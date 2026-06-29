@@ -10,6 +10,8 @@ simulated Codex home.
 - Python syntax compilation.
 - Unit tests.
 - Repository security scan.
+- `init-config` into a temporary private config path.
+- `validate-config` against the generated private config.
 - `doctor` against a temporary config.
 - `switch --dry-run` against a simulated `config.toml`.
 - MCP/plugin-like config blocks remain visible in the dry-run diff.

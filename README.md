@@ -31,8 +31,7 @@ does not mutate Codex session history, and does not install KeepAlive services.
 2. Copy an example config:
 
    ```sh
-   mkdir -p ~/.codex-hybrid-model-switcher
-   cp config/examples/config.macos.example.json ~/.codex-hybrid-model-switcher/config.json
+   codex-hybrid-switcher init-config --platform macos --output ~/.codex-hybrid-model-switcher/config.json
    ```
 
 3. Edit paths and provider endpoints in that private config.
@@ -40,7 +39,7 @@ does not mutate Codex session history, and does not install KeepAlive services.
 4. Check the environment:
 
    ```sh
-   codex-hybrid-switcher doctor --config ~/.codex-hybrid-model-switcher/config.json
+   codex-hybrid-switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
 5. Preview the Codex config change without writing anything:
@@ -73,6 +72,8 @@ does not mutate Codex session history, and does not install KeepAlive services.
 python -m codex_hybrid_switcher status
 python -m codex_hybrid_switcher doctor
 python -m codex_hybrid_switcher doctor --strict
+python -m codex_hybrid_switcher init-config --platform macos --output ~/.codex-hybrid-model-switcher/config.json
+python -m codex_hybrid_switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher bridge
 python -m codex_hybrid_switcher smoke
 python -m codex_hybrid_switcher security-scan .
@@ -92,6 +93,13 @@ python3 scripts/validate-install.py
 It creates a temporary workspace, installs the package, runs tests and security
 checks, and exercises `switch --dry-run` against a simulated Codex config. See
 `docs/install-validation.md` for macOS and Windows details.
+
+## Private Config Dry-run
+
+After install validation, use `docs/private-config-dryrun.md` to initialize and
+validate a machine-local config. The validation output redacts provider hostnames
+and local file paths. Stop at `switch --dry-run` until you are ready for a real
+Codex provider switch.
 
 ## What This Repository Must Not Contain
 
