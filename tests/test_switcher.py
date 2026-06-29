@@ -330,3 +330,43 @@ def test_guarded_switch_local_stops_before_write_when_smoke_fails(tmp_path, monk
     assert code == 1
     assert "Local smoke failed" in out
     assert (codex_home / "config.toml").read_text(encoding="utf-8") == before
+
+
+def test_start_bridge_uses_detached_windows_flags_and_log(tmp_path, monkeypatch):
+    config_path, _codex_home = write_config(tmp_path)
+    config = load_config(str(config_path))
+    runtime = tmp_path / "runtime"
+    calls = {"popen": None, "port_checks": 0}
+
+    class FakeProcess:
+        pid = 12345
+
+        def poll(self):
+            return None
+
+    def fake_port_open(_host, _port):
+        calls["port_checks"] += 1
+        return calls["port_checks"] > 1
+
+    def fake_popen(cmd, **kwargs):
+        calls["popen"] = {"cmd": cmd, **kwargs}
+        return FakeProcess()
+
+    monkeypatch.setattr(switcher.sys, "platform", "win32")
+    monkeypatch.setattr(switcher, "runtime_dir", lambda _config: runtime)
+    monkeypatch.setattr(switcher, "port_open", fake_port_open)
+    monkeypatch.setattr(switcher.subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200, raising=False)
+    monkeypatch.setattr(switcher.subprocess, "DETACHED_PROCESS", 0x00000008, raising=False)
+    monkeypatch.setattr(switcher.subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0x01000000, raising=False)
+    monkeypatch.setattr(switcher.subprocess, "Popen", fake_popen)
+
+    switcher.start_bridge(config)
+
+    assert calls["popen"] is not None
+    assert calls["popen"]["creationflags"] == 0x01000208
+    assert calls["popen"]["stderr"] is switcher.subprocess.STDOUT
+    assert calls["popen"]["stdin"] is switcher.subprocess.DEVNULL
+    assert calls["popen"]["close_fds"] is True
+    assert calls["popen"]["cmd"][:3] == [switcher.sys.executable, "-m", "codex_hybrid_switcher"]
+    assert (runtime / "bridge.pid").read_text(encoding="utf-8") == "12345"
+    assert (runtime / "bridge.log").exists()

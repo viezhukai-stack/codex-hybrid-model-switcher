@@ -26,6 +26,11 @@ It must not write:
 Local provider switches may start the bridge on `127.0.0.1:19030`; the bridge
 then starts llama.cpp on `127.0.0.1:19031` on demand.
 
+Bridge runtime files are written outside the repository:
+
+- `%USERPROFILE%\.codex-hybrid-model-switcher\bridge.pid`
+- `%USERPROFILE%\.codex-hybrid-model-switcher\bridge.log`
+
 ## Dry-run
 
 Cloud provider:
@@ -63,6 +68,18 @@ powershell -ExecutionPolicy Bypass -File scripts\windows-provider-switch.ps1 -Pr
 4. Open Codex manually.
 5. Confirm account information, plugins, and project conversations are still visible.
 6. Start a new test chat.
+
+If the local provider was applied from a remote SSH session and Codex reports
+`error sending request for url (http://127.0.0.1:19030/v1/responses)`, first
+check whether the bridge is still listening:
+
+```powershell
+netstat -ano | Select-String ':19030|:19031'
+Get-Content "$env:USERPROFILE\.codex-hybrid-model-switcher\bridge.log" -Tail 80
+```
+
+The guarded switch starts the bridge detached on Windows, but UI validation
+should still be done from the Windows desktop session.
 
 ## Local Provider Notes
 

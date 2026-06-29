@@ -75,6 +75,10 @@ def bridge_pid_file(config: AppConfig) -> Path:
     return runtime_dir(config) / "bridge.pid"
 
 
+def bridge_log_file(config: AppConfig) -> Path:
+    return runtime_dir(config) / "bridge.log"
+
+
 def port_open(host: str, port: int) -> bool:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(0.5)
@@ -117,7 +121,27 @@ def start_bridge(config: AppConfig) -> None:
     if port_open(bridge.host, bridge.port):
         return
     cmd = [sys.executable, "-m", "codex_hybrid_switcher", "bridge", "--config", str(config.path)]
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    creationflags = 0
+    if sys.platform == "win32":
+        creationflags = (
+            getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+            | getattr(subprocess, "DETACHED_PROCESS", 0)
+            | getattr(subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0)
+        )
+    log_path = bridge_log_file(config)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_handle = log_path.open("ab")
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,
+            creationflags=creationflags,
+            close_fds=True,
+        )
+    finally:
+        log_handle.close()
     bridge_pid_file(config).write_text(str(proc.pid), encoding="utf-8")
     for _ in range(30):
         time.sleep(1)

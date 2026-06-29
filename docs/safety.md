@@ -7,6 +7,9 @@
 - Do not install LaunchAgents, KeepAlive jobs, or recovery loops.
 - Quit Codex before switching providers.
 - Keep local model files outside the repository.
+- Keep bridge runtime files outside the repository. The Windows local provider
+  may create `%USERPROFILE%\.codex-hybrid-model-switcher\bridge.pid` and
+  `bridge.log`.
 - Use one canary machine for the first real cloud-provider switch before
   repeating the workflow elsewhere.
 - Require explicit `--allow-local` before switching Codex Desktop to a local
