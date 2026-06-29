@@ -138,6 +138,34 @@ enabled = true
     assert '-experimental_bearer_token = "<redacted>"' not in diff
 
 
+def test_rendered_config_keeps_root_settings_before_provider_section(tmp_path):
+    config_path, _codex_home = write_config(tmp_path)
+    config = load_config(str(config_path))
+    provider = config.provider("cloud-gpt-main")
+    existing = """model = "gpt-5.5"
+model_provider = "custom"
+model_reasoning_effort = "high"
+notify = [ "notify.exe", "turn-ended" ]
+
+[model_providers.custom]
+name = "Old"
+base_url = "https://old.example/v1"
+wire_api = "responses"
+requires_openai_auth = true
+experimental_bearer_token = "secret-token"
+
+[desktop]
+conversationDetailMode = "STEPS_PROSE"
+"""
+
+    rendered = switcher.build_config_text(existing, provider, config)
+
+    assert rendered.index('model_reasoning_effort = "high"') < rendered.index("[model_providers.custom]")
+    assert rendered.index('notify = [ "notify.exe", "turn-ended" ]') < rendered.index("[model_providers.custom]")
+    assert rendered.index("[model_providers.custom]") < rendered.index("[desktop]")
+    assert 'experimental_bearer_token = "secret-token"' in rendered
+
+
 def test_switch_dry_run_has_no_side_effects(tmp_path, monkeypatch, capsys):
     config_path, codex_home = write_config(tmp_path)
     codex_home.mkdir()

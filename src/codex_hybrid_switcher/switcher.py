@@ -16,6 +16,7 @@ from .config import AppConfig, load_config
 
 PROTECTED_CODEX_FILES = ("auth.json", "models_cache.json", "state_5.sqlite")
 MANAGED_CUSTOM_PROVIDER_KEYS = {"name", "base_url", "wire_api", "requires_openai_auth"}
+MANAGED_ROOT_KEYS = {"model_provider", "model", "review_model"}
 
 
 def codex_config_path(config: AppConfig) -> Path:
@@ -143,10 +144,14 @@ def stop_bridge(config: AppConfig) -> None:
         os.kill(pid, signal.SIGKILL if hasattr(signal, "SIGKILL") else signal.SIGTERM)
 
 
-def render_config(provider: dict, config: AppConfig, *, custom_provider_extras: str = "") -> str:
+def render_config(provider: dict, config: AppConfig, *, root_extras: str = "", custom_provider_extras: str = "") -> str:
     model = str(provider.get("model") or "gpt-5.5")
+    root = root_extras.strip()
     if provider.get("kind") == "official":
-        return f'model_provider = "openai"\nmodel = "{model}"\nreview_model = "{model}"\n'
+        text = f'model_provider = "openai"\nmodel = "{model}"\nreview_model = "{model}"\n'
+        if root:
+            text += f"\n{root}\n"
+        return text
 
     provider_id = "custom"
     base_url = str(provider.get("base_url") or f"http://127.0.0.1:{config.bridge.port}/v1")
@@ -154,7 +159,12 @@ def render_config(provider: dict, config: AppConfig, *, custom_provider_extras: 
     text = (
         f'model_provider = "{provider_id}"\n'
         f'model = "{model}"\n'
-        f'review_model = "{model}"\n\n'
+        f'review_model = "{model}"\n'
+    )
+    if root:
+        text += f"\n{root}\n"
+    text += (
+        "\n"
         f"[model_providers.{provider_id}]\n"
         f'name = "{provider.get("label") or provider.get("id")}"\n'
         f'base_url = "{base_url}"\n'
@@ -168,8 +178,14 @@ def render_config(provider: dict, config: AppConfig, *, custom_provider_extras: 
 
 
 def build_config_text(existing: str, provider: dict, config: AppConfig) -> str:
-    managed = render_config(provider, config, custom_provider_extras=extract_custom_provider_extras(existing)).rstrip()
-    preserved = strip_managed_config(existing).strip()
+    root_preserved, section_preserved = split_preserved_config(existing)
+    managed = render_config(
+        provider,
+        config,
+        root_extras=root_preserved,
+        custom_provider_extras=extract_custom_provider_extras(existing),
+    ).rstrip()
+    preserved = section_preserved.strip()
     if preserved:
         return f"{managed}\n\n{preserved}\n"
     return f"{managed}\n"
@@ -206,8 +222,15 @@ def extract_custom_provider_extras(existing: str) -> str:
 
 
 def strip_managed_config(existing: str) -> str:
+    root_preserved, section_preserved = split_preserved_config(existing)
+    text = "\n\n".join(part.strip() for part in (root_preserved, section_preserved) if part.strip())
+    return text + ("\n\n" if text else "")
+
+
+def split_preserved_config(existing: str) -> tuple[str, str]:
     lines = existing.splitlines()
-    kept: list[str] = []
+    root_kept: list[str] = []
+    section_kept: list[str] = []
     in_managed_provider = False
     in_section = False
 
@@ -223,17 +246,16 @@ def strip_managed_config(existing: str) -> str:
         if in_managed_provider:
             continue
 
-        if not in_section and (
-            stripped.startswith("model_provider =")
-            or stripped.startswith("model =")
-            or stripped.startswith("review_model =")
-        ):
+        if not in_section:
+            key = stripped.split("=", 1)[0].strip().lower()
+            if key in MANAGED_ROOT_KEYS:
+                continue
+            root_kept.append(line)
             continue
 
-        kept.append(line)
+        section_kept.append(line)
 
-    text = "\n".join(kept).rstrip()
-    return text + ("\n\n" if text else "")
+    return "\n".join(root_kept).strip(), "\n".join(section_kept).strip()
 
 
 def unified_diff(path: Path, before: str, after: str) -> str:
