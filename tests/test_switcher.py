@@ -146,6 +146,35 @@ def test_codex_is_running_treats_process_query_failure_as_running(monkeypatch):
     assert switcher.codex_is_running() is True
 
 
+def test_codex_is_running_detects_windows_codex_process(monkeypatch):
+    def fake_run(args, **_kwargs):
+        assert args == ["tasklist"]
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout="Codex.exe  1234 Console")
+
+    monkeypatch.setattr(switcher.sys, "platform", "win32")
+    monkeypatch.setattr(switcher.subprocess, "run", fake_run)
+
+    assert switcher.codex_is_running() is True
+
+
+def test_switch_refuses_when_codex_is_running_without_writing(tmp_path, monkeypatch, capsys):
+    config_path, codex_home = write_config(tmp_path)
+    write_realistic_codex_home(codex_home)
+    config_toml = codex_home / "config.toml"
+    before = config_toml.read_text(encoding="utf-8")
+
+    monkeypatch.setattr(switcher, "codex_is_running", lambda: True)
+    monkeypatch.setattr(switcher, "stop_bridge", lambda _config: (_ for _ in ()).throw(AssertionError("should not stop bridge")))
+
+    code = switcher.switch_provider("cloud-gpt-main", str(config_path))
+    out = capsys.readouterr().out
+
+    assert code == 2
+    assert "Codex Desktop appears to be running" in out
+    assert config_toml.read_text(encoding="utf-8") == before
+    assert list(codex_home.glob("config.toml.bak-codex-hybrid-*")) == []
+
+
 def test_unified_diff_redacts_private_config_values(tmp_path):
     before = 'base_url = "https://private.example/v1"\nexperimental_bearer_token = "secret-token"\nmodel = "old"\n'
     after = 'base_url = "https://planned.example/v1"\nexperimental_bearer_token = "new-secret"\nmodel = "new"\n'

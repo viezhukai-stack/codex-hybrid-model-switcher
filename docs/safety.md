@@ -7,10 +7,11 @@
 - Do not install LaunchAgents, KeepAlive jobs, or recovery loops.
 - Quit Codex before switching providers.
 - Keep local model files outside the repository.
+- Use one canary machine for the first real cloud-provider switch before
+  repeating the workflow elsewhere.
 
 Before publishing, run:
 
 ```sh
 python -m codex_hybrid_switcher security-scan .
 ```
-

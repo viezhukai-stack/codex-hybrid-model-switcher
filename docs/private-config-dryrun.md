@@ -68,8 +68,12 @@ Dry-run mode does not:
 The dry-run diff redacts known private fields such as `base_url` and token-like
 keys. Still treat dry-run output as private when using a real provider.
 
-## 5. Stop Here for v0.4
+## 5. Next: Cloud Canary
 
 This validation proves that private config loading and rendered Codex config are
-correct. Real provider switching and local model smoke tests are separate later
-steps.
+correct. Real cloud-provider switching must use a guarded canary workflow:
+
+- Windows: `docs/windows-cloud-canary.md`
+- macOS: `docs/macos-cloud-switch-smoke.md`
+
+Local model smoke tests are separate later steps.

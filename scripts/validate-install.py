@@ -157,21 +157,22 @@ def main(argv: list[str] | None = None) -> int:
         run([str(python), "-m", "compileall", "-q", "src", "tests"], cwd=repo)
         run([str(python), "-m", "pytest"], cwd=repo)
         run([str(python), "-m", "codex_hybrid_switcher", "security-scan", "."], cwd=repo)
-        generated_config = work / "generated-private" / "config.json"
-        run(
-            [
-                str(python),
-                "-m",
-                "codex_hybrid_switcher",
-                "init-config",
-                "--platform",
-                "macos",
-                "--output",
-                str(generated_config),
-            ],
-            cwd=repo,
-        )
-        run([str(python), "-m", "codex_hybrid_switcher", "validate-config", "--config", str(generated_config)], cwd=repo)
+        for platform in ("macos", "windows"):
+            generated_config = work / f"generated-private-{platform}" / "config.json"
+            run(
+                [
+                    str(python),
+                    "-m",
+                    "codex_hybrid_switcher",
+                    "init-config",
+                    "--platform",
+                    platform,
+                    "--output",
+                    str(generated_config),
+                ],
+                cwd=repo,
+            )
+            run([str(python), "-m", "codex_hybrid_switcher", "validate-config", "--config", str(generated_config)], cwd=repo)
         validation_config = work / "doctor-config.json"
         codex_home = work / "doctor-codex-home"
         codex_home.mkdir()

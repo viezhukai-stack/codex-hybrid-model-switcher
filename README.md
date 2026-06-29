@@ -103,9 +103,11 @@ validate a machine-local config. The validation output redacts provider hostname
 and local file paths. Stop at `switch --dry-run` until you are ready for a real
 Codex provider switch.
 
-For the first real macOS cloud-provider smoke test, use
-`docs/macos-cloud-switch-smoke.md` and prefer `guarded-switch` so protected Codex
-state files are hashed before and after the switch.
+For the first real cloud-provider smoke test, use a canary machine and prefer
+`guarded-switch` so protected Codex state files are hashed before and after the
+switch. Start with `docs/windows-cloud-canary.md` for Windows or
+`docs/macos-cloud-switch-smoke.md` for macOS. Do not test local llama.cpp models
+in the cloud canary workflow.
 
 ## What This Repository Must Not Contain
 
