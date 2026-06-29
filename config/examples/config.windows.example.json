@@ -1,0 +1,56 @@
+{
+  "codex_home": "%USERPROFILE%\\.codex",
+  "cc_switch_home": "%USERPROFILE%\\.cc-switch",
+  "bridge": {
+    "host": "127.0.0.1",
+    "port": 19030,
+    "llama_port": 19031,
+    "idle_seconds": 600
+  },
+  "providers": [
+    {
+      "id": "openai-official",
+      "label": "OpenAI Official",
+      "kind": "official",
+      "model": "gpt-5.5"
+    },
+    {
+      "id": "cpamc-gpt-5-5",
+      "label": "CPAMC GPT-5.5",
+      "kind": "cloud",
+      "base_url": "https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1",
+      "api_key_env": "CPAMC_API_KEY",
+      "model": "gpt-5.5",
+      "wire_api": "responses"
+    },
+    {
+      "id": "local-gemma",
+      "label": "Local Gemma",
+      "kind": "local",
+      "base_url": "http://127.0.0.1:19030/v1",
+      "model": "local/gemma",
+      "wire_api": "responses"
+    }
+  ],
+  "local_model": {
+    "id": "local/gemma",
+    "display_name": "Local Gemma",
+    "context_window": 8192,
+    "llama_server_path": "E:\\\\AI\\\\tools\\\\llama.cpp\\\\b9828-cuda-13.3-x64\\\\llama-server.exe",
+    "model_path": "E:\\\\AI\\\\models\\\\gguf\\\\YOUR-MODEL\\\\model.gguf",
+    "mmproj_path": "E:\\\\AI\\\\models\\\\gguf\\\\YOUR-MODEL\\\\mmproj.gguf",
+    "system_prompt": "You are a concise local coding assistant running through llama.cpp.",
+    "max_output_tokens": 512,
+    "extra_args": [
+      "--jinja",
+      "--reasoning",
+      "off",
+      "--reasoning-format",
+      "none",
+      "--reasoning-budget",
+      "0",
+      "--no-mmproj-offload"
+    ]
+  }
+}
+

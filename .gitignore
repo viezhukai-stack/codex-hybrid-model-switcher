@@ -1,0 +1,26 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Local/private runtime data
+.env
+config.json
+*.local.json
+*.log
+*.pid
+
+# Never commit Codex account/runtime state
+.codex/
+.cc-switch/
+auth.json
+models_cache.json
+state_5.sqlite
+sessions/
+rollouts/
+backups/
+quarantine/
+
