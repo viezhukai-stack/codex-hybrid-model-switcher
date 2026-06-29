@@ -86,3 +86,5 @@ Stop immediately if:
 - the vision smoke does not identify the red test image
 
 Do not switch Codex Desktop to the local provider until this smoke test passes.
+After it passes, use `guarded-switch <local-provider-id> --allow-local` or the
+Windows workflow in `docs/windows-user-flow.md`.

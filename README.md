@@ -81,6 +81,7 @@ python -m codex_hybrid_switcher security-scan .
 python -m codex_hybrid_switcher menu
 python -m codex_hybrid_switcher switch <provider-id> --dry-run
 python -m codex_hybrid_switcher guarded-switch <provider-id> --dry-run
+python -m codex_hybrid_switcher guarded-switch local-gemma --allow-local
 python -m codex_hybrid_switcher guarded-switch <provider-id>
 python -m codex_hybrid_switcher switch <provider-id>
 ```
@@ -113,6 +114,9 @@ in the cloud canary workflow.
 After cloud canary verification, use `docs/local-llama-smoke.md` to validate the
 local bridge and llama.cpp model before switching Codex Desktop to a local
 provider.
+
+For the Windows end-user switching flow after both canaries pass, use
+`docs/windows-user-flow.md`.
 
 ## What This Repository Must Not Contain
 

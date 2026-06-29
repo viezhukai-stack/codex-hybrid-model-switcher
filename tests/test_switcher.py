@@ -282,9 +282,51 @@ def test_guarded_switch_changes_only_config_toml(tmp_path, monkeypatch, capsys):
     assert list(codex_home.glob("config.toml.bak-codex-hybrid-*"))
 
 
-def test_guarded_switch_rejects_local_provider(tmp_path, monkeypatch):
+def test_guarded_switch_rejects_local_provider_without_explicit_allow(tmp_path, monkeypatch, capsys):
     config_path, codex_home = write_config(tmp_path)
     write_realistic_codex_home(codex_home)
     monkeypatch.setattr(switcher, "start_bridge", lambda _config: (_ for _ in ()).throw(AssertionError("should not start bridge")))
 
     assert switcher.guarded_switch_provider("local-gemma", str(config_path)) == 2
+    assert "--allow-local" in capsys.readouterr().out
+
+
+def test_guarded_switch_local_runs_smoke_before_write(tmp_path, monkeypatch, capsys):
+    config_path, codex_home = write_config(tmp_path)
+    write_realistic_codex_home(codex_home)
+    protected_before = switcher.protected_hashes(load_config(str(config_path)))
+    calls = {"smoke": False, "bridge": False}
+
+    def fake_smoke(_config_path):
+        calls["smoke"] = True
+        return 0
+
+    monkeypatch.setattr("codex_hybrid_switcher.local_smoke.run_local_smoke", fake_smoke)
+    monkeypatch.setattr(switcher, "codex_is_running", lambda: False)
+    monkeypatch.setattr(switcher, "start_bridge", lambda _config: calls.__setitem__("bridge", True))
+
+    code = switcher.guarded_switch_provider("local-gemma", str(config_path), allow_local=True)
+    out = capsys.readouterr().out
+
+    assert code == 0
+    assert calls == {"smoke": True, "bridge": True}
+    assert "Running local smoke before switching" in out
+    assert "Protected Codex files unchanged." in out
+    assert switcher.protected_hashes(load_config(str(config_path))) == protected_before
+    assert 'model = "local/gemma"' in (codex_home / "config.toml").read_text(encoding="utf-8")
+
+
+def test_guarded_switch_local_stops_before_write_when_smoke_fails(tmp_path, monkeypatch, capsys):
+    config_path, codex_home = write_config(tmp_path)
+    write_realistic_codex_home(codex_home)
+    before = (codex_home / "config.toml").read_text(encoding="utf-8")
+
+    monkeypatch.setattr("codex_hybrid_switcher.local_smoke.run_local_smoke", lambda _config_path: 1)
+    monkeypatch.setattr(switcher, "start_bridge", lambda _config: (_ for _ in ()).throw(AssertionError("should not start bridge")))
+
+    code = switcher.guarded_switch_provider("local-gemma", str(config_path), allow_local=True)
+    out = capsys.readouterr().out
+
+    assert code == 1
+    assert "Local smoke failed" in out
+    assert (codex_home / "config.toml").read_text(encoding="utf-8") == before

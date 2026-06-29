@@ -9,6 +9,8 @@
 - Keep local model files outside the repository.
 - Use one canary machine for the first real cloud-provider switch before
   repeating the workflow elsewhere.
+- Require explicit `--allow-local` before switching Codex Desktop to a local
+  provider.
 
 Before publishing, run:
 
