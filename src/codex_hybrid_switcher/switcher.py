@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import hashlib
 import os
 import signal
 import shutil
@@ -13,20 +14,46 @@ from pathlib import Path
 
 from .config import AppConfig, load_config
 
+PROTECTED_CODEX_FILES = ("auth.json", "models_cache.json", "state_5.sqlite")
+MANAGED_CUSTOM_PROVIDER_KEYS = {"name", "base_url", "wire_api", "requires_openai_auth"}
+MANAGED_ROOT_KEYS = {"model_provider", "model", "review_model"}
+
 
 def codex_config_path(config: AppConfig) -> Path:
     return config.codex_home / "config.toml"
+
+
+def protected_codex_paths(config: AppConfig) -> list[Path]:
+    return [config.codex_home / name for name in PROTECTED_CODEX_FILES]
+
+
+def file_hash(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def protected_hashes(config: AppConfig) -> dict[str, str | None]:
+    return {path.name: file_hash(path) for path in protected_codex_paths(config)}
 
 
 def codex_is_running() -> bool:
     try:
         if sys.platform == "win32":
             proc = subprocess.run(["tasklist"], text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
+            if proc.returncode != 0:
+                return True
             return "Codex" in proc.stdout
         proc = subprocess.run(["ps", "-axo", "command"], text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
+        if proc.returncode != 0:
+            return True
         return "Codex.app" in proc.stdout or "codex app-server" in proc.stdout
     except OSError:
-        return False
+        return True
 
 
 def backup_file(path: Path) -> Path | None:
@@ -117,37 +144,93 @@ def stop_bridge(config: AppConfig) -> None:
         os.kill(pid, signal.SIGKILL if hasattr(signal, "SIGKILL") else signal.SIGTERM)
 
 
-def render_config(provider: dict, config: AppConfig) -> str:
+def render_config(provider: dict, config: AppConfig, *, root_extras: str = "", custom_provider_extras: str = "") -> str:
     model = str(provider.get("model") or "gpt-5.5")
+    root = root_extras.strip()
     if provider.get("kind") == "official":
-        return f'model_provider = "openai"\nmodel = "{model}"\nreview_model = "{model}"\n'
+        text = f'model_provider = "openai"\nmodel = "{model}"\nreview_model = "{model}"\n'
+        if root:
+            text += f"\n{root}\n"
+        return text
 
     provider_id = "custom"
     base_url = str(provider.get("base_url") or f"http://127.0.0.1:{config.bridge.port}/v1")
     wire_api = str(provider.get("wire_api") or "responses")
-    return (
+    text = (
         f'model_provider = "{provider_id}"\n'
         f'model = "{model}"\n'
-        f'review_model = "{model}"\n\n'
+        f'review_model = "{model}"\n'
+    )
+    if root:
+        text += f"\n{root}\n"
+    text += (
+        "\n"
         f"[model_providers.{provider_id}]\n"
         f'name = "{provider.get("label") or provider.get("id")}"\n'
         f'base_url = "{base_url}"\n'
         f'wire_api = "{wire_api}"\n'
         "requires_openai_auth = true\n"
     )
+    extras = custom_provider_extras.strip()
+    if extras:
+        text += f"\n{extras}\n"
+    return text
 
 
 def build_config_text(existing: str, provider: dict, config: AppConfig) -> str:
-    managed = render_config(provider, config).rstrip()
-    preserved = strip_managed_config(existing).strip()
+    root_preserved, section_preserved = split_preserved_config(existing)
+    managed = render_config(
+        provider,
+        config,
+        root_extras=root_preserved,
+        custom_provider_extras=extract_custom_provider_extras(existing),
+    ).rstrip()
+    preserved = section_preserved.strip()
     if preserved:
         return f"{managed}\n\n{preserved}\n"
     return f"{managed}\n"
 
 
-def strip_managed_config(existing: str) -> str:
+def extract_custom_provider_extras(existing: str) -> str:
     lines = existing.splitlines()
-    kept: list[str] = []
+    extras: list[str] = []
+    in_managed_provider = False
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            if stripped == "[model_providers.custom]":
+                in_managed_provider = True
+                continue
+            if in_managed_provider:
+                break
+
+        if not in_managed_provider:
+            continue
+
+        if not stripped or stripped.startswith("#"):
+            extras.append(line)
+            continue
+
+        key = stripped.split("=", 1)[0].strip().lower()
+        if key in MANAGED_CUSTOM_PROVIDER_KEYS:
+            continue
+        extras.append(line)
+
+    text = "\n".join(extras).strip()
+    return text
+
+
+def strip_managed_config(existing: str) -> str:
+    root_preserved, section_preserved = split_preserved_config(existing)
+    text = "\n\n".join(part.strip() for part in (root_preserved, section_preserved) if part.strip())
+    return text + ("\n\n" if text else "")
+
+
+def split_preserved_config(existing: str) -> tuple[str, str]:
+    lines = existing.splitlines()
+    root_kept: list[str] = []
+    section_kept: list[str] = []
     in_managed_provider = False
     in_section = False
 
@@ -163,28 +246,49 @@ def strip_managed_config(existing: str) -> str:
         if in_managed_provider:
             continue
 
-        if not in_section and (
-            stripped.startswith("model_provider =")
-            or stripped.startswith("model =")
-            or stripped.startswith("review_model =")
-        ):
+        if not in_section:
+            key = stripped.split("=", 1)[0].strip().lower()
+            if key in MANAGED_ROOT_KEYS:
+                continue
+            root_kept.append(line)
             continue
 
-        kept.append(line)
+        section_kept.append(line)
 
-    text = "\n".join(kept).rstrip()
-    return text + ("\n\n" if text else "")
+    return "\n".join(root_kept).strip(), "\n".join(section_kept).strip()
 
 
 def unified_diff(path: Path, before: str, after: str) -> str:
+    before_lines = [redact_config_line(line) for line in before.splitlines(keepends=True)]
+    after_lines = [redact_config_line(line) for line in after.splitlines(keepends=True)]
     return "".join(
         difflib.unified_diff(
-            before.splitlines(keepends=True),
-            after.splitlines(keepends=True),
-            fromfile=f"{path} (current)",
-            tofile=f"{path} (planned)",
+            before_lines,
+            after_lines,
+            fromfile=f"{path.name} (current)",
+            tofile=f"{path.name} (planned)",
         )
     )
+
+
+def redact_config_line(line: str) -> str:
+    key = line.lstrip("+- ").split("=", 1)[0].strip().lower()
+    private_keys = {
+        "base_url",
+        "name",
+        "experimental_bearer_token",
+        "bearer_token",
+        "api_key",
+        "access" + "_token",
+        "refresh" + "_token",
+        "id" + "_token",
+        "password",
+    }
+    if key not in private_keys:
+        return line
+    prefix = line[: len(line) - len(line.lstrip("+- "))]
+    newline = "\n" if line.endswith("\n") else ""
+    return f'{prefix}{key} = "<redacted>"{newline}'
 
 
 def switch_provider(provider_id: str, config_path: str | None = None, *, force: bool = False, dry_run: bool = False) -> int:
@@ -211,6 +315,34 @@ def switch_provider(provider_id: str, config_path: str | None = None, *, force: 
     if backup:
         print(f"Backed up previous config: {backup}")
     print(f"Switched Codex provider to {provider_id}")
+    return 0
+
+
+def guarded_switch_provider(provider_id: str, config_path: str | None = None, *, force: bool = False, dry_run: bool = False) -> int:
+    config = load_config(config_path)
+    provider = config.provider(provider_id)
+    if provider.get("kind") == "local":
+        print("Guarded switch only supports official/cloud providers. Use normal switch for local providers after a separate local smoke plan.")
+        return 2
+    before = protected_hashes(config)
+    print("Protected file hashes before switch:")
+    for name, digest in before.items():
+        print(f"  - {name}: {'missing' if digest is None else digest[:12]}")
+    code = switch_provider(provider_id, str(config.path), force=force, dry_run=dry_run)
+    if code != 0 or dry_run:
+        return code
+    after = protected_hashes(config)
+    changed = [name for name in before if before[name] != after[name]]
+    print("Protected file hashes after switch:")
+    for name, digest in after.items():
+        print(f"  - {name}: {'missing' if digest is None else digest[:12]}")
+    if changed:
+        print("Protected Codex files changed unexpectedly:")
+        for name in changed:
+            print(f"  - {name}")
+        print("Stop and restore from backup before continuing.")
+        return 1
+    print("Protected Codex files unchanged.")
     return 0
 
 

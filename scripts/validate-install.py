@@ -108,7 +108,7 @@ def validate_dry_run(python: Path, repo: Path, work: Path) -> None:
         raise SystemExit("dry-run changed the simulated config.toml")
     required_stdout = [
         'model_provider = "custom"',
-        'base_url = "https://example.test/v1"',
+        'base_url = "<redacted>"',
     ]
     missing = [item for item in required_stdout if item not in proc.stdout]
     if missing:
@@ -117,6 +117,24 @@ def validate_dry_run(python: Path, repo: Path, work: Path) -> None:
     missing_preserved = [item for item in required_preserved if item not in after]
     if missing_preserved:
         raise SystemExit(f"simulated config lost preserved blocks: {missing_preserved}")
+
+    proc = run(
+        [
+            str(python),
+            "-m",
+            "codex_hybrid_switcher",
+            "guarded-switch",
+            "cloud-gpt-main",
+            "--dry-run",
+            "--config",
+            str(config_json),
+        ],
+        cwd=repo,
+    )
+    if config_toml.read_text(encoding="utf-8") != before:
+        raise SystemExit("guarded dry-run changed the simulated config.toml")
+    if "Protected file hashes before switch" not in proc.stdout:
+        raise SystemExit("guarded dry-run did not print protected hash preflight")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -139,21 +157,22 @@ def main(argv: list[str] | None = None) -> int:
         run([str(python), "-m", "compileall", "-q", "src", "tests"], cwd=repo)
         run([str(python), "-m", "pytest"], cwd=repo)
         run([str(python), "-m", "codex_hybrid_switcher", "security-scan", "."], cwd=repo)
-        generated_config = work / "generated-private" / "config.json"
-        run(
-            [
-                str(python),
-                "-m",
-                "codex_hybrid_switcher",
-                "init-config",
-                "--platform",
-                "macos",
-                "--output",
-                str(generated_config),
-            ],
-            cwd=repo,
-        )
-        run([str(python), "-m", "codex_hybrid_switcher", "validate-config", "--config", str(generated_config)], cwd=repo)
+        for platform in ("macos", "windows"):
+            generated_config = work / f"generated-private-{platform}" / "config.json"
+            run(
+                [
+                    str(python),
+                    "-m",
+                    "codex_hybrid_switcher",
+                    "init-config",
+                    "--platform",
+                    platform,
+                    "--output",
+                    str(generated_config),
+                ],
+                cwd=repo,
+            )
+            run([str(python), "-m", "codex_hybrid_switcher", "validate-config", "--config", str(generated_config)], cwd=repo)
         validation_config = work / "doctor-config.json"
         codex_home = work / "doctor-codex-home"
         codex_home.mkdir()
