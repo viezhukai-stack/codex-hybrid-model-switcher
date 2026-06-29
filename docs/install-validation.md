@@ -1,0 +1,64 @@
+# Install Validation
+
+Use this validation before replacing any existing Codex workflow with this
+project. It installs and tests the package in a temporary directory and uses a
+simulated Codex home.
+
+## What It Verifies
+
+- Editable install from the repository.
+- Python syntax compilation.
+- Unit tests.
+- Repository security scan.
+- `doctor` against a temporary config.
+- `switch --dry-run` against a simulated `config.toml`.
+- MCP/plugin-like config blocks remain visible in the dry-run diff.
+- The simulated `config.toml` is unchanged after dry-run.
+
+## What It Does Not Touch
+
+- Real `~/.codex` or `%USERPROFILE%\.codex`.
+- `auth.json`.
+- `models_cache.json`.
+- `state_5.sqlite`.
+- Real CC Switch state.
+- Real provider credentials.
+- Real llama.cpp or model files.
+
+## macOS
+
+From the repository root:
+
+```sh
+python3 scripts/validate-install.py
+```
+
+The default temporary root is `/private/tmp`. The script removes its validation
+workspace after a successful run. To inspect the generated files:
+
+```sh
+python3 scripts/validate-install.py --keep
+```
+
+## Windows
+
+From the repository root in PowerShell:
+
+```powershell
+py scripts\validate-install.py --tmp-root $env:TEMP
+```
+
+This uses a temporary validation workspace under `%TEMP%` and still uses only a
+simulated Codex home.
+
+## Expected Result
+
+The final line should be:
+
+```text
+install validation passed
+```
+
+If the script fails during dependency installation, rerun it in an environment
+that can reach the Python package index. If it fails during the security scan,
+remove the reported private data from the repository before continuing.
