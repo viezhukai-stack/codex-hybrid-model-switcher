@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import hashlib
 import os
 import signal
 import shutil
@@ -13,20 +14,44 @@ from pathlib import Path
 
 from .config import AppConfig, load_config
 
+PROTECTED_CODEX_FILES = ("auth.json", "models_cache.json", "state_5.sqlite")
+
 
 def codex_config_path(config: AppConfig) -> Path:
     return config.codex_home / "config.toml"
+
+
+def protected_codex_paths(config: AppConfig) -> list[Path]:
+    return [config.codex_home / name for name in PROTECTED_CODEX_FILES]
+
+
+def file_hash(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def protected_hashes(config: AppConfig) -> dict[str, str | None]:
+    return {path.name: file_hash(path) for path in protected_codex_paths(config)}
 
 
 def codex_is_running() -> bool:
     try:
         if sys.platform == "win32":
             proc = subprocess.run(["tasklist"], text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
+            if proc.returncode != 0:
+                return True
             return "Codex" in proc.stdout
         proc = subprocess.run(["ps", "-axo", "command"], text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
+        if proc.returncode != 0:
+            return True
         return "Codex.app" in proc.stdout or "codex app-server" in proc.stdout
     except OSError:
-        return False
+        return True
 
 
 def backup_file(path: Path) -> Path | None:
@@ -177,14 +202,36 @@ def strip_managed_config(existing: str) -> str:
 
 
 def unified_diff(path: Path, before: str, after: str) -> str:
+    before_lines = [redact_config_line(line) for line in before.splitlines(keepends=True)]
+    after_lines = [redact_config_line(line) for line in after.splitlines(keepends=True)]
     return "".join(
         difflib.unified_diff(
-            before.splitlines(keepends=True),
-            after.splitlines(keepends=True),
-            fromfile=f"{path} (current)",
-            tofile=f"{path} (planned)",
+            before_lines,
+            after_lines,
+            fromfile=f"{path.name} (current)",
+            tofile=f"{path.name} (planned)",
         )
     )
+
+
+def redact_config_line(line: str) -> str:
+    key = line.lstrip("+- ").split("=", 1)[0].strip().lower()
+    private_keys = {
+        "base_url",
+        "name",
+        "experimental_bearer_token",
+        "bearer_token",
+        "api_key",
+        "access" + "_token",
+        "refresh" + "_token",
+        "id" + "_token",
+        "password",
+    }
+    if key not in private_keys:
+        return line
+    prefix = line[: len(line) - len(line.lstrip("+- "))]
+    newline = "\n" if line.endswith("\n") else ""
+    return f'{prefix}{key} = "<redacted>"{newline}'
 
 
 def switch_provider(provider_id: str, config_path: str | None = None, *, force: bool = False, dry_run: bool = False) -> int:
@@ -211,6 +258,34 @@ def switch_provider(provider_id: str, config_path: str | None = None, *, force: 
     if backup:
         print(f"Backed up previous config: {backup}")
     print(f"Switched Codex provider to {provider_id}")
+    return 0
+
+
+def guarded_switch_provider(provider_id: str, config_path: str | None = None, *, force: bool = False, dry_run: bool = False) -> int:
+    config = load_config(config_path)
+    provider = config.provider(provider_id)
+    if provider.get("kind") == "local":
+        print("Guarded switch only supports official/cloud providers. Use normal switch for local providers after a separate local smoke plan.")
+        return 2
+    before = protected_hashes(config)
+    print("Protected file hashes before switch:")
+    for name, digest in before.items():
+        print(f"  - {name}: {'missing' if digest is None else digest[:12]}")
+    code = switch_provider(provider_id, str(config.path), force=force, dry_run=dry_run)
+    if code != 0 or dry_run:
+        return code
+    after = protected_hashes(config)
+    changed = [name for name in before if before[name] != after[name]]
+    print("Protected file hashes after switch:")
+    for name, digest in after.items():
+        print(f"  - {name}: {'missing' if digest is None else digest[:12]}")
+    if changed:
+        print("Protected Codex files changed unexpectedly:")
+        for name in changed:
+            print(f"  - {name}")
+        print("Stop and restore from backup before continuing.")
+        return 1
+    print("Protected Codex files unchanged.")
     return 0
 
 

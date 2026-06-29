@@ -65,8 +65,8 @@ Dry-run mode does not:
 - touch `models_cache.json`
 - touch `state_5.sqlite`
 
-The dry-run diff shows the rendered `config.toml`, including the configured
-provider `base_url`. Treat dry-run output as private when using a real provider.
+The dry-run diff redacts known private fields such as `base_url` and token-like
+keys. Still treat dry-run output as private when using a real provider.
 
 ## 5. Stop Here for v0.4
 

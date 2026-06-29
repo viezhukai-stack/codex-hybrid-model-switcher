@@ -79,6 +79,8 @@ python -m codex_hybrid_switcher smoke
 python -m codex_hybrid_switcher security-scan .
 python -m codex_hybrid_switcher menu
 python -m codex_hybrid_switcher switch <provider-id> --dry-run
+python -m codex_hybrid_switcher guarded-switch <provider-id> --dry-run
+python -m codex_hybrid_switcher guarded-switch <provider-id>
 python -m codex_hybrid_switcher switch <provider-id>
 ```
 
@@ -100,6 +102,10 @@ After install validation, use `docs/private-config-dryrun.md` to initialize and
 validate a machine-local config. The validation output redacts provider hostnames
 and local file paths. Stop at `switch --dry-run` until you are ready for a real
 Codex provider switch.
+
+For the first real macOS cloud-provider smoke test, use
+`docs/macos-cloud-switch-smoke.md` and prefer `guarded-switch` so protected Codex
+state files are hashed before and after the switch.
 
 ## What This Repository Must Not Contain
 

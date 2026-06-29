@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 
 from codex_hybrid_switcher import switcher
 from codex_hybrid_switcher.config import load_config
@@ -35,6 +36,22 @@ def write_config(tmp_path, *, codex_home=None):
         encoding="utf-8",
     )
     return config_path, codex_home
+
+
+def write_realistic_codex_home(codex_home):
+    codex_home.mkdir()
+    (codex_home / "config.toml").write_text(
+        """model_provider = "openai"
+model = "gpt-5.5"
+
+[mcp_servers.example]
+command = "example"
+""",
+        encoding="utf-8",
+    )
+    (codex_home / "auth.json").write_text('{"auth":true}', encoding="utf-8")
+    (codex_home / "models_cache.json").write_text('{"models":[]}', encoding="utf-8")
+    (codex_home / "state_5.sqlite").write_bytes(b"sqlite-placeholder")
 
 
 def test_strip_managed_config_preserves_unrelated_sections():
@@ -114,3 +131,72 @@ command = "example"
     assert "+model_provider = \"custom\"" in out
     assert config_toml.read_text(encoding="utf-8") == before
     assert list(codex_home.glob("*.bak-codex-hybrid-*")) == []
+
+
+def test_file_hash_returns_none_for_missing_file(tmp_path):
+    assert switcher.file_hash(tmp_path / "missing") is None
+
+
+def test_codex_is_running_treats_process_query_failure_as_running(monkeypatch):
+    def fake_run(*_args, **_kwargs):
+        return subprocess.CompletedProcess(args=[], returncode=1, stdout="")
+
+    monkeypatch.setattr(switcher.subprocess, "run", fake_run)
+
+    assert switcher.codex_is_running() is True
+
+
+def test_unified_diff_redacts_private_config_values(tmp_path):
+    before = 'base_url = "https://private.example/v1"\nexperimental_bearer_token = "secret-token"\nmodel = "old"\n'
+    after = 'base_url = "https://planned.example/v1"\nexperimental_bearer_token = "new-secret"\nmodel = "new"\n'
+
+    diff = switcher.unified_diff(tmp_path / "config.toml", before, after)
+
+    assert "private.example" not in diff
+    assert "planned.example" not in diff
+    assert "secret-token" not in diff
+    assert 'base_url = "<redacted>"' in diff
+    assert '-model = "old"' in diff
+    assert '+model = "new"' in diff
+
+
+def test_guarded_switch_dry_run_has_no_side_effects(tmp_path, monkeypatch, capsys):
+    config_path, codex_home = write_config(tmp_path)
+    write_realistic_codex_home(codex_home)
+    before = {path.name: switcher.file_hash(path) for path in codex_home.iterdir()}
+
+    monkeypatch.setattr(switcher, "codex_is_running", lambda: (_ for _ in ()).throw(AssertionError("should not check Codex")))
+
+    code = switcher.guarded_switch_provider("cloud-gpt-main", str(config_path), dry_run=True)
+    out = capsys.readouterr().out
+    after = {path.name: switcher.file_hash(path) for path in codex_home.iterdir()}
+
+    assert code == 0
+    assert "Protected file hashes before switch" in out
+    assert before == after
+
+
+def test_guarded_switch_changes_only_config_toml(tmp_path, monkeypatch, capsys):
+    config_path, codex_home = write_config(tmp_path)
+    write_realistic_codex_home(codex_home)
+    protected_before = switcher.protected_hashes(load_config(str(config_path)))
+
+    monkeypatch.setattr(switcher, "codex_is_running", lambda: False)
+    monkeypatch.setattr(switcher, "stop_bridge", lambda _config: None)
+
+    code = switcher.guarded_switch_provider("cloud-gpt-main", str(config_path))
+    out = capsys.readouterr().out
+
+    assert code == 0
+    assert "Protected Codex files unchanged." in out
+    assert switcher.protected_hashes(load_config(str(config_path))) == protected_before
+    assert 'model_provider = "custom"' in (codex_home / "config.toml").read_text(encoding="utf-8")
+    assert list(codex_home.glob("config.toml.bak-codex-hybrid-*"))
+
+
+def test_guarded_switch_rejects_local_provider(tmp_path, monkeypatch):
+    config_path, codex_home = write_config(tmp_path)
+    write_realistic_codex_home(codex_home)
+    monkeypatch.setattr(switcher, "start_bridge", lambda _config: (_ for _ in ()).throw(AssertionError("should not start bridge")))
+
+    assert switcher.guarded_switch_provider("local-gemma", str(config_path)) == 2

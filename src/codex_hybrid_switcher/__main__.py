@@ -8,7 +8,7 @@ from .doctor import run_doctor
 from .private_config import init_config, run_validate_config
 from .security import run_security_scan
 from .smoke import run_smoke
-from .switcher import interactive_menu, switch_provider
+from .switcher import guarded_switch_provider, interactive_menu, switch_provider
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -43,6 +43,11 @@ def main(argv: list[str] | None = None) -> int:
     switch.add_argument("--config", dest="sub_config")
     switch.add_argument("--force", action="store_true")
     switch.add_argument("--dry-run", action="store_true")
+    guarded_switch = sub.add_parser("guarded-switch")
+    guarded_switch.add_argument("provider_id")
+    guarded_switch.add_argument("--config", dest="sub_config")
+    guarded_switch.add_argument("--force", action="store_true")
+    guarded_switch.add_argument("--dry-run", action="store_true")
     add_config(sub.add_parser("status"))
 
     args = parser.parse_args(argv)
@@ -63,6 +68,8 @@ def main(argv: list[str] | None = None) -> int:
         return interactive_menu(config_path, force=args.force, dry_run=args.dry_run)
     if args.command == "switch":
         return switch_provider(args.provider_id, config_path, force=args.force, dry_run=args.dry_run)
+    if args.command == "guarded-switch":
+        return guarded_switch_provider(args.provider_id, config_path, force=args.force, dry_run=args.dry_run)
     if args.command == "status":
         return run_doctor(config_path)
     return 2
