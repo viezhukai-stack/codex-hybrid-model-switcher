@@ -56,6 +56,8 @@ def main(argv: list[str] | None = None) -> int:
     guarded_switch.add_argument("--config", dest="sub_config")
     guarded_switch.add_argument("--force", action="store_true")
     guarded_switch.add_argument("--dry-run", action="store_true")
+    guarded_switch.add_argument("--allow-local", action="store_true")
+    guarded_switch.add_argument("--skip-local-smoke", action="store_true")
     add_config(sub.add_parser("status"))
 
     args = parser.parse_args(argv)
@@ -86,7 +88,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "switch":
         return switch_provider(args.provider_id, config_path, force=args.force, dry_run=args.dry_run)
     if args.command == "guarded-switch":
-        return guarded_switch_provider(args.provider_id, config_path, force=args.force, dry_run=args.dry_run)
+        return guarded_switch_provider(
+            args.provider_id,
+            config_path,
+            force=args.force,
+            dry_run=args.dry_run,
+            allow_local=args.allow_local,
+            skip_local_smoke=args.skip_local_smoke,
+        )
     if args.command == "status":
         return run_doctor(config_path)
     return 2

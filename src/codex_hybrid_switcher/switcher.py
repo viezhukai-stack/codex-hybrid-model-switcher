@@ -75,6 +75,10 @@ def bridge_pid_file(config: AppConfig) -> Path:
     return runtime_dir(config) / "bridge.pid"
 
 
+def bridge_log_file(config: AppConfig) -> Path:
+    return runtime_dir(config) / "bridge.log"
+
+
 def port_open(host: str, port: int) -> bool:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(0.5)
@@ -117,7 +121,27 @@ def start_bridge(config: AppConfig) -> None:
     if port_open(bridge.host, bridge.port):
         return
     cmd = [sys.executable, "-m", "codex_hybrid_switcher", "bridge", "--config", str(config.path)]
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    creationflags = 0
+    if sys.platform == "win32":
+        creationflags = (
+            getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+            | getattr(subprocess, "DETACHED_PROCESS", 0)
+            | getattr(subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0)
+        )
+    log_path = bridge_log_file(config)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_handle = log_path.open("ab")
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,
+            creationflags=creationflags,
+            close_fds=True,
+        )
+    finally:
+        log_handle.close()
     bridge_pid_file(config).write_text(str(proc.pid), encoding="utf-8")
     for _ in range(30):
         time.sleep(1)
@@ -318,12 +342,34 @@ def switch_provider(provider_id: str, config_path: str | None = None, *, force: 
     return 0
 
 
-def guarded_switch_provider(provider_id: str, config_path: str | None = None, *, force: bool = False, dry_run: bool = False) -> int:
+def guarded_switch_provider(
+    provider_id: str,
+    config_path: str | None = None,
+    *,
+    force: bool = False,
+    dry_run: bool = False,
+    allow_local: bool = False,
+    skip_local_smoke: bool = False,
+) -> int:
     config = load_config(config_path)
     provider = config.provider(provider_id)
     if provider.get("kind") == "local":
-        print("Guarded switch only supports official/cloud providers. Use normal switch for local providers after a separate local smoke plan.")
-        return 2
+        if not allow_local:
+            print("Guarded switch refuses local providers unless --allow-local is explicit.")
+            print("Run local-smoke first, then rerun guarded-switch with --allow-local.")
+            return 2
+        if dry_run:
+            print("Local provider selected. Dry-run will not start bridge or llama.cpp.")
+        elif not skip_local_smoke:
+            print("Running local smoke before switching to the local provider.")
+            from .local_smoke import run_local_smoke
+
+            smoke_code = run_local_smoke(str(config.path))
+            if smoke_code != 0:
+                print("Local smoke failed; guarded switch stopped before writing Codex config.")
+                return smoke_code
+        else:
+            print("Skipping local smoke because --skip-local-smoke was provided.")
     before = protected_hashes(config)
     print("Protected file hashes before switch:")
     for name, digest in before.items():

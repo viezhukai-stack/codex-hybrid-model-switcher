@@ -13,3 +13,6 @@ cloud provider and does not start local llama.cpp.
 
 For local llama.cpp validation, follow `docs/local-llama-smoke.md`. The Windows
 example config assumes a user-managed CUDA llama.cpp path outside the repository.
+
+After cloud and local canaries pass, use `docs/windows-user-flow.md` for regular
+provider switching.
