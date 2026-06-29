@@ -118,6 +118,9 @@ provider.
 For the Windows end-user switching flow after both canaries pass, use
 `docs/windows-user-flow.md`.
 
+To repeat the validation on another Windows machine, follow
+`docs/windows-second-canary.md` before installing the end-user launcher.
+
 ## What This Repository Must Not Contain
 
 - `auth.json`

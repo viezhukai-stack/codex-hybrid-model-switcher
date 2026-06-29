@@ -47,6 +47,28 @@ powershell -ExecutionPolicy Bypass -File scripts\windows-provider-switch.ps1 -Pr
 
 Dry-run mode must finish with `Dry-run complete. No files were changed.`
 
+## Desktop Launcher
+
+After cloud and local canaries pass, install the guarded launcher:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-windows-launcher.ps1
+```
+
+This creates `Codex Model Switcher.cmd` on the desktop. The launcher runs
+`scripts\windows-provider-menu.ps1`, not the raw Python `menu` command.
+
+The launcher always:
+
+- lists providers from the private config
+- runs a guarded dry-run first
+- requires typing `APPLY` exactly before writing
+- delegates the real switch to `scripts\windows-provider-switch.ps1`
+- requires `-AllowLocal` internally for local providers
+
+It does not open Codex automatically. Open Codex manually after a successful
+apply and verify account, plugins, project conversations, and one new test chat.
+
 ## Apply
 
 1. Quit Codex Desktop completely.

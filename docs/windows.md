@@ -16,3 +16,7 @@ example config assumes a user-managed CUDA llama.cpp path outside the repository
 
 After cloud and local canaries pass, use `docs/windows-user-flow.md` for regular
 provider switching.
+
+To prove the workflow is portable, repeat the guarded validation on a second
+Windows machine with `docs/windows-second-canary.md`. Do this before treating a
+desktop launcher as the normal user-facing entry point on a new machine.
