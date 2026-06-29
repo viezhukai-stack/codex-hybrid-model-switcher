@@ -7,7 +7,7 @@ $launcher = Join-Path $desktop "Codex Model Switcher.cmd"
 $body = @"
 @echo off
 cd /d "$repo"
-codex-hybrid-switcher menu --config "%USERPROFILE%\.codex-hybrid-model-switcher\config.json"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows-provider-menu.ps1 -Config "%USERPROFILE%\.codex-hybrid-model-switcher\config.json"
 pause
 "@
 
