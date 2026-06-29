@@ -81,6 +81,18 @@ python -m codex_hybrid_switcher switch <provider-id> --dry-run
 python -m codex_hybrid_switcher switch <provider-id>
 ```
 
+## Isolated Install Validation
+
+Before using this project with a real Codex profile, run the isolated validation:
+
+```sh
+python3 scripts/validate-install.py
+```
+
+It creates a temporary workspace, installs the package, runs tests and security
+checks, and exercises `switch --dry-run` against a simulated Codex config. See
+`docs/install-validation.md` for macOS and Windows details.
+
 ## What This Repository Must Not Contain
 
 - `auth.json`
