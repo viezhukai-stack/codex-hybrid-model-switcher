@@ -45,6 +45,11 @@ It does not start the bridge, llama.cpp, or any local model.
    Dry-run mode validates the config and prints a redacted guarded diff. It
    must finish with `Dry-run complete. No files were changed.`
 
+   Stop here if the diff removes token-like fields, `sandbox_mode`, `notify`,
+   MCP/plugin/project sections, or any unrelated Codex setting. A canary apply
+   should only change the provider/model fields needed for the selected cloud
+   provider.
+
 ## Apply
 
 1. Quit Codex Desktop completely.
@@ -79,6 +84,8 @@ Stop immediately if:
 - Any protected file hash changes.
 - Account information, plugins, or project conversations disappear.
 - A local provider is selected by mistake.
+- The dry-run diff removes unrelated auth, plugin, MCP, project, or sandbox
+  settings.
 
 Only one Windows machine is required for this canary. A second Windows machine
 can be used later as cross-machine regression coverage.

@@ -107,6 +107,37 @@ command = "example"
     assert rendered.index('model_provider = "custom"') < rendered.index("[mcp_servers.example]")
 
 
+def test_rendered_config_preserves_custom_provider_extra_fields(tmp_path):
+    config_path, _codex_home = write_config(tmp_path)
+    config = load_config(str(config_path))
+    provider = config.provider("cloud-gpt-main")
+    existing = """model_provider = "custom"
+model = "old-model"
+
+[model_providers.custom]
+name = "Old"
+base_url = "https://old.example/v1"
+wire_api = "responses"
+requires_openai_auth = true
+experimental_bearer_token = "secret-token"
+sandbox_mode = "workspace-write"
+
+[plugins.example]
+enabled = true
+"""
+
+    rendered = switcher.build_config_text(existing, provider, config)
+    diff = switcher.unified_diff(tmp_path / "config.toml", existing, rendered)
+
+    assert 'base_url = "https://example.test/v1"' in rendered
+    assert 'base_url = "https://old.example/v1"' not in rendered
+    assert 'experimental_bearer_token = "secret-token"' in rendered
+    assert 'sandbox_mode = "workspace-write"' in rendered
+    assert "[plugins.example]" in rendered
+    assert "secret-token" not in diff
+    assert '-experimental_bearer_token = "<redacted>"' not in diff
+
+
 def test_switch_dry_run_has_no_side_effects(tmp_path, monkeypatch, capsys):
     config_path, codex_home = write_config(tmp_path)
     codex_home.mkdir()

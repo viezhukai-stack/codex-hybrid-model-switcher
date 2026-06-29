@@ -15,6 +15,7 @@ from pathlib import Path
 from .config import AppConfig, load_config
 
 PROTECTED_CODEX_FILES = ("auth.json", "models_cache.json", "state_5.sqlite")
+MANAGED_CUSTOM_PROVIDER_KEYS = {"name", "base_url", "wire_api", "requires_openai_auth"}
 
 
 def codex_config_path(config: AppConfig) -> Path:
@@ -142,7 +143,7 @@ def stop_bridge(config: AppConfig) -> None:
         os.kill(pid, signal.SIGKILL if hasattr(signal, "SIGKILL") else signal.SIGTERM)
 
 
-def render_config(provider: dict, config: AppConfig) -> str:
+def render_config(provider: dict, config: AppConfig, *, custom_provider_extras: str = "") -> str:
     model = str(provider.get("model") or "gpt-5.5")
     if provider.get("kind") == "official":
         return f'model_provider = "openai"\nmodel = "{model}"\nreview_model = "{model}"\n'
@@ -150,7 +151,7 @@ def render_config(provider: dict, config: AppConfig) -> str:
     provider_id = "custom"
     base_url = str(provider.get("base_url") or f"http://127.0.0.1:{config.bridge.port}/v1")
     wire_api = str(provider.get("wire_api") or "responses")
-    return (
+    text = (
         f'model_provider = "{provider_id}"\n'
         f'model = "{model}"\n'
         f'review_model = "{model}"\n\n'
@@ -160,14 +161,48 @@ def render_config(provider: dict, config: AppConfig) -> str:
         f'wire_api = "{wire_api}"\n'
         "requires_openai_auth = true\n"
     )
+    extras = custom_provider_extras.strip()
+    if extras:
+        text += f"\n{extras}\n"
+    return text
 
 
 def build_config_text(existing: str, provider: dict, config: AppConfig) -> str:
-    managed = render_config(provider, config).rstrip()
+    managed = render_config(provider, config, custom_provider_extras=extract_custom_provider_extras(existing)).rstrip()
     preserved = strip_managed_config(existing).strip()
     if preserved:
         return f"{managed}\n\n{preserved}\n"
     return f"{managed}\n"
+
+
+def extract_custom_provider_extras(existing: str) -> str:
+    lines = existing.splitlines()
+    extras: list[str] = []
+    in_managed_provider = False
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            if stripped == "[model_providers.custom]":
+                in_managed_provider = True
+                continue
+            if in_managed_provider:
+                break
+
+        if not in_managed_provider:
+            continue
+
+        if not stripped or stripped.startswith("#"):
+            extras.append(line)
+            continue
+
+        key = stripped.split("=", 1)[0].strip().lower()
+        if key in MANAGED_CUSTOM_PROVIDER_KEYS:
+            continue
+        extras.append(line)
+
+    text = "\n".join(extras).strip()
+    return text
 
 
 def strip_managed_config(existing: str) -> str:
