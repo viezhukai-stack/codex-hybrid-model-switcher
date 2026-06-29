@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codex-hybrid-model-switcher"
-version = "0.1.0"
+version = "0.2.0"
 description = "Cross-platform Codex model switcher for OpenAI-compatible providers and local llama.cpp models."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -12,9 +12,11 @@ license = { text = "MIT" }
 authors = [{ name = "Codex Hybrid Model Switcher Maintainers" }]
 dependencies = []
 
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
 [project.scripts]
 codex-hybrid-switcher = "codex_hybrid_switcher.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-

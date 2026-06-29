@@ -15,57 +15,57 @@
       "model": "gpt-5.5"
     },
     {
-      "id": "cpamc-gpt-5-5",
-      "label": "CPAMC GPT-5.5",
+      "id": "cloud-gpt-main",
+      "label": "Cloud GPT Main",
       "kind": "cloud",
       "base_url": "https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1",
-      "api_key_env": "CPAMC_API_KEY",
-      "model": "gpt-5.5",
+      "api_key_env": "OPENAI_COMPATIBLE_API_KEY",
+      "model": "provider-gpt-main",
       "wire_api": "responses"
     },
     {
-      "id": "cpamc-gpt-5-4",
-      "label": "CPAMC GPT-5.4",
+      "id": "cloud-gpt-secondary",
+      "label": "Cloud GPT Secondary",
       "kind": "cloud",
       "base_url": "https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1",
-      "api_key_env": "CPAMC_API_KEY",
-      "model": "gpt-5.4",
+      "api_key_env": "OPENAI_COMPATIBLE_API_KEY",
+      "model": "provider-gpt-secondary",
       "wire_api": "responses"
     },
     {
-      "id": "cpamc-claude-opus-4-6-thinking",
-      "label": "CPAMC Claude Opus 4.6 Thinking",
+      "id": "cloud-claude-thinking",
+      "label": "Cloud Claude Thinking",
       "kind": "cloud",
       "base_url": "https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1",
-      "api_key_env": "CPAMC_API_KEY",
-      "model": "claude-opus-4-6-thinking",
+      "api_key_env": "OPENAI_COMPATIBLE_API_KEY",
+      "model": "provider-claude-thinking",
       "wire_api": "responses"
     },
     {
-      "id": "cpamc-gemini-3-1-pro-preview",
-      "label": "CPAMC Gemini 3.1 Pro Preview",
+      "id": "cloud-gemini-pro",
+      "label": "Cloud Gemini Pro",
       "kind": "cloud",
       "base_url": "https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1",
-      "api_key_env": "CPAMC_API_KEY",
-      "model": "gemini-3.1-pro-preview",
+      "api_key_env": "OPENAI_COMPATIBLE_API_KEY",
+      "model": "provider-gemini-pro",
       "wire_api": "responses"
     },
     {
-      "id": "cpamc-gemini-3-5-flash",
-      "label": "CPAMC Gemini 3.5 Flash",
+      "id": "cloud-gemini-flash",
+      "label": "Cloud Gemini Flash",
       "kind": "cloud",
       "base_url": "https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1",
-      "api_key_env": "CPAMC_API_KEY",
-      "model": "gemini-3.5-flash",
+      "api_key_env": "OPENAI_COMPATIBLE_API_KEY",
+      "model": "provider-gemini-flash",
       "wire_api": "responses"
     },
     {
-      "id": "cpamc-grok-4-1-thinking",
-      "label": "CPAMC Grok 4.1 Thinking",
+      "id": "cloud-grok-thinking",
+      "label": "Cloud Grok Thinking",
       "kind": "cloud",
       "base_url": "https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1",
-      "api_key_env": "CPAMC_API_KEY",
-      "model": "grok-4.1-thinking",
+      "api_key_env": "OPENAI_COMPATIBLE_API_KEY",
+      "model": "provider-grok-thinking",
       "wire_api": "responses"
     },
     {
@@ -98,4 +98,3 @@
     ]
   }
 }
-

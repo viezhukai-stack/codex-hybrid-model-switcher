@@ -1,0 +1,49 @@
+# Open Source Readiness
+
+Use this checklist before making the repository public or sharing a support
+bundle.
+
+## Required Checks
+
+- Run `python -m codex_hybrid_switcher security-scan .`.
+- Confirm example configs use placeholder endpoints and environment variable
+  names only.
+- Confirm no account state files are present:
+  - `auth.json`
+  - `models_cache.json`
+  - `state_5.sqlite`
+  - `sessions/`
+- Confirm no generated recovery material is present:
+  - backups
+  - quarantine folders
+  - runtime logs
+  - machine-specific migration reports
+- Confirm no model binaries are present:
+  - `.gguf`
+  - `.safetensors`
+  - llama.cpp release archives
+- Confirm docs do not include private LAN addresses, hostnames, usernames,
+  private absolute paths, or personal provider endpoints.
+
+## Project Boundary
+
+This repository should contain reusable source code, tests, docs, and placeholder
+configuration only. Real Codex state, CC Switch state, provider credentials, and
+local model files stay on each user's machine.
+
+## Provider Examples
+
+Default documentation should refer to generic OpenAI-compatible providers. A
+private deployment can use any compatible provider by setting `base_url`,
+`api_key_env`, and `model` in a private config file outside the repository.
+
+## Release Gate
+
+Before publishing a release, verify:
+
+- CI passes on all configured Python versions.
+- `switch --dry-run` shows the expected diff and writes nothing.
+- Real `switch` creates a backup before writing `config.toml`.
+- The tool never edits `auth.json`, `models_cache.json`, or `state_5.sqlite`.
+- Local bridge tests do not require secrets and are documented separately from
+  unit tests.
