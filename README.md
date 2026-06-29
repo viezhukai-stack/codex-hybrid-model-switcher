@@ -3,7 +3,7 @@
 Cross-platform tooling for using Codex Desktop with:
 
 - official OpenAI/Codex account state preserved
-- OpenAI-compatible cloud providers
+- OpenAI-compatible cloud providers configured by the user
 - local llama.cpp models, including multimodal GGUF + mmproj models
 - CC Switch-style provider switching outside Codex's bottom-right model menu
 
@@ -43,22 +43,28 @@ does not mutate Codex session history, and does not install KeepAlive services.
    codex-hybrid-switcher doctor --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-5. Run the bridge in one terminal:
+5. Preview the Codex config change without writing anything:
+
+   ```sh
+   codex-hybrid-switcher switch cloud-gpt-main --dry-run --config ~/.codex-hybrid-model-switcher/config.json
+   ```
+
+6. Run the bridge in one terminal when testing a local model:
 
    ```sh
    codex-hybrid-switcher bridge --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-6. Run local bridge smoke tests in another terminal:
+7. Run local bridge smoke tests in another terminal:
 
    ```sh
    codex-hybrid-switcher smoke --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-7. Switch providers only after Codex Desktop is fully closed:
+8. Switch providers only after Codex Desktop is fully closed:
 
    ```sh
-   codex-hybrid-switcher switch cpamc-gpt-5-5 --config ~/.codex-hybrid-model-switcher/config.json
+   codex-hybrid-switcher switch cloud-gpt-main --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
 ## Commands
@@ -66,9 +72,12 @@ does not mutate Codex session history, and does not install KeepAlive services.
 ```sh
 python -m codex_hybrid_switcher status
 python -m codex_hybrid_switcher doctor
+python -m codex_hybrid_switcher doctor --strict
 python -m codex_hybrid_switcher bridge
 python -m codex_hybrid_switcher smoke
+python -m codex_hybrid_switcher security-scan .
 python -m codex_hybrid_switcher menu
+python -m codex_hybrid_switcher switch <provider-id> --dry-run
 python -m codex_hybrid_switcher switch <provider-id>
 ```
 

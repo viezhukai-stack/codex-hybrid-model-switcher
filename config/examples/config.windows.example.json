@@ -15,12 +15,12 @@
       "model": "gpt-5.5"
     },
     {
-      "id": "cpamc-gpt-5-5",
-      "label": "CPAMC GPT-5.5",
+      "id": "cloud-gpt-main",
+      "label": "Cloud GPT Main",
       "kind": "cloud",
       "base_url": "https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1",
-      "api_key_env": "CPAMC_API_KEY",
-      "model": "gpt-5.5",
+      "api_key_env": "OPENAI_COMPATIBLE_API_KEY",
+      "model": "provider-gpt-main",
       "wire_api": "responses"
     },
     {
@@ -53,4 +53,3 @@
     ]
   }
 }
-

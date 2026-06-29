@@ -146,6 +146,9 @@ def response_json(model: str, text: str) -> dict[str, Any]:
 
 
 def clean_local_text(text: str) -> str:
+    text = re.sub(r"<\|channel\|>\s*[A-Za-z0-9_-]+\s*", "", text)
+    text = re.sub(r"<\|message\|>", "", text)
+    text = re.sub(r"<\|end\|>", "", text)
     text = re.sub(r"<\|channel\>.*?<channel\|>", "", text, flags=re.DOTALL)
     text = re.sub(r"<\|channel\>[^\n]*\n?", "", text)
     text = text.replace("<channel|>", "")
@@ -415,4 +418,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import difflib
 import os
 import signal
 import shutil
@@ -136,6 +137,14 @@ def render_config(provider: dict, config: AppConfig) -> str:
     )
 
 
+def build_config_text(existing: str, provider: dict, config: AppConfig) -> str:
+    managed = render_config(provider, config).rstrip()
+    preserved = strip_managed_config(existing).strip()
+    if preserved:
+        return f"{managed}\n\n{preserved}\n"
+    return f"{managed}\n"
+
+
 def strip_managed_config(existing: str) -> str:
     lines = existing.splitlines()
     kept: list[str] = []
@@ -167,19 +176,35 @@ def strip_managed_config(existing: str) -> str:
     return text + ("\n\n" if text else "")
 
 
-def switch_provider(provider_id: str, config_path: str | None = None, *, force: bool = False) -> int:
+def unified_diff(path: Path, before: str, after: str) -> str:
+    return "".join(
+        difflib.unified_diff(
+            before.splitlines(keepends=True),
+            after.splitlines(keepends=True),
+            fromfile=f"{path} (current)",
+            tofile=f"{path} (planned)",
+        )
+    )
+
+
+def switch_provider(provider_id: str, config_path: str | None = None, *, force: bool = False, dry_run: bool = False) -> int:
     config = load_config(config_path)
     provider = config.provider(provider_id)
+    path = codex_config_path(config)
+    existing = path.read_text(encoding="utf-8", errors="replace") if path.exists() else ""
+    text = build_config_text(existing, provider, config)
+    if dry_run:
+        print("Dry run: no files changed, no backup created, bridge not started or stopped.")
+        diff = unified_diff(path, existing, text)
+        print(diff if diff else "No config changes required.")
+        return 0
     if codex_is_running() and not force:
         print("Codex Desktop appears to be running. Quit Codex completely, then rerun the switch.")
         return 2
     if provider.get("kind") == "local":
         start_bridge(config)
-    path = codex_config_path(config)
     path.parent.mkdir(parents=True, exist_ok=True)
     backup = backup_file(path)
-    existing = path.read_text(encoding="utf-8", errors="replace") if path.exists() else ""
-    text = strip_managed_config(existing) + render_config(provider, config)
     path.write_text(text, encoding="utf-8")
     if provider.get("kind") != "local":
         stop_bridge(config)
@@ -189,7 +214,7 @@ def switch_provider(provider_id: str, config_path: str | None = None, *, force: 
     return 0
 
 
-def interactive_menu(config_path: str | None = None, *, force: bool = False) -> int:
+def interactive_menu(config_path: str | None = None, *, force: bool = False, dry_run: bool = False) -> int:
     config = load_config(config_path)
     print("Codex Hybrid Model Switcher")
     print()
@@ -202,7 +227,7 @@ def interactive_menu(config_path: str | None = None, *, force: bool = False) -> 
     except (ValueError, IndexError):
         print("Invalid selection.")
         return 2
-    return switch_provider(str(provider["id"]), str(config.path), force=force)
+    return switch_provider(str(provider["id"]), str(config.path), force=force, dry_run=dry_run)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -210,7 +235,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("provider_id", nargs="?")
     parser.add_argument("--config")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
     if not args.provider_id:
-        return interactive_menu(args.config, force=args.force)
-    return switch_provider(args.provider_id, args.config, force=args.force)
+        return interactive_menu(args.config, force=args.force, dry_run=args.dry_run)
+    return switch_provider(args.provider_id, args.config, force=args.force, dry_run=args.dry_run)

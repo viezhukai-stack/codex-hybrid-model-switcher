@@ -28,7 +28,7 @@ ALLOWLIST_SUBSTRINGS = [
 ]
 
 
-SKIP_DIRS = {".git", ".venv", "__pycache__", "dist", "build"}
+SKIP_DIRS = {".git", ".venv", ".pytest_cache", "__pycache__", "dist", "build"}
 
 
 def run_security_scan(root: str = ".") -> int:
@@ -36,7 +36,7 @@ def run_security_scan(root: str = ".") -> int:
     findings: list[str] = []
     base = Path(root)
     for path in base.rglob("*"):
-        if any(part in SKIP_DIRS for part in path.parts):
+        if any(part in SKIP_DIRS or part.endswith(".egg-info") for part in path.parts):
             continue
         if path.name == "security.py":
             continue
