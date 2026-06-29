@@ -75,6 +75,7 @@ python -m codex_hybrid_switcher doctor --strict
 python -m codex_hybrid_switcher init-config --platform macos --output ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher bridge
+python -m codex_hybrid_switcher local-smoke
 python -m codex_hybrid_switcher smoke
 python -m codex_hybrid_switcher security-scan .
 python -m codex_hybrid_switcher menu
@@ -108,6 +109,10 @@ For the first real cloud-provider smoke test, use a canary machine and prefer
 switch. Start with `docs/windows-cloud-canary.md` for Windows or
 `docs/macos-cloud-switch-smoke.md` for macOS. Do not test local llama.cpp models
 in the cloud canary workflow.
+
+After cloud canary verification, use `docs/local-llama-smoke.md` to validate the
+local bridge and llama.cpp model before switching Codex Desktop to a local
+provider.
 
 ## What This Repository Must Not Contain
 
