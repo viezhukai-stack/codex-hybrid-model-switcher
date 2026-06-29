@@ -5,6 +5,7 @@ import sys
 
 from .bridge import run_bridge
 from .doctor import run_doctor
+from .local_smoke import run_local_smoke
 from .private_config import init_config, run_validate_config
 from .security import run_security_scan
 from .smoke import run_smoke
@@ -21,6 +22,13 @@ def main(argv: list[str] | None = None) -> int:
         return parser
 
     add_config(sub.add_parser("bridge"))
+    local_smoke = sub.add_parser("local-smoke")
+    local_smoke.add_argument("--config", dest="sub_config")
+    local_smoke.add_argument("--use-existing-bridge", action="store_true")
+    local_smoke.add_argument("--keep-bridge", action="store_true")
+    local_smoke.add_argument("--skip-vision", action="store_true")
+    local_smoke.add_argument("--expect-text", default="OK")
+    local_smoke.add_argument("--expect-vision", default="red")
     doctor = sub.add_parser("doctor")
     doctor.add_argument("--config", dest="sub_config")
     doctor.add_argument("--strict", action="store_true")
@@ -54,6 +62,15 @@ def main(argv: list[str] | None = None) -> int:
     config_path = getattr(args, "sub_config", None) or args.config
     if args.command == "bridge":
         return run_bridge(config_path)
+    if args.command == "local-smoke":
+        return run_local_smoke(
+            config_path,
+            use_existing_bridge=args.use_existing_bridge,
+            keep_bridge=args.keep_bridge,
+            skip_vision=args.skip_vision,
+            expect_text=args.expect_text,
+            expect_vision=args.expect_vision,
+        )
     if args.command == "doctor":
         return run_doctor(config_path, strict=args.strict)
     if args.command == "smoke":
