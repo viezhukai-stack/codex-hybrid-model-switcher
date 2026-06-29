@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
+import base64
 
 from codex_hybrid_switcher import local_smoke
-from codex_hybrid_switcher.smoke import output_matches
+from codex_hybrid_switcher.smoke import output_matches, red_png_base64
 
 
 def write_local_config(tmp_path, *, create_files: bool = True):
@@ -39,6 +40,13 @@ def test_output_matches_short_expected_words():
     assert output_matches("OK.", "OK")
     assert output_matches("The dominant color is red.", "red")
     assert not output_matches("blue", "red")
+
+
+def test_red_png_base64_uses_non_tiny_png():
+    data = base64.b64decode(red_png_base64())
+
+    assert data.startswith(b"\x89PNG\r\n\x1a\n")
+    assert len(data) > 80
 
 
 def test_local_smoke_stops_when_required_paths_are_missing(tmp_path, capsys):

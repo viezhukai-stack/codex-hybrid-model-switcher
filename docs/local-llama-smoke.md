@@ -61,7 +61,7 @@ powershell -ExecutionPolicy Bypass -File scripts\local-smoke-windows.ps1 --confi
 The default smoke test sends:
 
 - a text prompt that should answer `OK`
-- a one-pixel red PNG image prompt that should answer `red`
+- a 32x32 red PNG image prompt that should answer `red`
 
 To test text only:
 

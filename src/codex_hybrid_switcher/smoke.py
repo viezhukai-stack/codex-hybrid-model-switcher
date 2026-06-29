@@ -4,14 +4,27 @@ import argparse
 import base64
 import json
 import re
+import struct
 import urllib.request
+import zlib
 
 from .config import load_config
 
 
-RED_DOT_PNG = (
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADUlEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC"
-)
+def red_png_base64(size: int = 32) -> str:
+    raw = b"".join(b"\x00" + b"\xff\x00\x00" * size for _ in range(size))
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        body = kind + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
+
+    png = (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(raw))
+        + chunk(b"IEND", b"")
+    )
+    return base64.b64encode(png).decode("ascii")
 
 
 def post_json(url: str, payload: dict) -> dict:
@@ -45,7 +58,7 @@ def run_smoke(
     if skip_vision:
         return 0 if ok else 1
 
-    data_url = "data:image/png;base64," + base64.b64encode(base64.b64decode(RED_DOT_PNG)).decode("ascii")
+    data_url = "data:image/png;base64," + red_png_base64()
     vision = post_json(
         base,
         {
