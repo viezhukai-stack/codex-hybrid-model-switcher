@@ -33,12 +33,14 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "docs/api-key-environment.md" in text
     assert "docs/bridge-health.md" in text
     assert "docs/canary-report.md" in text
+    assert "docs/agent-handoff-drill.md" in text
     assert "docs/recovery.md" in text
     assert "docs/local-llama-smoke.md" in text
     assert "docs/stock-codex-handoff-validation.md" in text
     assert "docs/user-success-criteria.md" in text
     assert "validate-release-acceptance.py" in read("docs/release-checklist.md")
     assert "validate-stock-codex-handoff.py" in text
+    assert "validate-agent-handoff-drill.py" in text
     assert "codex-hybrid-switcher local-smoke" in text
     assert "codex-hybrid-switcher guarded-switch local-gemma --allow-local" in text
     assert "setup-report" in text
@@ -87,6 +89,7 @@ def test_readme_links_agent_assisted_path():
     assert "docs/bootstrap.md" in text
     assert "docs/setup-report.md" in text
     assert "docs/canary-report.md" in text
+    assert "docs/agent-handoff-drill.md" in text
     assert "docs/user-success-criteria.md" in text
     assert "docs/stock-codex-handoff-validation.md" in text
     assert "AGENTS.md" in text
@@ -124,6 +127,7 @@ def test_start_here_is_safe_stock_codex_handoff():
     assert "guarded-switch --dry-run" in text
     assert "setup-report" in text
     assert "canary-report" in text
+    assert "validate-agent-handoff-drill.py" in text
     assert "base_url" in text
     assert "model" in text
     assert "api_key_env" in text
@@ -148,6 +152,19 @@ def test_api_key_environment_doc_explains_env_help_boundary():
     assert "route=bridge" in text
     assert "bridge-health" in text
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions"):
+        assert protected in text
+
+
+def test_agent_handoff_drill_doc_explains_simulated_end_to_end_evidence():
+    text = read("docs/agent-handoff-drill.md")
+
+    assert "stock Codex Desktop" in text
+    assert "bootstrap.py" in text
+    assert "setup-report" in text
+    assert "canary-report" in text
+    assert "FINAL_CHECK.md" in text
+    assert "agent handoff drill validation passed" in text
+    for protected in ("auth.json", "models_cache.json", "state_5.sqlite"):
         assert protected in text
 
 

@@ -54,6 +54,7 @@ Start here:
 - Redacted setup report: [`docs/setup-report.md`](docs/setup-report.md)
 - Final canary evidence report: [`docs/canary-report.md`](docs/canary-report.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
+- Agent handoff drill: [`docs/agent-handoff-drill.md`](docs/agent-handoff-drill.md)
 - Stock Codex handoff validation: [`docs/stock-codex-handoff-validation.md`](docs/stock-codex-handoff-validation.md)
 - Visual demo gallery: [`docs/demo-gallery.md`](docs/demo-gallery.md)
 - Windows click-through user flow: [`docs/windows-user-flow.md`](docs/windows-user-flow.md)
@@ -239,6 +240,7 @@ For common setup and recovery questions, see `docs/faq.md`.
 - Bootstrap entry: [`docs/bootstrap.md`](docs/bootstrap.md)
 - Setup report: [`docs/setup-report.md`](docs/setup-report.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
+- Agent handoff drill: [`docs/agent-handoff-drill.md`](docs/agent-handoff-drill.md)
 - Stock Codex handoff validation: [`docs/stock-codex-handoff-validation.md`](docs/stock-codex-handoff-validation.md)
 - Chinese tutorial: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
 - English quickstart demo: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
@@ -327,6 +329,13 @@ python3 scripts/validate-stock-codex-flow.py
 It creates a simulated Codex home, runs bootstrap dry-run, performs a guarded
 apply against that simulated profile, and verifies only `config.toml` changed
 while account/cache/history-like files stayed unchanged.
+
+To prove the simulated agent handoff reaches setup report, canary evidence, and
+final verdict guidance:
+
+```sh
+python3 scripts/validate-agent-handoff-drill.py
+```
 
 To create a redacted report after setup:
 

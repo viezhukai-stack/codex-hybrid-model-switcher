@@ -44,6 +44,11 @@ of the repository and a simulated stock Codex home.
 Those checks remain machine-specific and should be done after the dry-run looks
 safe.
 
+For a fuller simulated agent rehearsal, also run
+[`agent-handoff-drill.md`](agent-handoff-drill.md). The drill continues through
+env-help, bridge-health, guarded apply, setup-report, canary-report, and final
+verdict guidance.
+
 ## Run It
 
 ```sh

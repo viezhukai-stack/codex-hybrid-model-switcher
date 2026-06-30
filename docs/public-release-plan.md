@@ -5,7 +5,7 @@ the repository public or publishing the GitHub release.
 
 ## Current Release
 
-The current public-readiness release is `v2.6.0`.
+The current public-readiness release is `v2.7.0`.
 
 Earlier `v1.0.0-rc.*`, `v1.0.0`, and v2.x tags are kept for audit history.
 Use the newest non-draft release unless a maintainer explicitly pins a
@@ -23,6 +23,7 @@ manually review:
 - `docs/open-source-readiness.md`
 - `docs/release-checklist.md`
 - `docs/validation-matrix.md`
+- `docs/agent-handoff-drill.md`
 - `docs/canary-report.md`
 - draft release notes for the current release
 
@@ -39,13 +40,14 @@ Confirm the docs do not include:
 1. Start from a clean `main` at the current public-readiness release.
 2. Run the repository checks from `docs/release-checklist.md`.
 3. Run `python scripts/validate-release-acceptance.py`.
-4. Confirm CI is green on Python 3.10, 3.11, and 3.12.
-5. Confirm badges, issue-template links, and release notes point to the current
+4. Run `python scripts/validate-agent-handoff-drill.py`.
+5. Confirm CI is green on Python 3.10, 3.11, and 3.12.
+6. Confirm badges, issue-template links, and release notes point to the current
    repository owner.
-6. Re-read the release notes before publishing.
-7. Switch repository visibility to public.
-8. Publish or verify the GitHub release.
-9. Pin the repository on the GitHub profile after it is public.
+7. Re-read the release notes before publishing.
+8. Switch repository visibility to public.
+9. Publish or verify the GitHub release.
+10. Pin the repository on the GitHub profile after it is public.
 
 Do not publish PyPI, Homebrew, winget, or installer packages as part of
 `v1.0.0` unless a separate packaging plan has been reviewed.
@@ -59,6 +61,7 @@ If the repository is private, switch visibility only after:
 - `docs/open-source-readiness.md` has been checked manually
 - the draft `v1.0.0` release notes have been reviewed
 - final canary evidence report guidance has been reviewed
+- agent handoff drill guidance has been reviewed
 
 Changing repository visibility is a manual owner action. It should not be done
 by automation.
