@@ -5,15 +5,15 @@ the repository public or publishing the GitHub release.
 
 ## Current Release
 
-The current public-readiness release is `v1.0.0`.
+The current public-readiness release is `v2.4.0`.
 
-`v1.0.0-rc.1`, `v1.0.0-rc.2`, and `v1.0.0-rc.3` are kept for audit history
-only. Do not use them as the current public release because final-readiness
-updates landed after those tags.
+Earlier `v1.0.0-rc.*`, `v1.0.0`, and v2.x tags are kept for audit history.
+Use the newest non-draft release unless a maintainer explicitly pins a
+different version.
 
 ## Required Manual Review
 
-Before making the repository public or publishing the `v1.0.0` release,
+Before making the repository public or publishing the current release,
 manually review:
 
 - README quick start and user paths
@@ -35,15 +35,16 @@ Confirm the docs do not include:
 
 ## Final Visibility Steps
 
-1. Start from a clean `main` at the final `v1.0.0` release.
+1. Start from a clean `main` at the current public-readiness release.
 2. Run the repository checks from `docs/release-checklist.md`.
-3. Confirm CI is green on Python 3.10, 3.11, and 3.12.
-4. Confirm badges, issue-template links, and release notes point to the current
+3. Run `python scripts/validate-release-acceptance.py`.
+4. Confirm CI is green on Python 3.10, 3.11, and 3.12.
+5. Confirm badges, issue-template links, and release notes point to the current
    repository owner.
-5. Re-read the draft `v1.0.0` release notes before publishing.
-6. Switch repository visibility to public.
-7. Publish the `v1.0.0` GitHub release.
-8. Pin the repository on the GitHub profile after it is public.
+6. Re-read the release notes before publishing.
+7. Switch repository visibility to public.
+8. Publish or verify the GitHub release.
+9. Pin the repository on the GitHub profile after it is public.
 
 Do not publish PyPI, Homebrew, winget, or installer packages as part of
 `v1.0.0` unless a separate packaging plan has been reviewed.

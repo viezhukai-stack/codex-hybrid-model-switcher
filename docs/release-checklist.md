@@ -7,6 +7,7 @@ Use this checklist before marking a release candidate ready.
 - `python -m compileall -q src tests scripts/validate-install.py`
 - `pytest`
 - `python -m codex_hybrid_switcher security-scan .`
+- `python scripts/validate-release-acceptance.py`
 - `python scripts/validate-install.py`
 - `python scripts/validate-stock-codex-flow.py`
 - `python scripts/validate-stock-codex-handoff.py`
@@ -41,6 +42,8 @@ Confirm the repository does not contain:
 - Stock-Codex simulation changes only `config.toml` and adds a
   `config.toml.bak-codex-hybrid-*` backup.
 - Stock-Codex handoff validation passes from a clean repository copy.
+- Release acceptance validation passes and confirms the stock Codex handoff
+  evidence is present.
 - Bridge-routed cloud providers refuse real apply when `api_key_env` is unset.
 - `env-help` prints OS-specific setup instructions without reading, printing,
   or storing API keys.

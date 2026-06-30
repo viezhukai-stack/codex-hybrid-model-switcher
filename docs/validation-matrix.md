@@ -16,6 +16,7 @@ driver, CUDA runtime, llama.cpp build, and model size.
 | Bridge-routed cloud unit path | Passed | Not applicable | Simulated | Unit tests verify `route=bridge` renders Codex to `127.0.0.1:19030`, refuses real switches when `api_key_env` is unset, starts the bridge when the env var is set, and preserves protected Codex files. |
 | API key env handoff | Passed | Not applicable | Simulated | `env-help` is covered by unit tests and install validation, including macOS and Windows command templates without exposing key values. |
 | Bridge health diagnostic | Passed | Not applicable | Simulated | `bridge-health` checks the bridge port, `/v1/health`, `/v1/models`, bridge-routed API key env status, and expected model ids without starting services or editing Codex state. |
+| Release acceptance gate | Passed | Not applicable | Simulated | `scripts/validate-release-acceptance.py` checks required handoff files, documentation markers, version consistency, Python compilation, security scan, and clean-copy handoff validation. |
 
 ## Required Before a Release
 
@@ -25,6 +26,7 @@ driver, CUDA runtime, llama.cpp build, and model size.
 - Stock-Codex bootstrap-to-apply simulation passes in a temporary directory.
 - Stock-Codex handoff validation passes from a clean temporary repository copy,
   including the default bridge dry-run and bridge-health diagnostic path.
+- Release acceptance validation passes before tagging.
 - Redacted setup report generation passes in the stock-Codex simulation.
 - The setup report includes user-visible success criteria for account,
   plugins/MCP, project list, and a new responding test conversation.

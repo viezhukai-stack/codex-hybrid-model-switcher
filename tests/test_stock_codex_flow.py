@@ -49,3 +49,22 @@ def test_stock_codex_handoff_validation_script(tmp_path):
     assert "bridge-health" in proc.stdout
     assert "Guarded dry-run" in proc.stdout
     assert "Protected Codex files unchanged" in proc.stdout
+
+
+def test_release_acceptance_quick_validation_script():
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "validate-release-acceptance.py"),
+            "--quick",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert proc.returncode == 0, proc.stdout
+    assert "release acceptance quick validation passed" in proc.stdout
+    assert "OK version is consistent" in proc.stdout
