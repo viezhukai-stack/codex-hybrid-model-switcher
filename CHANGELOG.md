@@ -5,6 +5,8 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v1.1.0
+
 - Added a beginner first-run `setup` wizard that creates and validates a private
   config without switching Codex Desktop.
 - Added non-interactive setup mode for repeatable support scripts and install
