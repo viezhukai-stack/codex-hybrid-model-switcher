@@ -15,7 +15,7 @@ PATTERNS = [
     r"(10|172\.(1[6-9]|2\d|3[01])|192\.168)\.\d{1,3}\.\d{1,3}",
     r"/Users/[A-Za-z0-9._-]+",
     r"C:\\Users\\[A-Za-z0-9._-]+",
-    r"https://[A-Za-z0-9.-]*(cpamc|kevintj)[A-Za-z0-9.-]*/?",
+    r"https?://[A-Za-z0-9.-]+\.(local|lan|internal)(:\d+)?(/|\s|$)",
 ]
 
 ALLOWLIST_SUBSTRINGS = [
