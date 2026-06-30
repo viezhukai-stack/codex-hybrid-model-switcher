@@ -194,6 +194,18 @@ decide whether setup is complete or only partially complete.
 Finally, copy the prompt in [`FINAL_CHECK.md`](FINAL_CHECK.md) into Codex and
 ask for a final verdict.
 
+## If Codex Needs A Safe Rehearsal
+
+Before touching a real Codex profile, Codex can run the simulated handoff drill:
+
+```sh
+python3 scripts/validate-agent-handoff-drill.py
+```
+
+This uses a temporary stock-like Codex home and proves the repository path can
+reach setup report, canary evidence, and final verdict guidance without editing
+the real profile.
+
 ## If The API Key Variable Is Unset
 
 Ask Codex to run:

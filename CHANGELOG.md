@@ -5,6 +5,18 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.7.0
+
+- Added `scripts/validate-agent-handoff-drill.py`, an end-to-end simulated
+  stock Codex agent handoff drill.
+- The drill rehearses bootstrap, guarded dry-run, env-help, bridge-health,
+  guarded apply, setup-report, canary-report, protected-file hash checks, and
+  final verdict guidance in a temporary stock-like Codex home.
+- Added `docs/agent-handoff-drill.md` and linked it from README, START_HERE,
+  AGENTS, validation matrix, release checklist, and public release plan.
+- Release acceptance and install validation now run the agent handoff drill,
+  making the "hand this repo to Codex" promise part of the release gate.
+
 ## v2.6.0
 
 - Strengthened the stock Codex bootstrap handoff by printing the full

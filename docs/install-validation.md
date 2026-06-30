@@ -18,6 +18,8 @@ simulated Codex home.
 - `bootstrap.py --non-interactive` into a temporary private config path.
 - Bootstrap guarded dry-run without touching the simulated Codex home.
 - Stock-Codex bootstrap-to-apply simulation using a temporary `.codex` home.
+- Agent handoff drill through bootstrap, dry-run, env-help, bridge-health,
+  guarded apply, setup-report, canary-report, and final verdict guidance.
 - Redacted setup report generation after the stock-Codex simulation.
 - `switch --dry-run` against a simulated `config.toml`.
 - MCP/plugin-like config blocks remain visible in the dry-run diff.
@@ -85,3 +87,15 @@ MCP/plugin/project config blocks. It verifies bootstrap dry-run writes nothing,
 then verifies guarded apply changes only `config.toml` and creates a backup.
 It also generates a redacted setup report and checks that private hostnames,
 temporary paths, and session/database contents are not leaked.
+
+## Agent Handoff Drill Only
+
+To run only the simulated stock Codex agent handoff drill:
+
+```sh
+python3 scripts/validate-agent-handoff-drill.py
+```
+
+The drill writes a temporary redacted report and verifies the handoff path
+reaches setup report, canary evidence, and final verdict guidance without
+touching a real Codex profile.

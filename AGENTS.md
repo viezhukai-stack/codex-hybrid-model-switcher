@@ -53,9 +53,10 @@ Read these files before making changes:
 9. `docs/recovery.md`
 10. `docs/setup-report.md`
 11. `docs/canary-report.md`
-12. `docs/stock-codex-handoff-validation.md`
-13. `docs/user-success-criteria.md`
-14. `docs/local-llama-smoke.md` only if the user asks for local models
+12. `docs/agent-handoff-drill.md`
+13. `docs/stock-codex-handoff-validation.md`
+14. `docs/user-success-criteria.md`
+15. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 
@@ -254,7 +255,8 @@ Do not claim setup is complete until current evidence shows:
   skipped final verification
 
 For repository release work, also run `scripts/validate-stock-codex-handoff.py`
-to prove the `START_HERE.md` flow still works from a clean repository copy.
+and `scripts/validate-agent-handoff-drill.py` to prove the `START_HERE.md`
+flow still works from a clean repository copy and reaches final evidence.
 
 If only setup/dry-run is complete, say exactly that. Do not imply the real
 Codex Desktop switch has been tested.

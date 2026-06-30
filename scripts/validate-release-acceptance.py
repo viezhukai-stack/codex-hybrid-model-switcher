@@ -16,11 +16,13 @@ REQUIRED_FILES = (
     "README.md",
     "docs/user-success-criteria.md",
     "docs/bridge-health.md",
+    "docs/agent-handoff-drill.md",
     "docs/canary-report.md",
     "docs/stock-codex-handoff-validation.md",
     "docs/release-checklist.md",
     "docs/validation-matrix.md",
     "scripts/validate-stock-codex-handoff.py",
+    "scripts/validate-agent-handoff-drill.py",
     "scripts/validate-install.py",
 )
 
@@ -32,6 +34,7 @@ DOC_REQUIREMENTS = {
         "guarded-switch --dry-run",
         "setup-report",
         "canary-report",
+        "validate-agent-handoff-drill.py",
         "auth.json",
         "models_cache.json",
         "state_5.sqlite",
@@ -42,6 +45,7 @@ DOC_REQUIREMENTS = {
     "AGENTS.md": (
         "Never switch providers while Codex Desktop is running",
         "docs/bridge-health.md",
+        "docs/agent-handoff-drill.md",
         "docs/canary-report.md",
         "guarded-switch --dry-run",
         "config.toml.bak-codex-hybrid-*",
@@ -58,6 +62,15 @@ DOC_REQUIREMENTS = {
         "bridge-health",
         "canary-report",
         "请不要修改任何文件",
+    ),
+    "docs/agent-handoff-drill.md": (
+        "stock Codex Desktop",
+        "bootstrap.py",
+        "Guarded dry-run",
+        "setup-report",
+        "canary-report",
+        "FINAL_CHECK.md",
+        "agent handoff drill validation passed",
     ),
     "docs/canary-report.md": (
         "canary-report",
@@ -98,12 +111,14 @@ DOC_REQUIREMENTS = {
     "docs/release-checklist.md": (
         "python scripts/validate-release-acceptance.py",
         "python scripts/validate-stock-codex-handoff.py",
+        "python scripts/validate-agent-handoff-drill.py",
         "canary-report",
         "security-scan",
         "GitHub Actions passes",
     ),
     "docs/validation-matrix.md": (
         "Stock Codex handoff",
+        "Agent handoff drill",
         "Bridge health diagnostic",
         "Canary evidence report",
         "default bridge dry-run",
@@ -168,6 +183,10 @@ def run_acceptance(*, quick: bool = False, tmp_root: str | None = None) -> int:
     if tmp_root:
         handoff_cmd.extend(["--tmp-root", tmp_root])
     run(handoff_cmd)
+    drill_cmd = [sys.executable, "scripts/validate-agent-handoff-drill.py"]
+    if tmp_root:
+        drill_cmd.extend(["--tmp-root", tmp_root])
+    run(drill_cmd)
     print("release acceptance validation passed")
     return 0
 
