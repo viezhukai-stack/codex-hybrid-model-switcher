@@ -5,6 +5,19 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.3.0
+
+- Strengthened the clean-copy stock Codex handoff validation for the default
+  `bridge` route.
+- `scripts/validate-stock-codex-handoff.py` now verifies the default bridge
+  bootstrap/dry-run path from a clean repository copy before running the direct
+  guarded-apply simulation.
+- The handoff validation now also runs `bridge-health` against a deterministic
+  closed bridge port and confirms it gives safe next steps without leaking the
+  private upstream provider hostname.
+- Updated validation docs to show that the default bridge handoff path is
+  covered without starting a real bridge or touching real Codex state.
+
 ## v2.2.0
 
 - Added `bridge-health`, a read-only diagnostic for bridge-routed cloud and

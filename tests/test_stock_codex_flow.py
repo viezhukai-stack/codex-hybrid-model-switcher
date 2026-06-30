@@ -45,5 +45,7 @@ def test_stock_codex_handoff_validation_script(tmp_path):
 
     assert proc.returncode == 0, proc.stdout
     assert "stock Codex handoff validation passed" in proc.stdout
+    assert "default bridge handoff dry-run validation passed" in proc.stdout
+    assert "bridge-health" in proc.stdout
     assert "Guarded dry-run" in proc.stdout
     assert "Protected Codex files unchanged" in proc.stdout
