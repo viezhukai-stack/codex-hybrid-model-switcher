@@ -5,6 +5,14 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v1.8.0
+
+- Added `docs/user-success-criteria.md`, a non-technical checklist for deciding
+  whether a guarded hybrid Codex setup is actually complete.
+- Added a user success checklist to generated setup reports.
+- Linked the success criteria from START_HERE, README, AGENTS, setup-report
+  docs, validation matrix, release checklist, and agent-assisted setup docs.
+
 ## v1.7.0
 
 - Added `scripts/validate-stock-codex-handoff.py`, a clean-copy validation for

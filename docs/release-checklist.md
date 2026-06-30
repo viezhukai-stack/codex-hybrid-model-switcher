@@ -43,6 +43,7 @@ Confirm the repository does not contain:
 - Stock-Codex handoff validation passes from a clean repository copy.
 - Setup report redacts provider hostnames, local paths, session content, and
   database content.
+- Setup report includes the user-visible success checklist.
 - Local providers require explicit local approval and run local smoke before writing config.
 - Desktop launchers do not use the unsafe raw Python `menu` command.
 
@@ -53,6 +54,8 @@ Confirm the repository does not contain:
 - Windows docs describe the guarded launcher.
 - Local model docs say local validation is optional and machine-dependent.
 - Recovery docs explain how to restore `config.toml` from the newest backup.
+- User success criteria explain when setup is complete versus only partially
+  complete.
 - Validation matrix reflects the actual canaries performed.
 - Public release plan explains how to promote the accepted release candidate to
   a final `v1.0.0` tag without moving existing tags.

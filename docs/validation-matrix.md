@@ -22,6 +22,8 @@ driver, CUDA runtime, llama.cpp build, and model size.
 - Stock-Codex bootstrap-to-apply simulation passes in a temporary directory.
 - Stock-Codex handoff validation passes from a clean temporary repository copy.
 - Redacted setup report generation passes in the stock-Codex simulation.
+- The setup report includes user-visible success criteria for account,
+  plugins/MCP, project list, and a new responding test conversation.
 - The stock-Codex handoff prompt in `START_HERE.md` is covered by documentation
   tests.
 - At least one Windows canary has validated cloud provider switching.

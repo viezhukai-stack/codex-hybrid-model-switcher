@@ -5,6 +5,10 @@ is designed for users who want a shareable "what happened on this machine"
 summary without exposing account state, tokens, sessions, private endpoints, or
 local paths.
 
+The report also includes a user success checklist. Those items are manual
+confirmations because a script cannot reliably prove what the user sees inside
+Codex Desktop.
+
 ## Generate a report
 
 From the repository after setup:
@@ -43,6 +47,7 @@ py -3 -m codex_hybrid_switcher setup-report `
 - whether MCP, plugin, project, desktop, and feature config sections are present
 - newest `config.toml.bak-codex-hybrid-*` backup name
 - local model path status as `configured` or `missing`
+- user-visible success checklist for Codex Desktop
 
 ## What it does not include
 
