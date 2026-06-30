@@ -5,6 +5,21 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.2.0
+
+- Added `bridge-health`, a read-only diagnostic for bridge-routed cloud and
+  local providers.
+- The command checks the configured bridge TCP port, `/v1/health`,
+  `/v1/models`, expected model ids, and bridge-routed API key environment
+  variables without starting services or editing Codex files.
+- Added clear next-step output for common failures: missing API key
+  environment variables, bridge not running, unhealthy HTTP endpoint, or stale
+  model list after config changes.
+- Wired bridge health guidance into the stock Codex handoff docs, README,
+  AGENTS runbook, validation matrix, and install validation.
+- Added tests that verify diagnostics stay redacted and do not leak provider
+  hostnames or API key values.
+
 ## v2.1.0
 
 - Added `env-help`, a read-only helper that prints macOS and Windows

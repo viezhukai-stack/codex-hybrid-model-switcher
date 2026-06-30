@@ -49,11 +49,12 @@ Read these files before making changes:
 5. `docs/first-run-wizard.md`
 6. `docs/agent-assisted-setup.md`
 7. `docs/api-key-environment.md`
-8. `docs/recovery.md`
-9. `docs/setup-report.md`
-10. `docs/stock-codex-handoff-validation.md`
-11. `docs/user-success-criteria.md`
-12. `docs/local-llama-smoke.md` only if the user asks for local models
+8. `docs/bridge-health.md`
+9. `docs/recovery.md`
+10. `docs/setup-report.md`
+11. `docs/stock-codex-handoff-validation.md`
+12. `docs/user-success-criteria.md`
+13. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 
@@ -154,9 +155,21 @@ available. On Windows, try `py -3` or `python`.
    is set before the real switch. If it is unset, stop and help the user set it
    outside the repository.
 
-9. Ask the user to fully quit Codex Desktop.
+9. For bridge-routed cloud providers, run `bridge-health` before the real
+   switch or immediately after a failed/silent test chat:
 
-10. Apply the guarded switch using the command printed by bootstrap. If running
+   ```sh
+   codex-hybrid-switcher bridge-health --config ~/.codex-hybrid-model-switcher/config.json
+   ```
+
+   If it reports a closed bridge port before the real switch, that can be
+   acceptable because guarded apply can start the managed bridge. If it reports
+   missing API key variables, stale models, or an unhealthy HTTP API, fix that
+   before asking the user to test Codex Desktop again.
+
+10. Ask the user to fully quit Codex Desktop.
+
+11. Apply the guarded switch using the command printed by bootstrap. If running
    from the repository on macOS, the command shape is:
 
    ```sh
@@ -166,9 +179,12 @@ available. On Windows, try `py -3` or `python`.
    If the package was installed, `codex-hybrid-switcher guarded-switch ...` is
    also acceptable.
 
-11. Ask the user to reopen Codex Desktop and create a new test conversation.
+12. Ask the user to reopen Codex Desktop and create a new test conversation.
 
-12. Generate a redacted setup report:
+13. If Codex opens but the new conversation does not reply, run `bridge-health`
+    again before changing any Codex files.
+
+14. Generate a redacted setup report:
 
     ```sh
     PYTHONPATH=src python3 -m codex_hybrid_switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json --output ~/Desktop/codex-hybrid-setup-report.md
@@ -216,6 +232,8 @@ Do not claim setup is complete until current evidence shows:
 - config validation passes
 - dry-run diff is redacted and scoped to provider/model settings
 - real switch, if performed, changed only `config.toml`
+- bridge-routed providers have either passed `bridge-health` or have a clear
+  bridge/key/model-list action item
 - protected file hashes are unchanged
 - user confirms Codex account, plugins/MCP, and project list are visible
 - user confirms a new test conversation responds

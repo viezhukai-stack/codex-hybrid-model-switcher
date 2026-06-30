@@ -49,6 +49,7 @@ Start here:
 - Beginner first-run wizard: [`docs/first-run-wizard.md`](docs/first-run-wizard.md)
 - Setup intake checklist: [`docs/setup-intake.md`](docs/setup-intake.md)
 - API key environment variables: [`docs/api-key-environment.md`](docs/api-key-environment.md)
+- Bridge health check: [`docs/bridge-health.md`](docs/bridge-health.md)
 - Safe English demo without touching a real profile: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
 - Redacted setup report: [`docs/setup-report.md`](docs/setup-report.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
@@ -156,33 +157,44 @@ file tells Codex how to proceed safely.
 
    This command does not read, print, or store API keys.
 
-8. Preview the Codex config change without writing anything:
+8. For `route=bridge`, check whether the local bridge is already healthy:
+
+   ```sh
+   codex-hybrid-switcher bridge-health --config ~/.codex-hybrid-model-switcher/config.json
+   ```
+
+   A closed bridge port before the real switch is not automatically a failure:
+   guarded apply can start the managed bridge. If Codex opens but a test chat
+   does not reply, run this command again to see whether the bridge, key, or
+   model list is the problem.
+
+9. Preview the Codex config change without writing anything:
 
    ```sh
    codex-hybrid-switcher guarded-switch cloud-gpt-main --dry-run --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-9. For a real cloud switch, quit Codex Desktop completely, then use guarded
+10. For a real cloud switch, quit Codex Desktop completely, then use guarded
    apply:
 
    ```sh
    codex-hybrid-switcher guarded-switch cloud-gpt-main --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-10. Test local models only on machines that have suitable hardware, llama.cpp,
+11. Test local models only on machines that have suitable hardware, llama.cpp,
    and model files:
 
    ```sh
    codex-hybrid-switcher local-smoke --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-11. Switch to a local provider only after local smoke passes:
+12. Switch to a local provider only after local smoke passes:
 
    ```sh
    codex-hybrid-switcher guarded-switch local-gemma --allow-local --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-12. Generate a redacted setup report after a real switch:
+13. Generate a redacted setup report after a real switch:
 
    ```sh
    codex-hybrid-switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json --output ~/Desktop/codex-hybrid-setup-report.md
@@ -215,6 +227,7 @@ For common setup and recovery questions, see `docs/faq.md`.
 - Final agent check prompt: [`FINAL_CHECK.md`](FINAL_CHECK.md)
 - Setup intake checklist: [`docs/setup-intake.md`](docs/setup-intake.md)
 - API key environment variables: [`docs/api-key-environment.md`](docs/api-key-environment.md)
+- Bridge health check: [`docs/bridge-health.md`](docs/bridge-health.md)
 - Bootstrap entry: [`docs/bootstrap.md`](docs/bootstrap.md)
 - Setup report: [`docs/setup-report.md`](docs/setup-report.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
@@ -244,6 +257,7 @@ python -m codex_hybrid_switcher setup
 python -m codex_hybrid_switcher setup --non-interactive --base-url https://YOUR-ENDPOINT.example/v1 --model provider-gpt-main --cloud-route bridge
 python -m codex_hybrid_switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher env-help --config ~/.codex-hybrid-model-switcher/config.json
+python -m codex_hybrid_switcher bridge-health --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher bridge
 python -m codex_hybrid_switcher local-smoke

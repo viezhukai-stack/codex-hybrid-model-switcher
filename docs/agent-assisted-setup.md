@@ -47,6 +47,8 @@ Codex should:
 - generate `~/.codex-hybrid-model-switcher/config.json`
 - validate the private config
 - run `env-help` if `api_key_env` is unset, without collecting the raw API key
+- run `bridge-health` for bridge-routed providers, especially if Codex opens
+  but a test chat does not reply
 - run `guarded-switch --dry-run`
 - explain the redacted diff
 - for bridge-routed cloud providers, confirm the API key environment variable is
@@ -90,6 +92,8 @@ The first milestone is not "everything is switched." The first milestone is:
 - private config generated
 - validation passed
 - dry-run diff is safe and redacted
+- bridge-routed provider health is checked, or Codex has explained why a closed
+  bridge port before apply is expected
 - no real Codex files changed
 
 Only after that should you let Codex perform a real switch.

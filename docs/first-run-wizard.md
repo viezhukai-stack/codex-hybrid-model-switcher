@@ -102,6 +102,15 @@ codex-hybrid-switcher env-help --config ~/.codex-hybrid-model-switcher/config.js
 Follow the printed OS-specific instructions outside the repository, then run
 `validate-config` again.
 
+For bridge-routed providers, check the bridge entry point:
+
+```sh
+codex-hybrid-switcher bridge-health --config ~/.codex-hybrid-model-switcher/config.json
+```
+
+A closed bridge port before the real guarded switch can be normal. After Codex
+Desktop is reopened, use this command again if a test chat does not reply.
+
 Preview the Codex config change:
 
 ```sh

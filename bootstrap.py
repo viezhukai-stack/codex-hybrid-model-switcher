@@ -82,6 +82,12 @@ def print_apply_instructions(config_path: Path, provider_id: str) -> None:
     else:
         print(f"     PYTHONPATH={SRC} python3 -m codex_hybrid_switcher env-help --config {config_path}")
     print()
+    print("For bridge-routed providers, check the bridge entry point with:")
+    if os.name == "nt":
+        print(f"     set PYTHONPATH={SRC} && py -3 -m codex_hybrid_switcher bridge-health --config {config_path}")
+    else:
+        print(f"     PYTHONPATH={SRC} python3 -m codex_hybrid_switcher bridge-health --config {config_path}")
+    print()
     print("After applying, generate a redacted setup report with:")
     if os.name == "nt":
         print(f"     set PYTHONPATH={SRC} && py -3 -m codex_hybrid_switcher setup-report --config {config_path}")

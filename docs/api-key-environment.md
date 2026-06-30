@@ -37,6 +37,15 @@ the API key from the configured environment variable.
 If the variable is unset, a real guarded switch stops before writing Codex
 config.
 
+After setting the variable, run:
+
+```sh
+codex-hybrid-switcher bridge-health --config ~/.codex-hybrid-model-switcher/config.json
+```
+
+This confirms the bridge-routed provider can see that the variable is set
+without printing the key value.
+
 ## What not to do
 
 - Do not paste raw API keys into this repository.

@@ -44,6 +44,9 @@ Confirm the repository does not contain:
 - Bridge-routed cloud providers refuse real apply when `api_key_env` is unset.
 - `env-help` prints OS-specific setup instructions without reading, printing,
   or storing API keys.
+- `bridge-health` checks bridge port, `/v1/health`, `/v1/models`, model ids,
+  and bridge-routed API key env status without starting services or writing
+  Codex files.
 - Bridge-routed cloud providers render Codex's `base_url` to the local bridge,
   not the private upstream provider hostname.
 - Setup report redacts provider hostnames, local paths, session content, and
@@ -65,6 +68,8 @@ Confirm the repository does not contain:
   changes.
 - Cloud route documentation explains `bridge` versus `direct` and recommends
   `bridge` for normal API-key providers.
+- Bridge health documentation explains what to do when Codex opens but a
+  bridge-routed test chat does not reply.
 - Validation matrix reflects the actual canaries performed.
 - Public release plan explains how to promote the accepted release candidate to
   a final `v1.0.0` tag without moving existing tags.

@@ -15,6 +15,7 @@ driver, CUDA runtime, llama.cpp build, and model size.
 | Stock Codex handoff | Passed | Not applicable | Simulated | `scripts/validate-stock-codex-handoff.py` copies the repository to a clean temporary directory, starts from `START_HERE.md`, verifies bootstrap does not pollute the repository, and confirms private config plus guarded apply behavior. |
 | Bridge-routed cloud unit path | Passed | Not applicable | Simulated | Unit tests verify `route=bridge` renders Codex to `127.0.0.1:19030`, refuses real switches when `api_key_env` is unset, starts the bridge when the env var is set, and preserves protected Codex files. |
 | API key env handoff | Passed | Not applicable | Simulated | `env-help` is covered by unit tests and install validation, including macOS and Windows command templates without exposing key values. |
+| Bridge health diagnostic | Passed | Not applicable | Simulated | `bridge-health` checks the bridge port, `/v1/health`, `/v1/models`, bridge-routed API key env status, and expected model ids without starting services or editing Codex state. |
 
 ## Required Before a Release
 
@@ -33,6 +34,8 @@ driver, CUDA runtime, llama.cpp build, and model size.
 - Bridge-routed cloud providers have tests for local bridge rendering,
   missing API-key refusal, and protected-file preservation.
 - `env-help` is tested as the next step when `api_key_env(...unset)` appears.
+- `bridge-health` is tested as the next step when Codex opens but a
+  bridge-routed provider does not reply.
 - At least one Windows canary has validated cloud provider switching.
 - At least one Windows canary has validated local llama.cpp text and image smoke.
 - At least one second-machine Windows canary has validated cloud switching and the guarded launcher.

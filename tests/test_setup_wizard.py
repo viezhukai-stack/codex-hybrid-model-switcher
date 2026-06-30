@@ -51,6 +51,7 @@ def test_setup_non_interactive_generates_private_config_only(tmp_path, capsys):
     assert raw["codex_home"] == str(codex_home)
     assert config.provider("cloud-main")["model"] == "provider-model"
     assert not (codex_home / "config.toml").exists()
+    assert "bridge-health" in out
     assert "guarded-switch cloud-main --dry-run" in out
     assert "does not rewrite Codex history" in out
 
