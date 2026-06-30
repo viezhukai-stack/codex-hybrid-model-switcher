@@ -6,6 +6,8 @@ bundle.
 ## Required Checks
 
 - Run `python -m codex_hybrid_switcher security-scan .`.
+- Confirm `CHANGELOG.md`, `SECURITY.md`, and `CONTRIBUTING.md` are present and
+  describe the current release candidate.
 - Confirm example configs use placeholder endpoints and environment variable
   names only.
 - Confirm no account state files are present:
@@ -42,6 +44,9 @@ private deployment can use any compatible provider by setting `base_url`,
 Before publishing a release, verify:
 
 - CI passes on all configured Python versions.
+- The package version follows Python packaging rules, while the Git tag may use
+  the project release style, for example package `1.0.0rc1` and tag
+  `v1.0.0-rc.1`.
 - `switch --dry-run` shows the expected diff and writes nothing.
 - Real `switch` creates a backup before writing `config.toml`.
 - The tool never edits `auth.json`, `models_cache.json`, or `state_5.sqlite`.

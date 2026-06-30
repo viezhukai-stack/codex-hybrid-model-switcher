@@ -68,6 +68,24 @@ does not mutate Codex session history, and does not install KeepAlive services.
    codex-hybrid-switcher guarded-switch local-gemma --allow-local --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
+## Release Candidate User Paths
+
+- Cloud provider path: initialize a private config, validate it, run
+  `guarded-switch --dry-run`, then quit Codex Desktop before applying a real
+  cloud-provider switch.
+- Windows beginner path: use the guarded Windows launcher after the canary
+  checks pass. The launcher should ask the user to close Codex before it writes
+  `config.toml`.
+- Optional local llama.cpp path: run `local-smoke` first. Only switch Codex to a
+  local provider after text and, for multimodal models, image smoke tests pass
+  on that machine.
+- Recovery path: quit Codex Desktop and restore the newest
+  `config.toml.bak-codex-hybrid-*` backup. This project is designed not to edit
+  `auth.json`, `models_cache.json`, `state_5.sqlite`, or session history.
+
+For release history and project rules, see `CHANGELOG.md`, `SECURITY.md`, and
+`CONTRIBUTING.md`.
+
 ## Commands
 
 ```sh
