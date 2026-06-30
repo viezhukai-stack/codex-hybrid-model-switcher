@@ -1,0 +1,18 @@
+name: Security report
+description: Do not file sensitive reports publicly.
+title: "[Security]: "
+labels: ["security"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not disclose security-sensitive details in a public issue.
+
+        Follow `SECURITY.md` and report privately through the repository owner's preferred private channel. Public issues must not include API keys, bearer tokens, passwords, Codex account files, session databases, private endpoints, private LAN addresses, machine names, or local model files.
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I understand that sensitive security details should not be posted publicly.
+          required: true

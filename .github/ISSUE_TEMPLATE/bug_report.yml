@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a reproducible problem without sharing private Codex state.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Do not attach Codex account files, model caches, session databases, API keys, tokens, passwords, local model files, backups, or private config files.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: List the smallest steps that reproduce the issue.
+      placeholder: |
+        1. Run ...
+        2. See ...
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS
+        - Windows
+        - Linux or other
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.10, 3.11, 3.12"
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I did not attach `auth.json`, `models_cache.json`, `state_5.sqlite`, session files, API keys, tokens, passwords, local model files, backups, or private config files.
+          required: true
+        - label: I reviewed the output for private endpoints, usernames, machine names, and absolute personal paths.
+          required: true

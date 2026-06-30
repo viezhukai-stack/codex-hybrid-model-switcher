@@ -1,5 +1,10 @@
 # Codex Hybrid Model Switcher
 
+[![CI](https://github.com/jianghualiang675/codex-hybrid-model-switcher/actions/workflows/ci.yml/badge.svg)](https://github.com/jianghualiang675/codex-hybrid-model-switcher/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/jianghualiang675/codex-hybrid-model-switcher?display_name=tag&include_prereleases)](https://github.com/jianghualiang675/codex-hybrid-model-switcher/releases)
+
 Cross-platform tooling for using Codex Desktop with:
 
 - official OpenAI/Codex account state preserved
@@ -9,6 +14,14 @@ Cross-platform tooling for using Codex Desktop with:
 
 The project is intentionally conservative. It does not edit `models_cache.json`,
 does not mutate Codex session history, and does not install KeepAlive services.
+
+## Compatibility
+
+| Platform | Status | Notes |
+| --- | --- | --- |
+| macOS | Supported | Cloud and local workflows are documented; real switching should still use guarded dry-runs first. |
+| Windows | Supported | Guarded launcher and canary workflows are documented. |
+| Linux | Unverified | The core Python package may run, but Codex Desktop integration is not a primary target yet. |
 
 ## Safety Model
 
@@ -85,6 +98,8 @@ does not mutate Codex session history, and does not install KeepAlive services.
 
 For release history and project rules, see `CHANGELOG.md`, `SECURITY.md`, and
 `CONTRIBUTING.md`.
+
+For common setup and recovery questions, see `docs/faq.md`.
 
 ## Commands
 

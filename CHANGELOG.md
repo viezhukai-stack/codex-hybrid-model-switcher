@@ -3,6 +3,15 @@
 All notable changes to this project are summarized here. This project follows a
 conservative release process because it edits Codex provider configuration.
 
+## Unreleased
+
+- Added public issue templates for bug reports, setup help, and security-report
+  redirection.
+- Added FAQ and troubleshooting documentation for switching, recovery, local
+  llama.cpp smoke failures, and safe issue reporting.
+- Added README badges and a platform compatibility summary.
+- Added package metadata keywords and classifiers.
+
 ## v1.0.0
 
 - Promoted the validated `v1.0.0-rc.3` release candidate to the final
