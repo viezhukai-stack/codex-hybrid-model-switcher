@@ -47,3 +47,7 @@ Before publishing a release, verify:
 - The tool never edits `auth.json`, `models_cache.json`, or `state_5.sqlite`.
 - Local bridge tests do not require secrets and are documented separately from
   unit tests.
+- `docs/validation-matrix.md` reflects the actual canaries performed.
+- `docs/release-checklist.md` is complete for the release candidate.
+- Release notes do not imply that every machine must pass local model
+  validation; local model support is hardware- and model-dependent.
