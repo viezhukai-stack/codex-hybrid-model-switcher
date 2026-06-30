@@ -1,0 +1,22 @@
+title: "Provider recipe: "
+labels: ["provider-config"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share only sanitized provider notes. Do not include keys, private endpoints, account files, or local paths.
+  - type: textarea
+    id: recipe
+    attributes:
+      label: Sanitized provider recipe
+      description: Include placeholder base_url, model IDs, wire_api, and any compatibility notes.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Mention what worked, what failed, and which docs helped.
+    validations:
+      required: false

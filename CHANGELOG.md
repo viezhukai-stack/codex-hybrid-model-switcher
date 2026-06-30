@@ -5,6 +5,10 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+- Added a visual demo gallery with sanitized generated SVG assets for dry-run,
+  Windows switching, and local llama.cpp smoke-test flows.
+- Added ROADMAP, release-post templates, recommended GitHub labels, and
+  discussion templates for public community operations.
 - Added a README 3-minute tour with a safer onboarding summary, visual workflow,
   and first-demo entry points.
 - Added a Chinese getting-started tutorial and an English quickstart demo for
