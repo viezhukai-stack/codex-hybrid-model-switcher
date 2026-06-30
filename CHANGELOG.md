@@ -5,6 +5,17 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v1.2.0
+
+- Added root `AGENTS.md` so another Codex agent can safely configure a stock
+  Codex Desktop install from this repository.
+- Added agent-assisted setup documentation with a copy-paste prompt for users
+  who want Codex to perform setup.
+- Added setup intake checklist for provider details and local llama.cpp paths
+  without collecting raw API keys.
+- Added documentation regression tests to keep the agent runbook's safety
+  invariants in CI.
+
 ## v1.1.0
 
 - Added a beginner first-run `setup` wizard that creates and validates a private
