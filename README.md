@@ -43,12 +43,15 @@ Start here:
 
 - New user walkthrough in Chinese: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
 - Safe English demo without touching a real profile: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
+- Visual demo gallery: [`docs/demo-gallery.md`](docs/demo-gallery.md)
 - Windows click-through user flow: [`docs/windows-user-flow.md`](docs/windows-user-flow.md)
 - Optional local llama.cpp smoke test: [`docs/local-llama-smoke.md`](docs/local-llama-smoke.md)
 
 Use it when you want OpenAI-compatible cloud providers, local llama.cpp models,
 or a recoverable switching workflow. Do not use it to patch Codex's native model
 cache, rewrite old conversations, or install always-on recovery services.
+
+![Guarded dry-run diff demo](docs/assets/dry-run-diff.svg)
 
 ## Compatibility
 
@@ -131,8 +134,8 @@ cache, rewrite old conversations, or install always-on recovery services.
   `config.toml.bak-codex-hybrid-*` backup. This project is designed not to edit
   `auth.json`, `models_cache.json`, `state_5.sqlite`, or session history.
 
-For release history and project rules, see `CHANGELOG.md`, `SECURITY.md`, and
-`CONTRIBUTING.md`.
+For release history and project rules, see `CHANGELOG.md`, `SECURITY.md`,
+`CONTRIBUTING.md`, and `ROADMAP.md`.
 
 For common setup and recovery questions, see `docs/faq.md`.
 
@@ -140,10 +143,14 @@ For common setup and recovery questions, see `docs/faq.md`.
 
 - Chinese tutorial: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
 - English quickstart demo: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
+- Visual demo gallery: [`docs/demo-gallery.md`](docs/demo-gallery.md)
 - Safety model: [`docs/safety.md`](docs/safety.md)
 - Recovery guide: [`docs/recovery.md`](docs/recovery.md)
 - Windows beginner flow: [`docs/windows-user-flow.md`](docs/windows-user-flow.md)
 - Local llama.cpp smoke test: [`docs/local-llama-smoke.md`](docs/local-llama-smoke.md)
+- Roadmap: [`ROADMAP.md`](ROADMAP.md)
+- Release post kit: [`docs/release-post.md`](docs/release-post.md)
+- GitHub labels and community setup: [`docs/github-labels.md`](docs/github-labels.md)
 
 ## Commands
 

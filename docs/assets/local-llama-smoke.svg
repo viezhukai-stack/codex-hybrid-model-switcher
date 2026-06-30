@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Local llama.cpp multimodal smoke flow</title>
+  <desc id="desc">A diagram showing Codex Desktop requests routed through the local bridge to llama.cpp with GGUF and mmproj files.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#064e3b"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#020617" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <text x="92" y="92" fill="#f8fafc" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="34" font-weight="800">Local llama.cpp smoke test</text>
+  <text x="92" y="128" fill="#cbd5e1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="20">Text and image requests stay behind the bridge before Codex is switched.</text>
+  <g filter="url(#shadow)" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+    <rect x="90" y="220" width="230" height="160" rx="20" fill="#f8fafc"/>
+    <text x="128" y="278" fill="#0f172a" font-size="24" font-weight="800">Codex</text>
+    <text x="128" y="314" fill="#334155" font-size="18">Desktop request</text>
+    <text x="128" y="348" fill="#334155" font-size="18">text + image</text>
+    <rect x="435" y="220" width="260" height="160" rx="20" fill="#dbeafe"/>
+    <text x="475" y="278" fill="#1e3a8a" font-size="24" font-weight="800">Bridge</text>
+    <text x="475" y="314" fill="#1e40af" font-size="18">127.0.0.1:19030</text>
+    <text x="475" y="348" fill="#1e40af" font-size="18">Responses adapter</text>
+    <rect x="815" y="220" width="280" height="160" rx="20" fill="#dcfce7"/>
+    <text x="855" y="278" fill="#14532d" font-size="24" font-weight="800">llama.cpp</text>
+    <text x="855" y="314" fill="#166534" font-size="18">127.0.0.1:19031</text>
+    <text x="855" y="348" fill="#166534" font-size="18">server process</text>
+    <line x1="320" y1="300" x2="435" y2="300" stroke="#93c5fd" stroke-width="6"/>
+    <polygon points="435,300 413,286 413,314" fill="#93c5fd"/>
+    <line x1="695" y1="300" x2="815" y2="300" stroke="#86efac" stroke-width="6"/>
+    <polygon points="815,300 793,286 793,314" fill="#86efac"/>
+    <rect x="322" y="455" width="245" height="100" rx="18" fill="#fef3c7"/>
+    <text x="352" y="500" fill="#713f12" font-size="22" font-weight="800">GGUF model</text>
+    <text x="352" y="530" fill="#854d0e" font-size="16">configured path</text>
+    <rect x="632" y="455" width="245" height="100" rx="18" fill="#fae8ff"/>
+    <text x="662" y="500" fill="#701a75" font-size="22" font-weight="800">mmproj file</text>
+    <text x="662" y="530" fill="#86198f" font-size="16">for vision models</text>
+    <line x1="445" y1="455" x2="858" y2="380" stroke="#fbbf24" stroke-width="4" stroke-dasharray="10 12"/>
+    <line x1="755" y1="455" x2="930" y2="380" stroke="#e879f9" stroke-width="4" stroke-dasharray="10 12"/>
+  </g>
+</svg>

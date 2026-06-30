@@ -1,0 +1,47 @@
+title: "Setup help: "
+labels: ["setup-help"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for opening a setup-help discussion.
+
+        Please do not paste account files, keys, private endpoints, local model files, or session history.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS
+        - Windows
+        - Linux or other
+    validations:
+      required: true
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Workflow
+      options:
+        - Cloud provider dry-run
+        - Cloud provider real switch
+        - Windows launcher
+        - Local llama.cpp smoke
+        - Recovery
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: What are you trying to do?
+      description: Describe the goal and the last safe step that worked.
+    validations:
+      required: true
+  - type: textarea
+    id: sanitized-output
+    attributes:
+      label: Sanitized output
+      description: Paste redacted dry-run, validate-config, or doctor output if useful.
+      render: text
+    validations:
+      required: false

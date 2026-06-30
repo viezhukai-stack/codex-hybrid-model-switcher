@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Windows guarded model switcher flow</title>
+  <desc id="desc">A Windows-style launcher screen showing provider choices and guarded switch checks.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="55%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#713f12"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#020617" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <g filter="url(#shadow)">
+    <rect x="90" y="70" width="1020" height="535" rx="24" fill="#f8fafc"/>
+    <rect x="90" y="70" width="1020" height="72" rx="24" fill="#0f172a"/>
+    <rect x="90" y="118" width="1020" height="24" fill="#0f172a"/>
+    <text x="130" y="116" fill="#e2e8f0" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="24" font-weight="700">Codex Model Switcher</text>
+    <rect x="130" y="178" width="330" height="360" rx="18" fill="#e2e8f0"/>
+    <text x="158" y="220" fill="#0f172a" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="700">Choose provider</text>
+    <rect x="158" y="248" width="274" height="54" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="182" y="282" fill="#0f172a" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Official OpenAI</text>
+    <rect x="158" y="318" width="274" height="54" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+    <text x="182" y="352" fill="#1e3a8a" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">Cloud GPT Main</text>
+    <rect x="158" y="388" width="274" height="54" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="182" y="422" fill="#0f172a" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Cloud Reasoning</text>
+    <rect x="158" y="458" width="274" height="54" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="182" y="492" fill="#0f172a" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Local llama.cpp</text>
+    <g>
+      <line x1="505" y1="245" x2="690" y2="245" stroke="#64748b" stroke-width="4"/>
+      <polygon points="690,245 672,234 672,256" fill="#64748b"/>
+      <line x1="505" y1="338" x2="690" y2="338" stroke="#64748b" stroke-width="4"/>
+      <polygon points="690,338 672,327 672,349" fill="#64748b"/>
+      <line x1="505" y1="431" x2="690" y2="431" stroke="#64748b" stroke-width="4"/>
+      <polygon points="690,431 672,420 672,442" fill="#64748b"/>
+    </g>
+    <rect x="720" y="178" width="350" height="360" rx="18" fill="#0f172a"/>
+    <text x="750" y="220" fill="#f8fafc" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="700">Guarded apply</text>
+    <text x="750" y="270" fill="#bfdbfe" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">1. Confirm Codex is closed</text>
+    <text x="750" y="318" fill="#bfdbfe" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">2. Back up config.toml</text>
+    <text x="750" y="366" fill="#bfdbfe" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">3. Hash protected files</text>
+    <text x="750" y="414" fill="#bfdbfe" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">4. Write provider only</text>
+    <text x="750" y="462" fill="#86efac" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">5. Reopen Codex Desktop</text>
+  </g>
+</svg>

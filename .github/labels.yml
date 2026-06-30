@@ -1,0 +1,30 @@
+- name: setup-help
+  color: "0ea5e9"
+  description: Help with installation, config generation, or first dry-run.
+- name: windows
+  color: "2563eb"
+  description: Windows launcher, PowerShell, or Windows Codex behavior.
+- name: macos
+  color: "64748b"
+  description: macOS launcher, shell, or macOS Codex behavior.
+- name: local-llama
+  color: "16a34a"
+  description: Local llama.cpp, GGUF, mmproj, or GPU smoke tests.
+- name: provider-config
+  color: "9333ea"
+  description: OpenAI-compatible provider configuration and routing.
+- name: security
+  color: "dc2626"
+  description: Safety boundary, secret handling, or sensitive-data reporting.
+- name: docs
+  color: "f59e0b"
+  description: Documentation, screenshots, tutorials, and examples.
+- name: good-first-issue
+  color: "22c55e"
+  description: Small, well-scoped tasks suitable for new contributors.
+- name: bug
+  color: "ef4444"
+  description: Confirmed defect in source, scripts, tests, or docs.
+- name: enhancement
+  color: "8b5cf6"
+  description: Feature request or improvement proposal.
