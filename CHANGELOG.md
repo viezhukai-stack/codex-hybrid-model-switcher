@@ -5,6 +5,16 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v1.4.0
+
+- Added stock-Codex bootstrap-to-apply validation using a temporary simulated
+  Codex home.
+- Verified the stock flow keeps `auth.json`, `models_cache.json`,
+  `state_5.sqlite`, `sessions/`, and rollout logs unchanged.
+- Added CI coverage for the stock-Codex validation script.
+- Extended install validation, release checklist, and validation matrix to
+  include the stock-Codex simulation gate.
+
 ## v1.3.0
 
 - Added root `bootstrap.py`, a zero-install first-run entry that creates a

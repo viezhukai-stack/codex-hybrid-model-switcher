@@ -259,6 +259,16 @@ For the current validation coverage and release gate, see
 `docs/validation-matrix.md`, `docs/release-checklist.md`, and
 `docs/public-release-plan.md`.
 
+To prove the stock-Codex bootstrap-to-apply path in a temporary profile, run:
+
+```sh
+python3 scripts/validate-stock-codex-flow.py
+```
+
+It creates a simulated Codex home, runs bootstrap dry-run, performs a guarded
+apply against that simulated profile, and verifies only `config.toml` changed
+while account/cache/history-like files stayed unchanged.
+
 ## What This Repository Must Not Contain
 
 - `auth.json`
