@@ -46,6 +46,8 @@ Confirm the repository does not contain:
 - Local model docs say local validation is optional and machine-dependent.
 - Recovery docs explain how to restore `config.toml` from the newest backup.
 - Validation matrix reflects the actual canaries performed.
+- Public release plan explains how to promote the accepted release candidate to
+  a final `v1.0.0` tag without moving existing tags.
 
 ## Canary Checks
 
@@ -75,3 +77,6 @@ Do not tag from a dirty tree or an unmerged feature branch.
 
 For release candidates, keep the Python package version normalized, such as
 `1.0.0rc1`, and use the Git tag style `v1.0.0-rc.1`.
+
+For the final release, use package version `1.0.0` and Git tag `v1.0.0`.
+Never move an existing release-candidate tag after it has been pushed.
