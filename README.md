@@ -15,6 +15,41 @@ Cross-platform tooling for using Codex Desktop with:
 The project is intentionally conservative. It does not edit `models_cache.json`,
 does not mutate Codex session history, and does not install KeepAlive services.
 
+## 3-Minute Tour
+
+**Codex Hybrid Model Switcher lets you switch Codex Desktop between official,
+cloud, and local model providers while keeping account files, plugin/MCP
+settings, model cache, and session history out of the blast radius.**
+
+It is built for users who want external model choice without hand-editing fragile
+Codex Desktop state. The switcher writes only guarded provider settings to
+`config.toml`, shows a redacted dry-run diff first, backs up before real writes,
+and verifies protected Codex files after the switch.
+
+```mermaid
+flowchart LR
+    A["Quit Codex Desktop"] --> B["Pick provider in switcher"]
+    B --> C["Preview redacted dry-run diff"]
+    C --> D["Guarded config.toml update"]
+    D --> E["Reopen Codex Desktop"]
+    E --> F["Use cloud or local model"]
+
+    G["auth.json"] -. "not edited" .- D
+    H["models_cache.json"] -. "not edited" .- D
+    I["state_5.sqlite"] -. "not edited" .- D
+```
+
+Start here:
+
+- New user walkthrough in Chinese: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
+- Safe English demo without touching a real profile: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
+- Windows click-through user flow: [`docs/windows-user-flow.md`](docs/windows-user-flow.md)
+- Optional local llama.cpp smoke test: [`docs/local-llama-smoke.md`](docs/local-llama-smoke.md)
+
+Use it when you want OpenAI-compatible cloud providers, local llama.cpp models,
+or a recoverable switching workflow. Do not use it to patch Codex's native model
+cache, rewrite old conversations, or install always-on recovery services.
+
 ## Compatibility
 
 | Platform | Status | Notes |

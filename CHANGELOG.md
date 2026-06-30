@@ -5,6 +5,8 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+- Added a README 3-minute tour with a safer onboarding summary, visual workflow,
+  and first-demo entry points.
 - Added a Chinese getting-started tutorial and an English quickstart demo for
   safer first-time adoption.
 - Updated public repository links, security contact details, and release
