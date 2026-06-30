@@ -1,0 +1,117 @@
+name: Real clean-machine canary
+description: Report a real stock Codex Desktop handoff test without sharing private state.
+title: "[Canary]: "
+labels: ["canary"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this only after testing from stock Codex Desktop with this GitHub repository.
+
+        Do not attach `auth.json`, `models_cache.json`, `state_5.sqlite`, `sessions/`, rollout logs, API keys, account tokens, passwords, private config files, local model files, or unredacted screenshots.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS
+        - Windows
+        - Linux or other
+    validations:
+      required: true
+  - type: input
+    id: release
+    attributes:
+      label: Repository release or commit tested
+      placeholder: "v2.9.0 or commit SHA"
+    validations:
+      required: true
+  - type: dropdown
+    id: starting-point
+    attributes:
+      label: Starting point
+      options:
+        - Stock Codex Desktop
+        - Existing Codex profile with prior custom config
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: handoff
+    attributes:
+      label: Handoff path
+      options:
+        - label: Codex read `HANDOFF_TO_CODEX.md`, `START_HERE.md`, `AGENTS.md`, and `FINAL_CHECK.md`.
+          required: true
+        - label: `scripts/validate-agent-handoff-drill.py` passed before touching the real profile.
+          required: true
+        - label: `guarded-switch --dry-run` was reviewed before a real switch.
+          required: true
+        - label: Codex Desktop was fully quit before the real guarded switch.
+          required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety checks
+      options:
+        - label: Only `config.toml` changed during the real switch.
+          required: true
+        - label: A `config.toml.bak-codex-hybrid-*` backup was created.
+          required: true
+        - label: `auth.json`, `models_cache.json`, and `state_5.sqlite` hash prefixes stayed unchanged.
+          required: true
+        - label: `sessions/` and rollout logs were not edited.
+          required: true
+  - type: checkboxes
+    id: visible-checks
+    attributes:
+      label: Visible Codex checks
+      options:
+        - label: Codex Desktop reopened without an error page.
+          required: true
+        - label: Account information was visible.
+          required: true
+        - label: Plugin entry points were visible.
+          required: true
+        - label: MCP entry points were visible, or MCP was not used on this machine.
+          required: true
+        - label: Project list was visible.
+          required: true
+        - label: A new test conversation responded through the selected provider.
+          required: true
+  - type: checkboxes
+    id: reports
+    attributes:
+      label: Redacted reports generated
+      options:
+        - label: `setup-report` was generated and reviewed.
+          required: true
+        - label: `canary-report` was generated and reviewed.
+          required: true
+        - label: `real-canary-template` was generated and reviewed.
+          required: true
+        - label: `FINAL_CHECK.md` verdict was `Complete`.
+          required: true
+  - type: textarea
+    id: sanitized-summary
+    attributes:
+      label: Sanitized summary
+      description: Summarize what worked. Use placeholders for provider endpoints, usernames, hostnames, and local paths.
+      placeholder: "Cloud provider switch passed on Windows/macOS using <provider>. No protected files changed."
+    validations:
+      required: true
+  - type: textarea
+    id: sanitized-output
+    attributes:
+      label: Optional redacted output snippets
+      description: Paste only short redacted snippets from validate-config, dry-run, setup-report, canary-report, or real-canary-template.
+      render: text
+    validations:
+      required: false
+  - type: checkboxes
+    id: no-private-data
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I did not upload Codex account/cache/history files, local model binaries, backups, API keys, tokens, passwords, private endpoints, real usernames, machine names, private LAN IPs, or absolute personal paths.
+          required: true

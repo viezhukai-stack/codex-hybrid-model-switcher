@@ -12,6 +12,7 @@ driver, CUDA runtime, llama.cpp build, and model size.
 | Windows canary 1 | Passed | Passed | Passed | Validated guarded cloud switch, local llama.cpp/Gemma text smoke, image smoke, and Codex Desktop UI behavior. |
 | Windows canary 2 | Passed | Not required | Passed | Validated second-machine migration, Python 3.10 compatibility, guarded cloud switch, user-facing launcher, account visibility, project conversations, plugin/MCP visibility, and a test chat. Local Qwen3.6 35B candidates were found but not tested because local hardware/model fit is not a release requirement. |
 | GitHub handoff entrypoint | Passed | Not applicable | Simulated | `HANDOFF_TO_CODEX.md` gives stock Codex users a single copy-paste prompt from the GitHub page, and `scripts/validate-github-entrypoint.py` verifies the prompt includes provider inputs, safety boundaries, bootstrap, dry-run, reports, and final verdict guidance. |
+| Real canary issue template | Passed | Not applicable | Template | `.github/ISSUE_TEMPLATE/real_clean_machine_canary.yml` gives field testers a safe checklist for reporting stock Codex handoff results without uploading account/cache/history files or secrets. |
 | Stock Codex simulation | Passed | Not applicable | Simulated | `scripts/validate-stock-codex-flow.py` creates a temporary stock-like Codex home, runs bootstrap dry-run, runs guarded apply, verifies only `config.toml` changed while account/cache/history-like files stayed unchanged, and checks the generated setup report is redacted. |
 | Stock Codex handoff | Passed | Not applicable | Simulated | `scripts/validate-stock-codex-handoff.py` copies the repository to a clean temporary directory, verifies default bridge bootstrap/dry-run plus `bridge-health`, verifies bootstrap does not pollute the repository, and confirms private config plus guarded apply behavior. |
 | Agent handoff drill | Passed | Not applicable | Simulated | `scripts/validate-agent-handoff-drill.py` rehearses the stock Codex agent path through bootstrap, dry-run, env-help, bridge-health, guarded apply, setup-report, canary-report, and final verdict guidance in a temporary profile. |
@@ -30,6 +31,8 @@ driver, CUDA runtime, llama.cpp build, and model size.
 - Stock-Codex bootstrap-to-apply simulation passes in a temporary directory.
 - GitHub handoff entrypoint validation passes, so a stock Codex user can start
   from the repository URL and a single copy-paste prompt.
+- Real canary issue template exists, so field testers can submit the final
+  clean-machine evidence without sharing private Codex state.
 - Stock-Codex handoff validation passes from a clean temporary repository copy,
   including the default bridge dry-run and bridge-health diagnostic path.
 - Agent handoff drill passes and proves the simulated stock Codex agent path

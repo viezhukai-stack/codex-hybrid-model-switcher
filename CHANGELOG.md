@@ -5,6 +5,15 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.10.0
+
+- Added `.github/ISSUE_TEMPLATE/real_clean_machine_canary.yml`, a safe GitHub
+  reporting path for real stock Codex Desktop handoff tests.
+- Added the `canary` label definition.
+- Release acceptance now verifies the real clean-machine canary issue template.
+- Updated release checklist and validation matrix so field-test reporting is
+  part of the public-readiness path.
+
 ## v2.9.0
 
 - Added `HANDOFF_TO_CODEX.md`, a root copy-paste prompt for users who only have

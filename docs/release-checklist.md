@@ -49,6 +49,8 @@ Confirm the repository does not contain:
 - GitHub handoff entrypoint validation passes for the root copy-paste prompt.
 - Agent handoff drill passes and writes a redacted temporary drill report.
 - Real clean-machine canary template validation passes.
+- GitHub issue template for real clean-machine canaries is present and blocks
+  private Codex state attachments.
 - Release acceptance validation passes and confirms the stock Codex handoff
   evidence is present.
 - Bridge-routed cloud providers refuse real apply when `api_key_env` is unset.
@@ -74,6 +76,8 @@ Confirm the repository does not contain:
 - README points new users toward dry-run and guarded canary flows.
 - `HANDOFF_TO_CODEX.md` gives stock Codex users a single copy-paste prompt from
   the GitHub page.
+- `.github/ISSUE_TEMPLATE/real_clean_machine_canary.yml` gives field testers a
+  safe reporting path.
 - `CHANGELOG.md`, `SECURITY.md`, and `CONTRIBUTING.md` are present and current.
 - Windows docs describe the guarded launcher.
 - Local model docs say local validation is optional and machine-dependent.

@@ -207,6 +207,21 @@ def test_real_clean_machine_canary_doc_explains_field_evidence():
         assert protected in text
 
 
+def test_real_clean_machine_canary_issue_template_is_safe():
+    text = read(".github/ISSUE_TEMPLATE/real_clean_machine_canary.yml")
+
+    assert "Real clean-machine canary" in text
+    assert "Stock Codex Desktop" in text
+    assert "HANDOFF_TO_CODEX.md" in text
+    assert "validate-agent-handoff-drill.py" in text
+    assert "guarded-switch --dry-run" in text
+    assert "FINAL_CHECK.md" in text
+    assert "canary-report" in text
+    assert "real-canary-template" in text
+    for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
+        assert protected in text
+
+
 def test_bridge_health_doc_explains_read_only_diagnostics():
     text = read("docs/bridge-health.md")
 

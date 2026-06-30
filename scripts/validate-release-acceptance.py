@@ -28,6 +28,7 @@ REQUIRED_FILES = (
     "scripts/validate-agent-handoff-drill.py",
     "scripts/validate-real-clean-machine-canary.py",
     "scripts/validate-install.py",
+    ".github/ISSUE_TEMPLATE/real_clean_machine_canary.yml",
 )
 
 DOC_REQUIREMENTS = {
@@ -156,6 +157,18 @@ DOC_REQUIREMENTS = {
         "Bridge health diagnostic",
         "Canary evidence report",
         "default bridge dry-run",
+    ),
+    ".github/ISSUE_TEMPLATE/real_clean_machine_canary.yml": (
+        "Real clean-machine canary",
+        "Stock Codex Desktop",
+        "HANDOFF_TO_CODEX.md",
+        "validate-agent-handoff-drill.py",
+        "guarded-switch --dry-run",
+        "auth.json",
+        "models_cache.json",
+        "state_5.sqlite",
+        "sessions/",
+        "FINAL_CHECK.md",
     ),
 }
 
