@@ -41,6 +41,8 @@ flowchart LR
 
 Start here:
 
+- If you want to hand the GitHub project to Codex directly:
+  [`HANDOFF_TO_CODEX.md`](HANDOFF_TO_CODEX.md)
 - If you only have stock Codex Desktop: [`START_HERE.md`](START_HERE.md)
 - Final self-check after setup: [`FINAL_CHECK.md`](FINAL_CHECK.md)
 - Hand this repo to Codex: [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md)

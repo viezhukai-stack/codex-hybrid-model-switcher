@@ -51,6 +51,23 @@ def test_stock_codex_handoff_validation_script(tmp_path):
     assert "Protected Codex files unchanged" in proc.stdout
 
 
+def test_github_entrypoint_validation_script():
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "validate-github-entrypoint.py"),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert proc.returncode == 0, proc.stdout
+    assert "github handoff entrypoint validation passed" in proc.stdout
+
+
 def test_agent_handoff_drill_validation_script(tmp_path):
     proc = subprocess.run(
         [

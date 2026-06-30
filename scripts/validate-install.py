@@ -281,6 +281,7 @@ def main(argv: list[str] | None = None) -> int:
         run([str(python), "-m", "compileall", "-q", "src", "tests"], cwd=repo)
         run([str(python), "-m", "pytest"], cwd=repo)
         run([str(python), "-m", "codex_hybrid_switcher", "security-scan", "."], cwd=repo)
+        run([str(python), "scripts/validate-github-entrypoint.py"], cwd=repo)
         for platform in ("macos", "windows"):
             generated_config = work / f"generated-private-{platform}" / "config.json"
             run(

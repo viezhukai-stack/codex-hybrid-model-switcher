@@ -16,6 +16,7 @@ simulated Codex home.
 - `bridge-health` against a temporary bridge-routed config with the bridge port
   closed, confirming it gives safe next steps without touching Codex state.
 - `bootstrap.py --non-interactive` into a temporary private config path.
+- GitHub handoff entrypoint validation for the root copy-paste prompt.
 - Bootstrap guarded dry-run without touching the simulated Codex home.
 - Stock-Codex bootstrap-to-apply simulation using a temporary `.codex` home.
 - Agent handoff drill through bootstrap, dry-run, env-help, bridge-health,
@@ -112,3 +113,15 @@ python3 scripts/validate-real-clean-machine-canary.py
 The validation uses a temporary private config and verifies the generated
 template has the required stock Codex evidence fields without leaking provider
 hostnames, local paths, tokens, or Codex state content.
+
+## GitHub Entrypoint Only
+
+To validate only the root handoff prompt:
+
+```sh
+python3 scripts/validate-github-entrypoint.py
+```
+
+This checks that `HANDOFF_TO_CODEX.md` and the top-level docs give a stock Codex
+user enough information to start from the GitHub URL without exposing private
+machine details.

@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED_FILES = (
+    "HANDOFF_TO_CODEX.md",
     "START_HERE.md",
     "AGENTS.md",
     "FINAL_CHECK.md",
@@ -23,13 +24,28 @@ REQUIRED_FILES = (
     "docs/release-checklist.md",
     "docs/validation-matrix.md",
     "scripts/validate-stock-codex-handoff.py",
+    "scripts/validate-github-entrypoint.py",
     "scripts/validate-agent-handoff-drill.py",
     "scripts/validate-real-clean-machine-canary.py",
     "scripts/validate-install.py",
 )
 
 DOC_REQUIREMENTS = {
+    "HANDOFF_TO_CODEX.md": (
+        "https://github.com/viezhukai-stack/codex-hybrid-model-switcher",
+        "stock Codex Desktop",
+        "base_url",
+        "api_key_env",
+        "cloud_route: bridge",
+        "validate-agent-handoff-drill.py",
+        "guarded-switch --dry-run",
+        "real-canary-template",
+        "auth.json",
+        "models_cache.json",
+        "state_5.sqlite",
+    ),
     "START_HERE.md": (
+        "HANDOFF_TO_CODEX.md",
         "Copy This Prompt Into Codex",
         "bootstrap.py",
         "bridge-health",
@@ -46,6 +62,7 @@ DOC_REQUIREMENTS = {
         "KeepAlive",
     ),
     "AGENTS.md": (
+        "HANDOFF_TO_CODEX.md",
         "Never switch providers while Codex Desktop is running",
         "docs/bridge-health.md",
         "docs/agent-handoff-drill.md",
@@ -123,6 +140,7 @@ DOC_REQUIREMENTS = {
     ),
     "docs/release-checklist.md": (
         "python scripts/validate-release-acceptance.py",
+        "python scripts/validate-github-entrypoint.py",
         "python scripts/validate-stock-codex-handoff.py",
         "python scripts/validate-agent-handoff-drill.py",
         "python scripts/validate-real-clean-machine-canary.py",
@@ -131,6 +149,7 @@ DOC_REQUIREMENTS = {
         "GitHub Actions passes",
     ),
     "docs/validation-matrix.md": (
+        "GitHub handoff entrypoint",
         "Stock Codex handoff",
         "Agent handoff drill",
         "Real clean-machine canary template",
@@ -189,6 +208,7 @@ def run_acceptance(*, quick: bool = False, tmp_root: str | None = None) -> int:
 
     run([sys.executable, "-m", "compileall", "-q", "bootstrap.py", "src", "tests", "scripts"])
     run([sys.executable, "-m", "codex_hybrid_switcher", "security-scan", "."])
+    run([sys.executable, "scripts/validate-github-entrypoint.py"])
 
     if quick:
         print("release acceptance quick validation passed")

@@ -3,6 +3,9 @@
 This page is for a user who only has stock Codex Desktop and wants Codex itself
 to configure Codex Hybrid Model Switcher.
 
+If you are starting from the GitHub page and want the shortest copy-paste
+prompt, use [`HANDOFF_TO_CODEX.md`](HANDOFF_TO_CODEX.md) first.
+
 The intended workflow is:
 
 1. Open this GitHub repository in Codex.
