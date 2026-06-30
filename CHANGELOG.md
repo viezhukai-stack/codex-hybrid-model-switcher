@@ -3,6 +3,15 @@
 All notable changes to this project are summarized here. This project follows a
 conservative release process because it edits Codex provider configuration.
 
+## v1.0.0-rc.3
+
+- Added a public release plan for promoting a validated release candidate to
+  final `v1.0.0` without moving existing tags.
+- Linked the public release plan from the README, release checklist, and open
+  source readiness checklist.
+- Renamed the README release-candidate user path section to a stable user path
+  section for public-facing documentation.
+
 ## v1.0.0-rc.2
 
 - Removed organization-specific private endpoint names from the built-in

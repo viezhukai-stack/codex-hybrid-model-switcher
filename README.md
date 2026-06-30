@@ -68,7 +68,7 @@ does not mutate Codex session history, and does not install KeepAlive services.
    codex-hybrid-switcher guarded-switch local-gemma --allow-local --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-## Release Candidate User Paths
+## User Paths
 
 - Cloud provider path: initialize a private config, validate it, run
   `guarded-switch --dry-run`, then quit Codex Desktop before applying a real
@@ -142,7 +142,8 @@ To repeat the validation on another Windows machine, follow
 `docs/windows-second-canary.md` before installing the end-user launcher.
 
 For the current validation coverage and release gate, see
-`docs/validation-matrix.md` and `docs/release-checklist.md`.
+`docs/validation-matrix.md`, `docs/release-checklist.md`, and
+`docs/public-release-plan.md`.
 
 ## What This Repository Must Not Contain
 

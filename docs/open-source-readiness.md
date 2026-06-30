@@ -56,5 +56,7 @@ Before publishing a release, verify:
   unit tests.
 - `docs/validation-matrix.md` reflects the actual canaries performed.
 - `docs/release-checklist.md` is complete for the release candidate.
+- `docs/public-release-plan.md` has been reviewed before final `v1.0.0`
+  promotion.
 - Release notes do not imply that every machine must pass local model
   validation; local model support is hardware- and model-dependent.
