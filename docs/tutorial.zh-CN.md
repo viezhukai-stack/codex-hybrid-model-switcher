@@ -92,7 +92,41 @@ No sensitive-looking content found.
 install validation passed
 ```
 
-## 第三步：生成你的私有配置
+## 第三步：用首次向导生成私有配置
+
+推荐新用户先用向导：
+
+```sh
+codex-hybrid-switcher setup
+```
+
+这个命令只会生成你的本机私有配置，不会切换 Codex，也不会改
+`~/.codex/config.toml`。
+
+它会问你：
+
+- Codex 配置目录。
+- 云端 provider 名称。
+- OpenAI-compatible `base_url`。
+- 模型 ID。
+- API key 的环境变量名。
+- 是否现在就添加本地 llama.cpp 模型。
+
+第一次使用建议先不要添加本地 llama.cpp 模型。先把云端 provider 跑通，
+再单独处理本地模型。
+
+如果你不想交互输入，也可以这样：
+
+```sh
+codex-hybrid-switcher setup --non-interactive \
+  --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 \
+  --model provider-gpt-main \
+  --api-key-env OPENAI_COMPATIBLE_API_KEY
+```
+
+注意：`--api-key-env` 填的是环境变量名，不是 API key 原文。
+
+## 备用方式：复制示例配置
 
 macOS 示例：
 
@@ -106,7 +140,8 @@ Windows 示例：
 codex-hybrid-switcher init-config --platform windows --output "$env:USERPROFILE\.codex-hybrid-model-switcher\config.json"
 ```
 
-生成的 `config.json` 是你的本机私有配置，不要提交到 Git。
+无论用向导还是复制示例，生成的 `config.json` 都是你的本机私有配置，
+不要提交到 Git。
 
 你需要编辑里面的字段，例如：
 

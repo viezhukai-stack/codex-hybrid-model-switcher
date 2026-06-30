@@ -42,6 +42,7 @@ flowchart LR
 Start here:
 
 - New user walkthrough in Chinese: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
+- Beginner first-run wizard: [`docs/first-run-wizard.md`](docs/first-run-wizard.md)
 - Safe English demo without touching a real profile: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
 - Visual demo gallery: [`docs/demo-gallery.md`](docs/demo-gallery.md)
 - Windows click-through user flow: [`docs/windows-user-flow.md`](docs/windows-user-flow.md)
@@ -79,41 +80,57 @@ cache, rewrite old conversations, or install always-on recovery services.
    python3 -m pip install -e .
    ```
 
-2. Copy an example config:
+2. Run the first-run wizard. It creates a private config only; it does not
+   switch Codex Desktop:
+
+   ```sh
+   codex-hybrid-switcher setup
+   ```
+
+   Non-interactive example for scripts or tests:
+
+   ```sh
+   codex-hybrid-switcher setup --non-interactive \
+     --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 \
+     --model provider-gpt-main \
+     --api-key-env OPENAI_COMPATIBLE_API_KEY
+   ```
+
+3. Or copy an example config manually:
 
    ```sh
    codex-hybrid-switcher init-config --platform macos --output ~/.codex-hybrid-model-switcher/config.json
    ```
 
-3. Edit paths and provider endpoints in that private config.
+4. Edit paths and provider endpoints in that private config if needed.
 
-4. Check the environment:
+5. Check the environment:
 
    ```sh
    codex-hybrid-switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-5. Preview the Codex config change without writing anything:
+6. Preview the Codex config change without writing anything:
 
    ```sh
    codex-hybrid-switcher guarded-switch cloud-gpt-main --dry-run --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-6. For a real cloud switch, quit Codex Desktop completely, then use guarded
+7. For a real cloud switch, quit Codex Desktop completely, then use guarded
    apply:
 
    ```sh
    codex-hybrid-switcher guarded-switch cloud-gpt-main --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-7. Test local models only on machines that have suitable hardware, llama.cpp,
+8. Test local models only on machines that have suitable hardware, llama.cpp,
    and model files:
 
    ```sh
    codex-hybrid-switcher local-smoke --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-8. Switch to a local provider only after local smoke passes:
+9. Switch to a local provider only after local smoke passes:
 
    ```sh
    codex-hybrid-switcher guarded-switch local-gemma --allow-local --config ~/.codex-hybrid-model-switcher/config.json
@@ -145,6 +162,7 @@ For common setup and recovery questions, see `docs/faq.md`.
 - English quickstart demo: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
 - Visual demo gallery: [`docs/demo-gallery.md`](docs/demo-gallery.md)
 - Safety model: [`docs/safety.md`](docs/safety.md)
+- First-run wizard: [`docs/first-run-wizard.md`](docs/first-run-wizard.md)
 - Recovery guide: [`docs/recovery.md`](docs/recovery.md)
 - Windows beginner flow: [`docs/windows-user-flow.md`](docs/windows-user-flow.md)
 - Local llama.cpp smoke test: [`docs/local-llama-smoke.md`](docs/local-llama-smoke.md)
@@ -159,6 +177,8 @@ python -m codex_hybrid_switcher status
 python -m codex_hybrid_switcher doctor
 python -m codex_hybrid_switcher doctor --strict
 python -m codex_hybrid_switcher init-config --platform macos --output ~/.codex-hybrid-model-switcher/config.json
+python -m codex_hybrid_switcher setup
+python -m codex_hybrid_switcher setup --non-interactive --base-url https://YOUR-ENDPOINT.example/v1 --model provider-gpt-main
 python -m codex_hybrid_switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher bridge
 python -m codex_hybrid_switcher local-smoke

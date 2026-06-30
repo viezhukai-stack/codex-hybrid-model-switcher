@@ -5,6 +5,12 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+- Added a beginner first-run `setup` wizard that creates and validates a private
+  config without switching Codex Desktop.
+- Added non-interactive setup mode for repeatable support scripts and install
+  validation.
+- Documented the stock-Codex caveat that existing official conversations may
+  remain in the `openai` bucket because the project does not rewrite history.
 - Added a visual demo gallery with sanitized generated SVG assets for dry-run,
   Windows switching, and local llama.cpp smoke-test flows.
 - Added ROADMAP, release-post templates, recommended GitHub labels, and
