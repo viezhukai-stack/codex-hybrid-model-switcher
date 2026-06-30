@@ -17,6 +17,8 @@ Do you want cloud-only setup first: yes/no
 
 Do not write the API key itself here. Put the key in your operating system or
 shell environment, then give the variable name to the setup wizard.
+If you do not know how to set it, run `codex-hybrid-switcher env-help` after
+the private config exists.
 
 For most OpenAI-compatible providers, use `bridge`. It keeps the provider API
 key outside Codex Desktop and lets the local bridge forward requests. Use

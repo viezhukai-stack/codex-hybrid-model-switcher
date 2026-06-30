@@ -46,6 +46,7 @@ Codex should:
 - install this package locally only if bootstrap cannot run
 - generate `~/.codex-hybrid-model-switcher/config.json`
 - validate the private config
+- run `env-help` if `api_key_env` is unset, without collecting the raw API key
 - run `guarded-switch --dry-run`
 - explain the redacted diff
 - for bridge-routed cloud providers, confirm the API key environment variable is

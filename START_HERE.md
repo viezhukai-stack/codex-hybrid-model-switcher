@@ -41,8 +41,9 @@ prompt.
 2. 优先运行 bootstrap.py。
 3. 生成用户目录里的私有 config.json。
 4. 运行 validate-config。
-5. 运行 guarded-switch --dry-run。
-6. 用人话解释 dry-run 会改什么、不会改什么。
+5. 如果看到 `api_key_env(...unset)`，运行 env-help 并告诉我怎么设置环境变量。
+6. 运行 guarded-switch --dry-run。
+7. 用人话解释 dry-run 会改什么、不会改什么。
 
 只有 dry-run 安全后，再让我完全退出 Codex Desktop，然后再执行真实 guarded-switch。
 真实切换后，请验证受保护文件 hash 没变，并生成脱敏 setup report。
@@ -99,6 +100,8 @@ First milestone, before any real switch:
 
 - private config exists outside this repository
 - config validation passes
+- `api_key_env` is set, or Codex has shown the env-help instructions needed to
+  set it
 - guarded dry-run prints a redacted diff
 - no real Codex files changed
 - for `cloud_route=bridge`, the API key environment variable is set before the
@@ -167,3 +170,20 @@ decide whether setup is complete or only partially complete.
 
 Finally, copy the prompt in [`FINAL_CHECK.md`](FINAL_CHECK.md) into Codex and
 ask for a final verdict.
+
+## If The API Key Variable Is Unset
+
+Ask Codex to run:
+
+```sh
+python3 -m codex_hybrid_switcher env-help --config ~/.codex-hybrid-model-switcher/config.json
+```
+
+If running from the repository without installing:
+
+```sh
+PYTHONPATH=src python3 -m codex_hybrid_switcher env-help --config ~/.codex-hybrid-model-switcher/config.json
+```
+
+The command prints OS-specific setup instructions. It does not ask for, print,
+or store the API key.

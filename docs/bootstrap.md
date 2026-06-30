@@ -85,3 +85,18 @@ and dry-run. They do not apply a real provider switch.
 After dry-run looks correct, set the API key environment variable for
 bridge-routed cloud providers, quit Codex Desktop completely, and run the
 guarded apply command that bootstrap prints.
+
+If validation says `api_key_env(...unset)`, ask Codex to run:
+
+```sh
+PYTHONPATH=src python3 -m codex_hybrid_switcher env-help --config ~/.codex-hybrid-model-switcher/config.json
+```
+
+On Windows:
+
+```powershell
+set PYTHONPATH=src && py -3 -m codex_hybrid_switcher env-help --config "%USERPROFILE%\.codex-hybrid-model-switcher\config.json"
+```
+
+`env-help` prints copy-paste instructions for setting the environment variable.
+It does not read, print, or store API keys.

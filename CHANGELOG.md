@@ -5,6 +5,20 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.1.0
+
+- Added `env-help`, a read-only helper that prints macOS and Windows
+  environment-variable setup instructions for configured cloud provider API
+  keys.
+- Kept API keys out of the command surface: `env-help` does not read, print, or
+  store key values.
+- Updated bootstrap output, START_HERE, AGENTS, README, first-run wizard,
+  Chinese tutorial, and agent-assisted setup docs to route users to `env-help`
+  when `api_key_env(...unset)` appears.
+- Added `docs/api-key-environment.md` as a standalone explanation of how
+  `api_key_env` works with bridge-routed cloud providers.
+- Added tests and install validation coverage for the env-help handoff path.
+
 ## v2.0.0
 
 - Added `bridge` and `direct` cloud-provider routing.

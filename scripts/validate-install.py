@@ -171,6 +171,10 @@ def validate_first_run_setup(python: Path, repo: Path, work: Path) -> None:
     if (work / "setup-codex-home" / "config.toml").exists():
         raise SystemExit("setup touched simulated Codex config.toml")
     run([str(python), "-m", "codex_hybrid_switcher", "validate-config", "--config", str(setup_config)], cwd=repo)
+    env_proc = run([str(python), "-m", "codex_hybrid_switcher", "env-help", "--platform", "macos", "--config", str(setup_config)], cwd=repo)
+    for expected in ("API key environment help", "OPENAI_COMPATIBLE_API_KEY", "does not read, print, or store API keys"):
+        if expected not in env_proc.stdout:
+            raise SystemExit(f"env-help output missing expected content: {expected}")
 
 
 def validate_bootstrap(python: Path, repo: Path, work: Path) -> None:

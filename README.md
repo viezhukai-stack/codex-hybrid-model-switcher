@@ -48,6 +48,7 @@ Start here:
 - New user walkthrough in Chinese: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
 - Beginner first-run wizard: [`docs/first-run-wizard.md`](docs/first-run-wizard.md)
 - Setup intake checklist: [`docs/setup-intake.md`](docs/setup-intake.md)
+- API key environment variables: [`docs/api-key-environment.md`](docs/api-key-environment.md)
 - Safe English demo without touching a real profile: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
 - Redacted setup report: [`docs/setup-report.md`](docs/setup-report.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
@@ -147,33 +148,41 @@ file tells Codex how to proceed safely.
    codex-hybrid-switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-7. Preview the Codex config change without writing anything:
+7. If validation shows `api_key_env(...unset)`, print safe setup instructions:
+
+   ```sh
+   codex-hybrid-switcher env-help --config ~/.codex-hybrid-model-switcher/config.json
+   ```
+
+   This command does not read, print, or store API keys.
+
+8. Preview the Codex config change without writing anything:
 
    ```sh
    codex-hybrid-switcher guarded-switch cloud-gpt-main --dry-run --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-8. For a real cloud switch, quit Codex Desktop completely, then use guarded
+9. For a real cloud switch, quit Codex Desktop completely, then use guarded
    apply:
 
    ```sh
    codex-hybrid-switcher guarded-switch cloud-gpt-main --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-9. Test local models only on machines that have suitable hardware, llama.cpp,
+10. Test local models only on machines that have suitable hardware, llama.cpp,
    and model files:
 
    ```sh
    codex-hybrid-switcher local-smoke --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-10. Switch to a local provider only after local smoke passes:
+11. Switch to a local provider only after local smoke passes:
 
    ```sh
    codex-hybrid-switcher guarded-switch local-gemma --allow-local --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-11. Generate a redacted setup report after a real switch:
+12. Generate a redacted setup report after a real switch:
 
    ```sh
    codex-hybrid-switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json --output ~/Desktop/codex-hybrid-setup-report.md
@@ -205,6 +214,7 @@ For common setup and recovery questions, see `docs/faq.md`.
 - Stock Codex handoff prompt: [`START_HERE.md`](START_HERE.md)
 - Final agent check prompt: [`FINAL_CHECK.md`](FINAL_CHECK.md)
 - Setup intake checklist: [`docs/setup-intake.md`](docs/setup-intake.md)
+- API key environment variables: [`docs/api-key-environment.md`](docs/api-key-environment.md)
 - Bootstrap entry: [`docs/bootstrap.md`](docs/bootstrap.md)
 - Setup report: [`docs/setup-report.md`](docs/setup-report.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
@@ -233,6 +243,7 @@ python -m codex_hybrid_switcher init-config --platform macos --output ~/.codex-h
 python -m codex_hybrid_switcher setup
 python -m codex_hybrid_switcher setup --non-interactive --base-url https://YOUR-ENDPOINT.example/v1 --model provider-gpt-main --cloud-route bridge
 python -m codex_hybrid_switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
+python -m codex_hybrid_switcher env-help --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher bridge
 python -m codex_hybrid_switcher local-smoke

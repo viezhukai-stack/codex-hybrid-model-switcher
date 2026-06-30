@@ -5,6 +5,7 @@ import sys
 
 from .bridge import run_bridge
 from .doctor import run_doctor
+from .env_help import run_env_help
 from .local_smoke import run_local_smoke
 from .private_config import init_config, run_validate_config
 from .report import run_setup_report
@@ -47,6 +48,10 @@ def main(argv: list[str] | None = None) -> int:
     setup_report = sub.add_parser("setup-report")
     setup_report.add_argument("--config", dest="sub_config")
     setup_report.add_argument("--output")
+    env_help = sub.add_parser("env-help")
+    env_help.add_argument("--config", dest="sub_config")
+    env_help.add_argument("--platform", choices=["macos", "windows"])
+    env_help.add_argument("--name")
     setup = sub.add_parser("setup")
     setup.add_argument("--output")
     setup.add_argument("--platform", choices=["macos", "windows"])
@@ -107,6 +112,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_validate_config(config_path, check_paths=args.check_paths)
     if args.command == "setup-report":
         return run_setup_report(config_path, output=args.output)
+    if args.command == "env-help":
+        return run_env_help(config_path, platform=args.platform, name=args.name)
     if args.command == "setup":
         return run_setup_wizard(
             output=args.output,
