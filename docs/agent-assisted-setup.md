@@ -140,6 +140,17 @@ PYTHONPATH=src python3 -m codex_hybrid_switcher real-canary-template \
   --output ~/Desktop/codex-hybrid-real-clean-machine-canary.md
 ```
 
+Then ask Codex to generate the read-only final verdict report:
+
+```sh
+PYTHONPATH=src python3 -m codex_hybrid_switcher final-check \
+  --config ~/.codex-hybrid-model-switcher/config.json \
+  --setup-report ~/Desktop/codex-hybrid-setup-report.md \
+  --canary-report ~/Desktop/codex-hybrid-canary-evidence.md \
+  --real-canary-template ~/Desktop/codex-hybrid-real-clean-machine-canary.md \
+  --output ~/Desktop/codex-hybrid-final-check.md
+```
+
 Use [`user-success-criteria.md`](user-success-criteria.md) to confirm whether
 the setup is complete or only partially complete.
 

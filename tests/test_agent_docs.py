@@ -35,6 +35,8 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "docs/bridge-health.md" in text
     assert "docs/canary-report.md" in text
     assert "docs/real-clean-machine-canary.md" in text
+    assert "docs/final-check.md" in text
+    assert "docs/final-check.md" in text
     assert "docs/agent-handoff-drill.md" in text
     assert "docs/recovery.md" in text
     assert "docs/local-llama-smoke.md" in text
@@ -48,6 +50,7 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "codex-hybrid-switcher guarded-switch local-gemma --allow-local" in text
     assert "setup-report" in text
     assert "canary-report" in text
+    assert "final-check" in text
 
 
 def test_agent_assisted_setup_has_copy_paste_prompt_and_history_caveat():
@@ -69,6 +72,7 @@ def test_agent_assisted_setup_has_copy_paste_prompt_and_history_caveat():
     assert "setup-report" in text
     assert "canary-report" in text
     assert "real-canary-template" in text
+    assert "final-check" in text
 
 
 def test_setup_intake_warns_against_raw_secret_collection():
@@ -135,6 +139,7 @@ def test_start_here_is_safe_stock_codex_handoff():
     assert "setup-report" in text
     assert "canary-report" in text
     assert "real-canary-template" in text
+    assert "final-check" in text
     assert "validate-agent-handoff-drill.py" in text
     assert "base_url" in text
     assert "model" in text
@@ -164,6 +169,7 @@ def test_handoff_to_codex_is_single_prompt_entrypoint():
     assert "validate-agent-handoff-drill.py" in text
     assert "guarded-switch --dry-run" in text
     assert "real-canary-template" in text
+    assert "final-check" in text
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
         assert protected in text
     for forbidden in ("LaunchAgent", "KeepAlive", "scheduled tasks", "recovery loops"):
@@ -218,6 +224,7 @@ def test_real_clean_machine_canary_issue_template_is_safe():
     assert "FINAL_CHECK.md" in text
     assert "canary-report" in text
     assert "real-canary-template" in text
+    assert "final-check" in text
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
         assert protected in text
 
@@ -254,3 +261,15 @@ def test_final_check_prompt_defines_completion_verdicts_and_safety_boundary():
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions", "rollout logs"):
         assert protected in text
     assert "请不要修改任何文件" in text
+
+
+def test_final_check_doc_explains_read_only_verdict_command():
+    text = read("docs/final-check.md")
+
+    assert "final-check" in text
+    assert "read-only" in text
+    assert "codex-hybrid-final-check.md" in text
+    for verdict in ("Complete", "Partially complete", "Not complete", "Needs rollback"):
+        assert verdict in text
+    for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
+        assert protected in text

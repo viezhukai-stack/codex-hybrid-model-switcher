@@ -90,6 +90,8 @@ body:
           required: true
         - label: `real-canary-template` was generated and reviewed.
           required: true
+        - label: `final-check` was generated and its verdict was `Complete`.
+          required: true
         - label: `FINAL_CHECK.md` verdict was `Complete`.
           required: true
   - type: textarea

@@ -49,7 +49,8 @@ Please do this in order:
 11. Verify protected file hashes after the switch.
 12. Ask me to reopen Codex Desktop and create a new test conversation.
 13. Generate setup-report, canary-report, and real-canary-template.
-14. Use FINAL_CHECK.md for the final Complete / Partially complete / Not
+14. Run final-check to generate the read-only final verdict report.
+15. Use FINAL_CHECK.md for the final Complete / Partially complete / Not
     complete / Needs rollback verdict.
 
 Stop and ask before continuing if anything wants to edit auth.json,
@@ -72,6 +73,7 @@ At the end of a successful real cloud canary, Codex should produce:
 1. `codex-hybrid-setup-report.md`
 2. `codex-hybrid-canary-evidence.md`
 3. `codex-hybrid-real-clean-machine-canary.md`
-4. A final verdict from `FINAL_CHECK.md`
+4. `codex-hybrid-final-check.md`
+5. A final verdict from `FINAL_CHECK.md`
 
 If any visible Codex check fails, the verdict is not complete.

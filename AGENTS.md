@@ -55,10 +55,11 @@ Read these files before making changes:
 11. `docs/setup-report.md`
 12. `docs/canary-report.md`
 13. `docs/real-clean-machine-canary.md`
-14. `docs/agent-handoff-drill.md`
-15. `docs/stock-codex-handoff-validation.md`
-16. `docs/user-success-criteria.md`
-17. `docs/local-llama-smoke.md` only if the user asks for local models
+14. `docs/final-check.md`
+15. `docs/agent-handoff-drill.md`
+16. `docs/stock-codex-handoff-validation.md`
+17. `docs/user-success-criteria.md`
+18. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 
@@ -207,7 +208,13 @@ available. On Windows, try `py -3` or `python`.
     PYTHONPATH=src python3 -m codex_hybrid_switcher real-canary-template --config ~/.codex-hybrid-model-switcher/config.json --provider-id cloud-gpt-main --setup-report ~/Desktop/codex-hybrid-setup-report.md --canary-report ~/Desktop/codex-hybrid-canary-evidence.md --output ~/Desktop/codex-hybrid-real-clean-machine-canary.md
     ```
 
-17. If anything looks wrong, quit Codex Desktop and restore the newest
+17. Generate the read-only final check:
+
+    ```sh
+    PYTHONPATH=src python3 -m codex_hybrid_switcher final-check --config ~/.codex-hybrid-model-switcher/config.json --setup-report ~/Desktop/codex-hybrid-setup-report.md --canary-report ~/Desktop/codex-hybrid-canary-evidence.md --real-canary-template ~/Desktop/codex-hybrid-real-clean-machine-canary.md --output ~/Desktop/codex-hybrid-final-check.md
+    ```
+
+18. If anything looks wrong, quit Codex Desktop and restore the newest
     `config.toml.bak-codex-hybrid-*` backup. Do not edit databases or caches.
 
 ## History Visibility Caveat
@@ -259,6 +266,8 @@ Do not claim setup is complete until current evidence shows:
   explicitly skipped it
 - a real clean-machine canary template has been generated for a first public
   handoff test, or the user explicitly skipped real canary evidence
+- a final check report has been generated, or the user explicitly skipped final
+  verification
 - the user success checklist has been reviewed, or the user explicitly skipped
   it
 - final verdict from `FINAL_CHECK.md` is `Complete`, or the user explicitly

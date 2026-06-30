@@ -27,6 +27,7 @@ The goal is to make Codex say one of these clearly:
 - setup report 是否已经生成？
 - setup report 中是否没有 API key、token、原始 provider hostname、本机路径、账号数据、会话文本或数据库内容？
 - canary-report 是否已经生成，并记录账号、插件/MCP、项目列表、新建测试对话、bridge-health/setup report review 的 yes/no/na 状态？
+- final-check 是否已经生成，并给出 Complete / Partially complete / Not complete / Needs rollback 之一？
 - 如果 provider 使用 bridge 路由，bridge-health 是否通过，或者是否明确指出了 bridge/key/model list 的问题？
 
 请同时核对命令侧证据：
@@ -34,6 +35,7 @@ The goal is to make Codex say one of these clearly:
 - 是否有 config.toml.bak-codex-hybrid-* 备份？
 - 是否没有修改 auth.json、models_cache.json、state_5.sqlite、sessions 或 rollout logs？
 - 如果新对话没有回复，是否已经运行 bridge-health，而不是猜测问题原因？
+- 如果 final-check 不是 Complete，是否列出了缺失项或回滚项？
 
 最后请只给出一个结论：
 - Complete：全部通过。

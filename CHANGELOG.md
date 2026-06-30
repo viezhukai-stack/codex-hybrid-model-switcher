@@ -5,6 +5,17 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.11.0
+
+- Added `final-check`, a read-only verdict command that combines the private
+  config, setup report, canary evidence, and real canary template into a
+  Complete / Partially complete / Not complete / Needs rollback result.
+- Wired `final-check` into bootstrap output, first-run setup output, README,
+  START_HERE, AGENTS, FINAL_CHECK, user success criteria, real canary docs, and
+  release acceptance.
+- Updated stock-Codex handoff and agent handoff drills so simulated handoffs now
+  generate a final check report and require a `Complete` verdict.
+
 ## v2.10.0
 
 - Added `.github/ISSUE_TEMPLATE/real_clean_machine_canary.yml`, a safe GitHub

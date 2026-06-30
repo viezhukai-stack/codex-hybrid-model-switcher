@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from codex_hybrid_switcher.canary_report import render_canary_report, run_canary_report
+from codex_hybrid_switcher.final_check import render_final_check, run_final_check
 from codex_hybrid_switcher.real_canary import render_real_canary_template, run_real_canary_template
 from codex_hybrid_switcher.report import render_report, run_setup_report
 
@@ -243,4 +244,128 @@ def test_run_real_canary_template_writes_output(tmp_path):
     text = output.read_text(encoding="utf-8")
     assert "Real Clean Machine Canary" in text
     assert "Do not attach `auth.json`" in text
+    assert "private-provider.example" not in text
+
+
+def test_render_final_check_reports_complete_only_with_full_evidence(tmp_path):
+    codex_home = write_codex_home(tmp_path)
+    config_path = write_private_config(tmp_path, codex_home)
+    setup_path = tmp_path / "codex-hybrid-setup-report.md"
+    canary_path = tmp_path / "codex-hybrid-canary-evidence.md"
+    real_canary_path = tmp_path / "codex-hybrid-real-clean-machine-canary.md"
+    setup_path.write_text(render_report(str(config_path)), encoding="utf-8")
+    canary_path.write_text(
+        render_canary_report(
+            str(config_path),
+            provider_id="cloud-main",
+            setup_report=str(setup_path),
+            verdict="complete",
+            evidence={
+                "account_visible": "yes",
+                "plugins_visible": "yes",
+                "mcp_visible": "yes",
+                "project_list_visible": "yes",
+                "test_chat_responded": "yes",
+                "bridge_health_passed": "yes",
+                "setup_report_reviewed": "yes",
+            },
+        ),
+        encoding="utf-8",
+    )
+    real_canary_path.write_text(
+        render_real_canary_template(
+            str(config_path),
+            provider_id="cloud-main",
+            setup_report=str(setup_path),
+            canary_report=str(canary_path),
+        ),
+        encoding="utf-8",
+    )
+
+    report = render_final_check(
+        str(config_path),
+        setup_report=str(setup_path),
+        canary_report=str(canary_path),
+        real_canary_template=str(real_canary_path),
+    )
+
+    assert "Codex Hybrid Final Check" in report
+    assert "final_verdict: `Complete`" in report
+    assert "`Account information is visible`: `yes`" in report
+    assert "`A new test conversation responded`: `yes`" in report
+    assert "private-provider.example" not in report
+    assert str(tmp_path) not in report
+    assert "do-not-print" not in report
+
+
+def test_render_final_check_reports_partial_when_reports_are_missing(tmp_path):
+    codex_home = write_codex_home(tmp_path)
+    config_path = write_private_config(tmp_path, codex_home)
+    setup_path = tmp_path / "codex-hybrid-setup-report.md"
+    setup_path.write_text(render_report(str(config_path)), encoding="utf-8")
+
+    report = render_final_check(str(config_path), setup_report=str(setup_path))
+
+    assert "final_verdict: `Partially complete`" in report
+    assert "canary report is missing or incomplete" in report
+    assert "real clean-machine canary template is missing or incomplete" in report
+
+
+def test_render_final_check_reports_rollback_when_visible_checks_fail(tmp_path):
+    codex_home = write_codex_home(tmp_path)
+    config_path = write_private_config(tmp_path, codex_home)
+    setup_path = tmp_path / "codex-hybrid-setup-report.md"
+    canary_path = tmp_path / "codex-hybrid-canary-evidence.md"
+    real_canary_path = tmp_path / "codex-hybrid-real-clean-machine-canary.md"
+    setup_path.write_text(render_report(str(config_path)), encoding="utf-8")
+    canary_path.write_text(
+        render_canary_report(
+            str(config_path),
+            provider_id="cloud-main",
+            setup_report=str(setup_path),
+            verdict="failed",
+            evidence={
+                "account_visible": "yes",
+                "plugins_visible": "yes",
+                "mcp_visible": "yes",
+                "project_list_visible": "yes",
+                "test_chat_responded": "no",
+                "bridge_health_passed": "yes",
+                "setup_report_reviewed": "yes",
+            },
+        ),
+        encoding="utf-8",
+    )
+    real_canary_path.write_text(
+        render_real_canary_template(
+            str(config_path),
+            provider_id="cloud-main",
+            setup_report=str(setup_path),
+            canary_report=str(canary_path),
+        ),
+        encoding="utf-8",
+    )
+
+    report = render_final_check(
+        str(config_path),
+        setup_report=str(setup_path),
+        canary_report=str(canary_path),
+        real_canary_template=str(real_canary_path),
+    )
+
+    assert "final_verdict: `Needs rollback`" in report
+    assert "A new test conversation responded" in report
+    assert "canary verdict is failed" in report
+
+
+def test_run_final_check_writes_output(tmp_path):
+    codex_home = write_codex_home(tmp_path)
+    config_path = write_private_config(tmp_path, codex_home)
+    output = tmp_path / "final-check.md"
+
+    assert run_final_check(str(config_path), output=str(output)) == 0
+
+    text = output.read_text(encoding="utf-8")
+    assert "Codex Hybrid Final Check" in text
+    assert "final_verdict: `Not complete`" in text
     assert "private-provider.example" not in text

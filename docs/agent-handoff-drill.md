@@ -22,8 +22,9 @@ redacted drill report inside the temporary workspace.
 - A guarded apply changes only `config.toml` and creates a backup.
 - `auth.json`, `models_cache.json`, and `state_5.sqlite` hash prefixes stay
   unchanged.
-- `setup-report` and `canary-report` are generated and remain redacted.
-- The final evidence path reaches a simulated `Complete` verdict.
+- `setup-report`, `canary-report`, `real-canary-template`, and `final-check`
+  are generated and remain redacted.
+- The final check path reaches a simulated `Complete` verdict.
 
 ## What it does not prove
 

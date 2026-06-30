@@ -21,6 +21,7 @@ driver, CUDA runtime, llama.cpp build, and model size.
 | API key env handoff | Passed | Not applicable | Simulated | `env-help` is covered by unit tests and install validation, including macOS and Windows command templates without exposing key values. |
 | Bridge health diagnostic | Passed | Not applicable | Simulated | `bridge-health` checks the bridge port, `/v1/health`, `/v1/models`, bridge-routed API key env status, and expected model ids without starting services or editing Codex state. |
 | Canary evidence report | Passed | Not applicable | Simulated | `canary-report` records user-visible account, plugins/MCP, project list, test chat, bridge health, and setup report review evidence without exposing secrets or editing Codex state. |
+| Final check report | Passed | Not applicable | Simulated | `final-check` combines the private config, setup report, canary evidence, and real canary template into a read-only Complete / Partially complete / Not complete / Needs rollback verdict. |
 | Release acceptance gate | Passed | Not applicable | Simulated | `scripts/validate-release-acceptance.py` checks required handoff files, documentation markers, version consistency, Python compilation, security scan, and clean-copy handoff validation. |
 
 ## Required Before a Release
@@ -45,6 +46,8 @@ driver, CUDA runtime, llama.cpp build, and model size.
   plugins/MCP, project list, and a new responding test conversation.
 - Canary evidence generation records the final user-visible checks and warns
   when a `complete` verdict lacks required evidence.
+- Final check generation reads the redacted reports and refuses to call the
+  setup complete when final evidence is missing or failed.
 - `FINAL_CHECK.md` gives users a final agent prompt for classifying completion
   as complete, partial, incomplete, or rollback-needed.
 - The stock-Codex handoff prompt in `START_HERE.md` is covered by documentation

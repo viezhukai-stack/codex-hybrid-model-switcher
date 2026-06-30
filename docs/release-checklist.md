@@ -16,6 +16,7 @@ Use this checklist before marking a release candidate ready.
 - `python scripts/validate-real-clean-machine-canary.py`
 - `python -m codex_hybrid_switcher setup-report --config <temp-config>`
 - `python -m codex_hybrid_switcher canary-report --config <temp-config> --verdict partial`
+- `python -m codex_hybrid_switcher final-check --config <temp-config>`
 - GitHub Actions passes on Python 3.10, 3.11, and 3.12.
 - Working tree is clean before tagging.
 
@@ -68,6 +69,9 @@ Confirm the repository does not contain:
   bridge health, and setup report review status without editing Codex files.
 - Canary evidence report warns when a `complete` verdict lacks required
   evidence.
+- Final check report combines setup, canary, and real-canary evidence into a
+  read-only Complete / Partially complete / Not complete / Needs rollback
+  verdict.
 - Local providers require explicit local approval and run local smoke before writing config.
 - Desktop launchers do not use the unsafe raw Python `menu` command.
 
@@ -85,6 +89,7 @@ Confirm the repository does not contain:
 - User success criteria explain when setup is complete versus only partially
   complete.
 - Canary evidence docs explain how to record final user-visible checks.
+- Final check docs explain the read-only verdict command and required reports.
 - Final check prompt asks Codex to classify completion without making new
   changes.
 - Agent handoff drill docs explain how to rehearse the full stock Codex path.

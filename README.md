@@ -56,6 +56,7 @@ Start here:
 - Redacted setup report: [`docs/setup-report.md`](docs/setup-report.md)
 - Final canary evidence report: [`docs/canary-report.md`](docs/canary-report.md)
 - Real clean-machine canary: [`docs/real-clean-machine-canary.md`](docs/real-clean-machine-canary.md)
+- Read-only final check: [`docs/final-check.md`](docs/final-check.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
 - Agent handoff drill: [`docs/agent-handoff-drill.md`](docs/agent-handoff-drill.md)
 - Stock Codex handoff validation: [`docs/stock-codex-handoff-validation.md`](docs/stock-codex-handoff-validation.md)
@@ -212,6 +213,18 @@ file tells Codex how to proceed safely.
    codex-hybrid-switcher canary-report --config ~/.codex-hybrid-model-switcher/config.json --provider-id cloud-gpt-main --account-visible yes --plugins-visible yes --mcp-visible yes --project-list-visible yes --test-chat-responded yes --bridge-health-passed yes --setup-report-reviewed yes --verdict complete --output ~/Desktop/codex-hybrid-canary-evidence.md
    ```
 
+15. Generate the real clean-machine canary checklist for field testing:
+
+   ```sh
+   codex-hybrid-switcher real-canary-template --config ~/.codex-hybrid-model-switcher/config.json --provider-id cloud-gpt-main --setup-report ~/Desktop/codex-hybrid-setup-report.md --canary-report ~/Desktop/codex-hybrid-canary-evidence.md --output ~/Desktop/codex-hybrid-real-clean-machine-canary.md
+   ```
+
+16. Generate the read-only final verdict report:
+
+   ```sh
+   codex-hybrid-switcher final-check --config ~/.codex-hybrid-model-switcher/config.json --setup-report ~/Desktop/codex-hybrid-setup-report.md --canary-report ~/Desktop/codex-hybrid-canary-evidence.md --real-canary-template ~/Desktop/codex-hybrid-real-clean-machine-canary.md --output ~/Desktop/codex-hybrid-final-check.md
+   ```
+
 ## User Paths
 
 - Cloud provider path: initialize a private config, validate it, run
@@ -242,7 +255,9 @@ For common setup and recovery questions, see `docs/faq.md`.
 - Bridge health check: [`docs/bridge-health.md`](docs/bridge-health.md)
 - Bootstrap entry: [`docs/bootstrap.md`](docs/bootstrap.md)
 - Setup report: [`docs/setup-report.md`](docs/setup-report.md)
+- Canary evidence report: [`docs/canary-report.md`](docs/canary-report.md)
 - Real clean-machine canary: [`docs/real-clean-machine-canary.md`](docs/real-clean-machine-canary.md)
+- Read-only final check: [`docs/final-check.md`](docs/final-check.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
 - Agent handoff drill: [`docs/agent-handoff-drill.md`](docs/agent-handoff-drill.md)
 - Stock Codex handoff validation: [`docs/stock-codex-handoff-validation.md`](docs/stock-codex-handoff-validation.md)
@@ -273,6 +288,9 @@ python -m codex_hybrid_switcher validate-config --config ~/.codex-hybrid-model-s
 python -m codex_hybrid_switcher env-help --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher bridge-health --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json
+python -m codex_hybrid_switcher canary-report --config ~/.codex-hybrid-model-switcher/config.json --provider-id cloud-gpt-main --verdict complete
+python -m codex_hybrid_switcher real-canary-template --config ~/.codex-hybrid-model-switcher/config.json
+python -m codex_hybrid_switcher final-check --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher bridge
 python -m codex_hybrid_switcher local-smoke
 python -m codex_hybrid_switcher smoke
@@ -358,6 +376,12 @@ To prepare the final real clean-machine canary checklist:
 
 ```sh
 python3 -m codex_hybrid_switcher real-canary-template --config ~/.codex-hybrid-model-switcher/config.json --provider-id cloud-gpt-main --setup-report ~/Desktop/codex-hybrid-setup-report.md --canary-report ~/Desktop/codex-hybrid-canary-evidence.md --output ~/Desktop/codex-hybrid-real-clean-machine-canary.md
+```
+
+To produce the final read-only verdict report:
+
+```sh
+python3 -m codex_hybrid_switcher final-check --config ~/.codex-hybrid-model-switcher/config.json --setup-report ~/Desktop/codex-hybrid-setup-report.md --canary-report ~/Desktop/codex-hybrid-canary-evidence.md --real-canary-template ~/Desktop/codex-hybrid-real-clean-machine-canary.md --output ~/Desktop/codex-hybrid-final-check.md
 ```
 
 ## What This Repository Must Not Contain
