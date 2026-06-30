@@ -16,6 +16,9 @@
 - name: security
   color: "dc2626"
   description: Safety boundary, secret handling, or sensitive-data reporting.
+- name: canary
+  color: "14b8a6"
+  description: Real clean-machine stock Codex handoff validation.
 - name: docs
   color: "f59e0b"
   description: Documentation, screenshots, tutorials, and examples.
