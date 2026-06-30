@@ -10,6 +10,7 @@ from .doctor import run_doctor
 from .env_help import run_env_help
 from .local_smoke import run_local_smoke
 from .private_config import init_config, run_validate_config
+from .real_canary import add_real_canary_template_args, run_real_canary_template
 from .report import run_setup_report
 from .security import run_security_scan
 from .setup_wizard import run_setup_wizard
@@ -56,6 +57,8 @@ def main(argv: list[str] | None = None) -> int:
     setup_report.add_argument("--output")
     canary_report = sub.add_parser("canary-report")
     add_canary_report_args(canary_report)
+    real_canary_template = sub.add_parser("real-canary-template")
+    add_real_canary_template_args(real_canary_template)
     env_help = sub.add_parser("env-help")
     env_help.add_argument("--config", dest="sub_config")
     env_help.add_argument("--platform", choices=["macos", "windows"])
@@ -130,6 +133,14 @@ def main(argv: list[str] | None = None) -> int:
             setup_report=args.setup_report,
             verdict=args.verdict,
             evidence=evidence_from_args(args),
+        )
+    if args.command == "real-canary-template":
+        return run_real_canary_template(
+            config_path,
+            output=args.output,
+            provider_id=args.provider_id,
+            setup_report=args.setup_report,
+            canary_report=args.canary_report,
         )
     if args.command == "env-help":
         return run_env_help(config_path, platform=args.platform, name=args.name)

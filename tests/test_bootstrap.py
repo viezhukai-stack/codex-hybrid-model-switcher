@@ -52,6 +52,7 @@ def test_bootstrap_noninteractive_creates_private_config_and_dry_runs(tmp_path):
     assert "bridge-health" in proc.stdout
     assert "setup-report" in proc.stdout
     assert "canary-report" in proc.stdout
+    assert "real-canary-template" in proc.stdout
     assert "FINAL_CHECK.md" in proc.stdout
 
 

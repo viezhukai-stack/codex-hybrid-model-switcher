@@ -11,6 +11,8 @@ who need to decide whether the hybrid Codex setup actually worked.
 - A `config.toml.bak-codex-hybrid-*` backup was created.
 - A redacted setup report was generated or is about to be generated.
 - A canary evidence report will be generated after the visible checks.
+- For public-readiness testing, a real clean-machine canary template will be
+  generated after the canary evidence report.
 
 ## In Codex Desktop
 
@@ -32,6 +34,8 @@ Mark setup as successful only when all of these are true:
   content.
 - [ ] A `canary-report` was generated with account, plugins/MCP, project list,
   test chat, bridge health, and setup report review recorded as `yes` or `na`.
+- [ ] A `real-canary-template` report was generated for any clean-machine
+  public-readiness test.
 
 ## What Counts as Not Finished
 
@@ -43,6 +47,7 @@ The setup is not complete yet if:
 - no new test conversation has responded
 - the user has not checked account, plugins/MCP, and project visibility
 - no `canary-report` has recorded the visible checks
+- no real clean-machine canary exists for a public-readiness claim
 
 Say exactly which milestone passed instead of claiming the full setup is done.
 

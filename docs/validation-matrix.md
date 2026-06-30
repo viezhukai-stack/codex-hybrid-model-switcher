@@ -14,6 +14,7 @@ driver, CUDA runtime, llama.cpp build, and model size.
 | Stock Codex simulation | Passed | Not applicable | Simulated | `scripts/validate-stock-codex-flow.py` creates a temporary stock-like Codex home, runs bootstrap dry-run, runs guarded apply, verifies only `config.toml` changed while account/cache/history-like files stayed unchanged, and checks the generated setup report is redacted. |
 | Stock Codex handoff | Passed | Not applicable | Simulated | `scripts/validate-stock-codex-handoff.py` copies the repository to a clean temporary directory, verifies default bridge bootstrap/dry-run plus `bridge-health`, verifies bootstrap does not pollute the repository, and confirms private config plus guarded apply behavior. |
 | Agent handoff drill | Passed | Not applicable | Simulated | `scripts/validate-agent-handoff-drill.py` rehearses the stock Codex agent path through bootstrap, dry-run, env-help, bridge-health, guarded apply, setup-report, canary-report, and final verdict guidance in a temporary profile. |
+| Real clean-machine canary template | Passed | Not applicable | Simulated | `scripts/validate-real-clean-machine-canary.py` verifies the field-test template for a stock Codex user can be generated without leaking provider hostnames, local paths, tokens, or Codex state. |
 | Bridge-routed cloud unit path | Passed | Not applicable | Simulated | Unit tests verify `route=bridge` renders Codex to `127.0.0.1:19030`, refuses real switches when `api_key_env` is unset, starts the bridge when the env var is set, and preserves protected Codex files. |
 | API key env handoff | Passed | Not applicable | Simulated | `env-help` is covered by unit tests and install validation, including macOS and Windows command templates without exposing key values. |
 | Bridge health diagnostic | Passed | Not applicable | Simulated | `bridge-health` checks the bridge port, `/v1/health`, `/v1/models`, bridge-routed API key env status, and expected model ids without starting services or editing Codex state. |
@@ -30,6 +31,8 @@ driver, CUDA runtime, llama.cpp build, and model size.
   including the default bridge dry-run and bridge-health diagnostic path.
 - Agent handoff drill passes and proves the simulated stock Codex agent path
   reaches setup report, canary evidence, and final verdict guidance.
+- Real clean-machine canary template validation passes, so a field tester has a
+  standard artifact for final stock Codex handoff evidence.
 - Release acceptance validation passes before tagging.
 - Redacted setup report generation passes in the stock-Codex simulation.
 - The setup report includes user-visible success criteria for account,

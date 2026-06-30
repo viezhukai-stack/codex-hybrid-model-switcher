@@ -5,7 +5,7 @@ the repository public or publishing the GitHub release.
 
 ## Current Release
 
-The current public-readiness release is `v2.7.0`.
+The current public-readiness release is `v2.8.0`.
 
 Earlier `v1.0.0-rc.*`, `v1.0.0`, and v2.x tags are kept for audit history.
 Use the newest non-draft release unless a maintainer explicitly pins a
@@ -24,6 +24,7 @@ manually review:
 - `docs/release-checklist.md`
 - `docs/validation-matrix.md`
 - `docs/agent-handoff-drill.md`
+- `docs/real-clean-machine-canary.md`
 - `docs/canary-report.md`
 - draft release notes for the current release
 
@@ -41,13 +42,14 @@ Confirm the docs do not include:
 2. Run the repository checks from `docs/release-checklist.md`.
 3. Run `python scripts/validate-release-acceptance.py`.
 4. Run `python scripts/validate-agent-handoff-drill.py`.
-5. Confirm CI is green on Python 3.10, 3.11, and 3.12.
-6. Confirm badges, issue-template links, and release notes point to the current
+5. Run `python scripts/validate-real-clean-machine-canary.py`.
+6. Confirm CI is green on Python 3.10, 3.11, and 3.12.
+7. Confirm badges, issue-template links, and release notes point to the current
    repository owner.
-7. Re-read the release notes before publishing.
-8. Switch repository visibility to public.
-9. Publish or verify the GitHub release.
-10. Pin the repository on the GitHub profile after it is public.
+8. Re-read the release notes before publishing.
+9. Switch repository visibility to public.
+10. Publish or verify the GitHub release.
+11. Pin the repository on the GitHub profile after it is public.
 
 Do not publish PyPI, Homebrew, winget, or installer packages as part of
 `v1.0.0` unless a separate packaging plan has been reviewed.
@@ -62,6 +64,7 @@ If the repository is private, switch visibility only after:
 - the draft `v1.0.0` release notes have been reviewed
 - final canary evidence report guidance has been reviewed
 - agent handoff drill guidance has been reviewed
+- real clean-machine canary guidance has been reviewed
 
 Changing repository visibility is a manual owner action. It should not be done
 by automation.

@@ -33,6 +33,7 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "docs/api-key-environment.md" in text
     assert "docs/bridge-health.md" in text
     assert "docs/canary-report.md" in text
+    assert "docs/real-clean-machine-canary.md" in text
     assert "docs/agent-handoff-drill.md" in text
     assert "docs/recovery.md" in text
     assert "docs/local-llama-smoke.md" in text
@@ -41,6 +42,7 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "validate-release-acceptance.py" in read("docs/release-checklist.md")
     assert "validate-stock-codex-handoff.py" in text
     assert "validate-agent-handoff-drill.py" in text
+    assert "validate-real-clean-machine-canary.py" in text
     assert "codex-hybrid-switcher local-smoke" in text
     assert "codex-hybrid-switcher guarded-switch local-gemma --allow-local" in text
     assert "setup-report" in text
@@ -65,6 +67,7 @@ def test_agent_assisted_setup_has_copy_paste_prompt_and_history_caveat():
     assert "does not rewrite history" in text
     assert "setup-report" in text
     assert "canary-report" in text
+    assert "real-canary-template" in text
 
 
 def test_setup_intake_warns_against_raw_secret_collection():
@@ -89,6 +92,7 @@ def test_readme_links_agent_assisted_path():
     assert "docs/bootstrap.md" in text
     assert "docs/setup-report.md" in text
     assert "docs/canary-report.md" in text
+    assert "docs/real-clean-machine-canary.md" in text
     assert "docs/agent-handoff-drill.md" in text
     assert "docs/user-success-criteria.md" in text
     assert "docs/stock-codex-handoff-validation.md" in text
@@ -127,6 +131,7 @@ def test_start_here_is_safe_stock_codex_handoff():
     assert "guarded-switch --dry-run" in text
     assert "setup-report" in text
     assert "canary-report" in text
+    assert "real-canary-template" in text
     assert "validate-agent-handoff-drill.py" in text
     assert "base_url" in text
     assert "model" in text
@@ -165,6 +170,18 @@ def test_agent_handoff_drill_doc_explains_simulated_end_to_end_evidence():
     assert "FINAL_CHECK.md" in text
     assert "agent handoff drill validation passed" in text
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite"):
+        assert protected in text
+
+
+def test_real_clean_machine_canary_doc_explains_field_evidence():
+    text = read("docs/real-clean-machine-canary.md")
+
+    assert "stock Codex Desktop" in text
+    assert "real-canary-template" in text
+    assert "guarded-switch --dry-run" in text
+    assert "FINAL_CHECK.md" in text
+    assert "A new test conversation responds" in text
+    for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
         assert protected in text
 
 

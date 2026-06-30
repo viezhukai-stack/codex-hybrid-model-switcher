@@ -18,11 +18,13 @@ REQUIRED_FILES = (
     "docs/bridge-health.md",
     "docs/agent-handoff-drill.md",
     "docs/canary-report.md",
+    "docs/real-clean-machine-canary.md",
     "docs/stock-codex-handoff-validation.md",
     "docs/release-checklist.md",
     "docs/validation-matrix.md",
     "scripts/validate-stock-codex-handoff.py",
     "scripts/validate-agent-handoff-drill.py",
+    "scripts/validate-real-clean-machine-canary.py",
     "scripts/validate-install.py",
 )
 
@@ -34,6 +36,7 @@ DOC_REQUIREMENTS = {
         "guarded-switch --dry-run",
         "setup-report",
         "canary-report",
+        "real-canary-template",
         "validate-agent-handoff-drill.py",
         "auth.json",
         "models_cache.json",
@@ -46,6 +49,7 @@ DOC_REQUIREMENTS = {
         "Never switch providers while Codex Desktop is running",
         "docs/bridge-health.md",
         "docs/agent-handoff-drill.md",
+        "docs/real-clean-machine-canary.md",
         "docs/canary-report.md",
         "guarded-switch --dry-run",
         "config.toml.bak-codex-hybrid-*",
@@ -71,6 +75,15 @@ DOC_REQUIREMENTS = {
         "canary-report",
         "FINAL_CHECK.md",
         "agent handoff drill validation passed",
+    ),
+    "docs/real-clean-machine-canary.md": (
+        "stock Codex Desktop",
+        "guarded-switch --dry-run",
+        "real-canary-template",
+        "FINAL_CHECK.md",
+        "auth.json",
+        "models_cache.json",
+        "state_5.sqlite",
     ),
     "docs/canary-report.md": (
         "canary-report",
@@ -112,6 +125,7 @@ DOC_REQUIREMENTS = {
         "python scripts/validate-release-acceptance.py",
         "python scripts/validate-stock-codex-handoff.py",
         "python scripts/validate-agent-handoff-drill.py",
+        "python scripts/validate-real-clean-machine-canary.py",
         "canary-report",
         "security-scan",
         "GitHub Actions passes",
@@ -119,6 +133,7 @@ DOC_REQUIREMENTS = {
     "docs/validation-matrix.md": (
         "Stock Codex handoff",
         "Agent handoff drill",
+        "Real clean-machine canary template",
         "Bridge health diagnostic",
         "Canary evidence report",
         "default bridge dry-run",
@@ -187,6 +202,10 @@ def run_acceptance(*, quick: bool = False, tmp_root: str | None = None) -> int:
     if tmp_root:
         drill_cmd.extend(["--tmp-root", tmp_root])
     run(drill_cmd)
+    real_canary_cmd = [sys.executable, "scripts/validate-real-clean-machine-canary.py"]
+    if tmp_root:
+        real_canary_cmd.extend(["--tmp-root", tmp_root])
+    run(real_canary_cmd)
     print("release acceptance validation passed")
     return 0
 

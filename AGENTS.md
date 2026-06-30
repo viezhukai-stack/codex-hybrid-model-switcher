@@ -53,10 +53,11 @@ Read these files before making changes:
 9. `docs/recovery.md`
 10. `docs/setup-report.md`
 11. `docs/canary-report.md`
-12. `docs/agent-handoff-drill.md`
-13. `docs/stock-codex-handoff-validation.md`
-14. `docs/user-success-criteria.md`
-15. `docs/local-llama-smoke.md` only if the user asks for local models
+12. `docs/real-clean-machine-canary.md`
+13. `docs/agent-handoff-drill.md`
+14. `docs/stock-codex-handoff-validation.md`
+15. `docs/user-success-criteria.md`
+16. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 
@@ -199,7 +200,13 @@ available. On Windows, try `py -3` or `python`.
     PYTHONPATH=src python3 -m codex_hybrid_switcher canary-report --config ~/.codex-hybrid-model-switcher/config.json --provider-id cloud-gpt-main --account-visible yes --plugins-visible yes --mcp-visible yes --project-list-visible yes --test-chat-responded yes --bridge-health-passed yes --setup-report-reviewed yes --verdict complete --output ~/Desktop/codex-hybrid-canary-evidence.md
     ```
 
-16. If anything looks wrong, quit Codex Desktop and restore the newest
+16. Generate a real clean-machine canary checklist:
+
+    ```sh
+    PYTHONPATH=src python3 -m codex_hybrid_switcher real-canary-template --config ~/.codex-hybrid-model-switcher/config.json --provider-id cloud-gpt-main --setup-report ~/Desktop/codex-hybrid-setup-report.md --canary-report ~/Desktop/codex-hybrid-canary-evidence.md --output ~/Desktop/codex-hybrid-real-clean-machine-canary.md
+    ```
+
+17. If anything looks wrong, quit Codex Desktop and restore the newest
     `config.toml.bak-codex-hybrid-*` backup. Do not edit databases or caches.
 
 ## History Visibility Caveat
@@ -249,13 +256,16 @@ Do not claim setup is complete until current evidence shows:
 - a redacted setup report has been generated or the user explicitly skipped it
 - a canary evidence report has recorded the visible checks or the user
   explicitly skipped it
+- a real clean-machine canary template has been generated for a first public
+  handoff test, or the user explicitly skipped real canary evidence
 - the user success checklist has been reviewed, or the user explicitly skipped
   it
 - final verdict from `FINAL_CHECK.md` is `Complete`, or the user explicitly
   skipped final verification
 
-For repository release work, also run `scripts/validate-stock-codex-handoff.py`
-and `scripts/validate-agent-handoff-drill.py` to prove the `START_HERE.md`
+For repository release work, also run `scripts/validate-stock-codex-handoff.py`,
+`scripts/validate-agent-handoff-drill.py`, and
+`scripts/validate-real-clean-machine-canary.py` to prove the `START_HERE.md`
 flow still works from a clean repository copy and reaches final evidence.
 
 If only setup/dry-run is complete, say exactly that. Do not imply the real

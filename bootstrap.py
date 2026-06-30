@@ -118,6 +118,24 @@ def print_apply_instructions(config_path: Path, provider_id: str) -> None:
             "--output ~/Desktop/codex-hybrid-canary-evidence.md"
         )
     print()
+    print("For a real clean-machine canary, create the final field checklist with:")
+    if os.name == "nt":
+        print(
+            f"     set PYTHONPATH={SRC} && py -3 -m codex_hybrid_switcher real-canary-template "
+            f"--config {config_path} --provider-id {provider_id} "
+            "--setup-report %USERPROFILE%\\Desktop\\codex-hybrid-setup-report.md "
+            "--canary-report %USERPROFILE%\\Desktop\\codex-hybrid-canary-evidence.md "
+            "--output %USERPROFILE%\\Desktop\\codex-hybrid-real-clean-machine-canary.md"
+        )
+    else:
+        print(
+            f"     PYTHONPATH={SRC} python3 -m codex_hybrid_switcher real-canary-template "
+            f"--config {config_path} --provider-id {provider_id} "
+            "--setup-report ~/Desktop/codex-hybrid-setup-report.md "
+            "--canary-report ~/Desktop/codex-hybrid-canary-evidence.md "
+            "--output ~/Desktop/codex-hybrid-real-clean-machine-canary.md"
+        )
+    print()
     print("Then use FINAL_CHECK.md for the final Complete / Partially complete / Not complete / Needs rollback verdict.")
 
 
