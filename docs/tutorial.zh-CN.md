@@ -4,6 +4,9 @@
 目标是让你把 Codex Desktop 切到一个 OpenAI-compatible 云端 provider，
 同时尽量保留原有账号状态、插件、MCP 配置和项目对话可见性。
 
+如果你想直接把这个 GitHub 项目交给 Codex 来配置，先看根目录的
+[`START_HERE.md`](../START_HERE.md)，里面有可以直接复制给 Codex 的任务单。
+
 如果你只想先看一个不会改真实 Codex 的演示，请先读
 [`quickstart-demo.md`](quickstart-demo.md)。
 

@@ -5,6 +5,15 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v1.6.0
+
+- Added root `START_HERE.md`, a stock-Codex handoff page with a copy-paste
+  prompt, safe milestones, stop conditions, and final report instructions.
+- Linked the handoff page from README, AGENTS, and agent-assisted setup docs so
+  a user can hand the repository to Codex without knowing the internal docs.
+- Added documentation tests to keep the stock-Codex handoff prompt aligned with
+  the guarded switching safety model.
+
 ## v1.5.0
 
 - Added `setup-report`, a redacted Markdown report for completed or in-progress

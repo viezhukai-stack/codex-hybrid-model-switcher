@@ -42,13 +42,14 @@ the private config, for example `OPENAI_COMPATIBLE_API_KEY`.
 
 Read these files before making changes:
 
-1. `README.md`
-2. `docs/bootstrap.md`
-3. `docs/first-run-wizard.md`
-4. `docs/agent-assisted-setup.md`
-5. `docs/recovery.md`
-6. `docs/setup-report.md`
-7. `docs/local-llama-smoke.md` only if the user asks for local models
+1. `START_HERE.md`
+2. `README.md`
+3. `docs/bootstrap.md`
+4. `docs/first-run-wizard.md`
+5. `docs/agent-assisted-setup.md`
+6. `docs/recovery.md`
+7. `docs/setup-report.md`
+8. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 

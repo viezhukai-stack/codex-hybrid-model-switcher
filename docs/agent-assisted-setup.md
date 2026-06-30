@@ -6,10 +6,11 @@ this repository to Codex itself.
 The short version:
 
 1. Open this repository in Codex.
-2. Ask Codex to follow `AGENTS.md`.
-3. Provide your provider details.
-4. Let Codex run setup, validation, and dry-run first.
-5. Quit Codex Desktop only when Codex asks you to perform the real switch.
+2. Start with the root `START_HERE.md` prompt.
+3. Ask Codex to follow `AGENTS.md`.
+4. Provide your provider details.
+5. Let Codex run setup, validation, and dry-run first.
+6. Quit Codex Desktop only when Codex asks you to perform the real switch.
 
 ## Copy-paste prompt for Codex
 
