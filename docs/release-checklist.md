@@ -41,6 +41,7 @@ Confirm the repository does not contain:
 ## Documentation Checks
 
 - README points new users toward dry-run and guarded canary flows.
+- `CHANGELOG.md`, `SECURITY.md`, and `CONTRIBUTING.md` are present and current.
 - Windows docs describe the guarded launcher.
 - Local model docs say local validation is optional and machine-dependent.
 - Recovery docs explain how to restore `config.toml` from the newest backup.
@@ -71,3 +72,6 @@ git push origin vX.Y.Z
 ```
 
 Do not tag from a dirty tree or an unmerged feature branch.
+
+For release candidates, keep the Python package version normalized, such as
+`1.0.0rc1`, and use the Git tag style `v1.0.0-rc.1`.

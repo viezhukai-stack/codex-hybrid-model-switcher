@@ -1,0 +1,88 @@
+# Changelog
+
+All notable changes to this project are summarized here. This project follows a
+conservative release process because it edits Codex provider configuration.
+
+## v1.0.0-rc.1
+
+- Prepared the repository as a private release candidate.
+- Added public-facing safety, contribution, and release documentation.
+- Hardened sensitive-content scanning for common token, path, LAN IP, and
+  username leaks.
+- Kept the project scoped to GitHub source/tag/release artifacts. No PyPI,
+  Homebrew, or winget packaging is included.
+
+## v0.9.0
+
+- Added the validation matrix for Mac and Windows canaries.
+- Added the release checklist and release gate documentation.
+- Clarified that local model validation is optional per machine.
+- Updated README examples to prefer `guarded-switch`.
+
+## v0.8.0
+
+- Added a guarded Windows end-user launcher flow.
+- Added a second Windows canary workflow.
+- Added Python 3.10 CI coverage after validating a Windows machine with Python
+  3.10 only.
+- Validated a second Windows machine for cloud provider switching, account
+  visibility, project conversations, plugin/MCP visibility, and the guarded
+  launcher.
+
+## v0.7.0
+
+- Added Windows guarded provider switching.
+- Required explicit local approval for local providers.
+- Ran local smoke before writing local-provider config.
+- Fixed Windows bridge startup so it stays alive after the shell or SSH session
+  that launched the switch exits.
+
+## v0.6.0
+
+- Validated Windows local llama.cpp flow on the first Windows canary.
+- Confirmed local text and image smoke responses.
+- Preserved `auth.json`, `models_cache.json`, and `state_5.sqlite` during
+  guarded switching.
+
+## v0.5.0
+
+- Completed the first Windows cloud-provider canary.
+- Added guarded switch behavior that hashes protected Codex files before and
+  after apply.
+- Confirmed the cloud switch can preserve account, plugin/MCP, and project
+  conversation visibility.
+
+## v0.4.0
+
+- Added private config initialization and validation.
+- Kept provider endpoints, keys, and local paths out of the repository.
+- Strengthened dry-run flows before real provider switching.
+
+## v0.3.0
+
+- Added isolated install validation in temporary directories.
+- Verified install, tests, security scan, and dry-run behavior without touching
+  a real Codex profile.
+
+## v0.2.0
+
+- Added the engineering hardening baseline.
+- Added tests, CI, dry-run behavior, and initial security scanning.
+- Reframed the project as a clean reusable repository rather than a copy of a
+  live machine setup.
+
+## Safety Lessons Locked In
+
+- Do not edit `models_cache.json`.
+- Do not edit `state_5.sqlite` except for a deliberate, backed-up history
+  repair outside this project.
+- Do not mutate Codex sessions or rollout logs.
+- Do not install LaunchAgents, KeepAlive jobs, scheduled recovery loops, or
+  automatic restart scripts.
+- Do not switch providers while Codex Desktop is running.
+- Do not commit account state, provider credentials, local model files, runtime
+  logs, backups, or quarantine directories.
+- Treat Codex Desktop's bottom-right model selector as informational only; the
+  external switcher and provider config are the source of truth.
+- Treat local llama.cpp validation as hardware- and model-dependent. One
+  successful local canary is enough for release readiness.

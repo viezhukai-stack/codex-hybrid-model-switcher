@@ -6,25 +6,23 @@ from pathlib import Path
 
 
 PATTERNS = [
-    r"id_token",
-    r"refresh_token",
-    r"access_token",
+    r"(id|refresh|access)[_-]?token\s*[:=]\s*['\"]?[A-Za-z0-9_.-]{16,}",
+    r"(bearer|authorization)\s*[:=]\s*['\"]?Bearer\s+[A-Za-z0-9_.-]{20,}",
     r"Bearer\s+[A-Za-z0-9_.-]{20,}",
-    r"password\s*[:=]",
-    r"api[_-]?key\s*[:=]\s*[A-Za-z0-9_.-]{12,}",
-    r"10\.0\.0\.\d+",
-    r"/Users/mac",
-    r"C:\\Users\\hl",
+    r"password\s*[:=]\s*['\"]?[^'\"\s]{8,}",
+    r"api[_-]?key\s*[:=]\s*['\"]?[A-Za-z0-9_.-]{12,}",
+    r"sk-[A-Za-z0-9]{20,}",
+    r"(10|172\.(1[6-9]|2\d|3[01])|192\.168)\.\d{1,3}\.\d{1,3}",
+    r"/Users/[A-Za-z0-9._-]+",
+    r"C:\\Users\\[A-Za-z0-9._-]+",
+    r"https://[A-Za-z0-9.-]*(cpamc|kevintj)[A-Za-z0-9.-]*/?",
 ]
 
 ALLOWLIST_SUBSTRINGS = [
-    "PATTERNS =",
     "api_key_env",
     "replace-with-your-provider-key",
-    "r\"id_token\"",
-    "r\"refresh_token\"",
-    "r\"access_token\"",
-    "r\"/Users/mac\"",
+    "C:\\\\Users\\\\YOUR-NAME",
+    'LOCAL_API_KEY = "codex-local-bridge"',
 ]
 
 
