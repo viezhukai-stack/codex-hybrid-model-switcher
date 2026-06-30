@@ -5,6 +5,18 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.4.0
+
+- Added `scripts/validate-release-acceptance.py`, a read-only release
+  acceptance gate for the stock Codex handoff promise.
+- The new gate checks required handoff files, documentation markers, version
+  consistency, Python compilation, security scan, and clean-copy handoff
+  validation.
+- Added quick mode for CI/documentation checks that should avoid the heavier
+  clean-copy handoff run.
+- Updated release-readiness documentation to point to the current `v2.4.0`
+  line instead of the older v1.0 wording.
+
 ## v2.3.0
 
 - Strengthened the clean-copy stock Codex handoff validation for the default

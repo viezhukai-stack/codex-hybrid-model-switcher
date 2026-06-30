@@ -36,6 +36,7 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "docs/local-llama-smoke.md" in text
     assert "docs/stock-codex-handoff-validation.md" in text
     assert "docs/user-success-criteria.md" in text
+    assert "validate-release-acceptance.py" in read("docs/release-checklist.md")
     assert "validate-stock-codex-handoff.py" in text
     assert "codex-hybrid-switcher local-smoke" in text
     assert "codex-hybrid-switcher guarded-switch local-gemma --allow-local" in text
