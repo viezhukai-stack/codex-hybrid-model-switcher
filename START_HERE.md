@@ -12,6 +12,7 @@ The intended workflow is:
 5. Reopen Codex Desktop and test a new conversation.
 6. Ask Codex to generate the redacted setup report.
 7. Use `docs/user-success-criteria.md` to confirm the setup is really done.
+8. Use `FINAL_CHECK.md` for Codex's final completion verdict.
 
 ## Copy This Prompt Into Codex
 
@@ -110,6 +111,7 @@ Final user-visible milestone:
 - a redacted setup report exists
 - the user success checklist in `docs/user-success-criteria.md` has been
   reviewed
+- the final check in `FINAL_CHECK.md` reports `Complete`
 
 ## Stop Conditions
 
@@ -152,3 +154,6 @@ still part of the safety process.
 
 Then use [`docs/user-success-criteria.md`](docs/user-success-criteria.md) to
 decide whether setup is complete or only partially complete.
+
+Finally, copy the prompt in [`FINAL_CHECK.md`](FINAL_CHECK.md) into Codex and
+ask for a final verdict.

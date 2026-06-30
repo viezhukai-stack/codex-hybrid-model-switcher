@@ -5,6 +5,14 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v1.9.0
+
+- Added root `FINAL_CHECK.md`, a copy-paste final verification prompt for Codex.
+- Linked final verification from START_HERE, README, AGENTS, user success
+  criteria, validation matrix, release checklist, and agent-assisted setup docs.
+- Added documentation tests to keep final verdict categories and rollback
+  boundaries present.
+
 ## v1.8.0
 
 - Added `docs/user-success-criteria.md`, a non-technical checklist for deciding

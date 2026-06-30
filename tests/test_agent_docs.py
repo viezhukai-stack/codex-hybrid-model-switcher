@@ -26,6 +26,7 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     text = read("AGENTS.md")
 
     assert "START_HERE.md" in text
+    assert "FINAL_CHECK.md" in text
     assert "docs/first-run-wizard.md" in text
     assert "docs/bootstrap.md" in text
     assert "docs/agent-assisted-setup.md" in text
@@ -68,6 +69,7 @@ def test_readme_links_agent_assisted_path():
     text = read("README.md")
 
     assert "START_HERE.md" in text
+    assert "FINAL_CHECK.md" in text
     assert "docs/agent-assisted-setup.md" in text
     assert "docs/setup-intake.md" in text
     assert "docs/bootstrap.md" in text
@@ -102,6 +104,7 @@ def test_start_here_is_safe_stock_codex_handoff():
 
     assert "stock Codex Desktop" in text
     assert "Copy This Prompt Into Codex" in text
+    assert "FINAL_CHECK.md" in text
     assert "bootstrap.py" in text
     assert "guarded-switch --dry-run" in text
     assert "setup-report" in text
@@ -114,3 +117,22 @@ def test_start_here_is_safe_stock_codex_handoff():
     for forbidden in ("LaunchAgent", "KeepAlive", "scheduled", "recovery loops"):
         assert forbidden in text
     assert "config.toml.bak-codex-hybrid-*" in text
+
+
+def test_final_check_prompt_defines_completion_verdicts_and_safety_boundary():
+    text = read("FINAL_CHECK.md")
+
+    assert "Copy This Prompt Into Codex" in text
+    for verdict in ("Complete", "Partially complete", "Not complete", "Needs rollback"):
+        assert verdict in text
+    for visible in (
+        "账号信息",
+        "插件/MCP",
+        "项目列表",
+        "新建测试对话",
+        "setup report",
+    ):
+        assert visible in text
+    for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions", "rollout logs"):
+        assert protected in text
+    assert "请不要修改任何文件" in text

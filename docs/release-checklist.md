@@ -56,6 +56,8 @@ Confirm the repository does not contain:
 - Recovery docs explain how to restore `config.toml` from the newest backup.
 - User success criteria explain when setup is complete versus only partially
   complete.
+- Final check prompt asks Codex to classify completion without making new
+  changes.
 - Validation matrix reflects the actual canaries performed.
 - Public release plan explains how to promote the accepted release candidate to
   a final `v1.0.0` tag without moving existing tags.

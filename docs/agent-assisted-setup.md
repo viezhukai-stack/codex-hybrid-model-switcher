@@ -52,6 +52,7 @@ Codex should:
 - verify protected Codex files did not change
 - generate a redacted setup report after the real switch
 - walk through `docs/user-success-criteria.md` before saying setup is complete
+- use `FINAL_CHECK.md` for the final completion verdict
 
 Codex should not:
 
@@ -103,6 +104,9 @@ The report is redacted by design. Still review it before sharing it publicly.
 
 Then use [`user-success-criteria.md`](user-success-criteria.md) to confirm
 whether the setup is complete or only partially complete.
+
+For the final verdict, copy the prompt in [`../FINAL_CHECK.md`](../FINAL_CHECK.md)
+into Codex.
 
 ## Bootstrap shortcut
 
