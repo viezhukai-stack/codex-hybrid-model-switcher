@@ -26,6 +26,7 @@ The goal is to make Codex say one of these clearly:
 - 新建测试对话是否已经成功回复？
 - setup report 是否已经生成？
 - setup report 中是否没有 API key、token、原始 provider hostname、本机路径、账号数据、会话文本或数据库内容？
+- canary-report 是否已经生成，并记录账号、插件/MCP、项目列表、新建测试对话、bridge-health/setup report review 的 yes/no/na 状态？
 - 如果 provider 使用 bridge 路由，bridge-health 是否通过，或者是否明确指出了 bridge/key/model list 的问题？
 
 请同时核对命令侧证据：
@@ -49,6 +50,7 @@ Use direct evidence first:
 
 - visible user confirmation from Codex Desktop
 - generated setup report
+- generated canary evidence report
 - guarded switch output
 - backup filename
 - protected file hash output

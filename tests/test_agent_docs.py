@@ -32,6 +32,7 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "docs/agent-assisted-setup.md" in text
     assert "docs/api-key-environment.md" in text
     assert "docs/bridge-health.md" in text
+    assert "docs/canary-report.md" in text
     assert "docs/recovery.md" in text
     assert "docs/local-llama-smoke.md" in text
     assert "docs/stock-codex-handoff-validation.md" in text
@@ -41,6 +42,7 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "codex-hybrid-switcher local-smoke" in text
     assert "codex-hybrid-switcher guarded-switch local-gemma --allow-local" in text
     assert "setup-report" in text
+    assert "canary-report" in text
 
 
 def test_agent_assisted_setup_has_copy_paste_prompt_and_history_caveat():
@@ -60,6 +62,7 @@ def test_agent_assisted_setup_has_copy_paste_prompt_and_history_caveat():
     assert "custom" in text
     assert "does not rewrite history" in text
     assert "setup-report" in text
+    assert "canary-report" in text
 
 
 def test_setup_intake_warns_against_raw_secret_collection():
@@ -83,6 +86,7 @@ def test_readme_links_agent_assisted_path():
     assert "docs/bridge-health.md" in text
     assert "docs/bootstrap.md" in text
     assert "docs/setup-report.md" in text
+    assert "docs/canary-report.md" in text
     assert "docs/user-success-criteria.md" in text
     assert "docs/stock-codex-handoff-validation.md" in text
     assert "AGENTS.md" in text
@@ -97,6 +101,7 @@ def test_user_success_criteria_covers_visible_codex_completion():
     assert "project list is still visible" in text
     assert "A new test conversation responds" in text
     assert "bridge-health" in text
+    assert "canary-report" in text
     assert "not complete yet" in text
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
         assert protected in text
@@ -118,6 +123,7 @@ def test_start_here_is_safe_stock_codex_handoff():
     assert "bootstrap.py" in text
     assert "guarded-switch --dry-run" in text
     assert "setup-report" in text
+    assert "canary-report" in text
     assert "base_url" in text
     assert "model" in text
     assert "api_key_env" in text
@@ -170,6 +176,7 @@ def test_final_check_prompt_defines_completion_verdicts_and_safety_boundary():
         "项目列表",
         "新建测试对话",
         "setup report",
+        "canary-report",
         "bridge-health",
     ):
         assert visible in text

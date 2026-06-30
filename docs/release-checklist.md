@@ -12,6 +12,7 @@ Use this checklist before marking a release candidate ready.
 - `python scripts/validate-stock-codex-flow.py`
 - `python scripts/validate-stock-codex-handoff.py`
 - `python -m codex_hybrid_switcher setup-report --config <temp-config>`
+- `python -m codex_hybrid_switcher canary-report --config <temp-config> --verdict partial`
 - GitHub Actions passes on Python 3.10, 3.11, and 3.12.
 - Working tree is clean before tagging.
 
@@ -55,6 +56,10 @@ Confirm the repository does not contain:
 - Setup report redacts provider hostnames, local paths, session content, and
   database content.
 - Setup report includes the user-visible success checklist.
+- Canary evidence report records account, plugin, MCP, project list, test chat,
+  bridge health, and setup report review status without editing Codex files.
+- Canary evidence report warns when a `complete` verdict lacks required
+  evidence.
 - Local providers require explicit local approval and run local smoke before writing config.
 - Desktop launchers do not use the unsafe raw Python `menu` command.
 
@@ -67,6 +72,7 @@ Confirm the repository does not contain:
 - Recovery docs explain how to restore `config.toml` from the newest backup.
 - User success criteria explain when setup is complete versus only partially
   complete.
+- Canary evidence docs explain how to record final user-visible checks.
 - Final check prompt asks Codex to classify completion without making new
   changes.
 - Cloud route documentation explains `bridge` versus `direct` and recommends

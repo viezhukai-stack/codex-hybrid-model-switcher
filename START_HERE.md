@@ -170,6 +170,24 @@ Review the report before sharing it publicly. It is designed to redact
 endpoints, paths, tokens, account data, and full hashes, but human review is
 still part of the safety process.
 
+After reopening Codex Desktop and confirming account, plugins/MCP, project
+list, and a responding test chat, record final canary evidence:
+
+```sh
+python3 -m codex_hybrid_switcher canary-report \
+  --config ~/.codex-hybrid-model-switcher/config.json \
+  --provider-id cloud-gpt-main \
+  --account-visible yes \
+  --plugins-visible yes \
+  --mcp-visible yes \
+  --project-list-visible yes \
+  --test-chat-responded yes \
+  --bridge-health-passed yes \
+  --setup-report-reviewed yes \
+  --verdict complete \
+  --output ~/Desktop/codex-hybrid-canary-evidence.md
+```
+
 Then use [`docs/user-success-criteria.md`](docs/user-success-criteria.md) to
 decide whether setup is complete or only partially complete.
 

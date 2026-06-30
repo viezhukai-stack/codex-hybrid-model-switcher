@@ -7,7 +7,8 @@ local paths.
 
 The report also includes a user success checklist. Those items are manual
 confirmations because a script cannot reliably prove what the user sees inside
-Codex Desktop.
+Codex Desktop. To record those confirmations as evidence, generate a
+[`canary-report`](canary-report.md) after the user-visible checks are done.
 
 ## Generate a report
 
@@ -68,7 +69,9 @@ After a real guarded switch:
 2. Confirm account, plugins/MCP, and project list still look right.
 3. Start a new test chat.
 4. Generate the setup report.
-5. Share the report only after reviewing it for anything private.
+5. Generate the `canary-report` if the visible checks passed.
+6. Share the reports only after reviewing them for anything private.
 
 The report is not a substitute for the user's visual UI check, but it gives a
-stable text artifact for support and release validation.
+stable text artifact for support and release validation. The canary evidence
+report records the visual UI check results explicitly.

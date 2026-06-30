@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+from codex_hybrid_switcher.canary_report import render_canary_report, run_canary_report
 from codex_hybrid_switcher.report import render_report, run_setup_report
 
 
@@ -117,4 +118,82 @@ def test_run_setup_report_writes_output(tmp_path):
     text = output.read_text(encoding="utf-8")
     assert "Codex Hybrid Setup Report" in text
     assert "User Success Checklist" in text
+    assert "private-provider.example" not in text
+
+
+def test_render_canary_report_records_manual_evidence_without_private_values(tmp_path):
+    codex_home = write_codex_home(tmp_path)
+    config_path = write_private_config(tmp_path, codex_home)
+
+    report = render_canary_report(
+        str(config_path),
+        provider_id="cloud-main",
+        setup_report=str(tmp_path / "codex-hybrid-setup-report.md"),
+        verdict="complete",
+        evidence={
+            "account_visible": "yes",
+            "plugins_visible": "yes",
+            "mcp_visible": "yes",
+            "project_list_visible": "yes",
+            "test_chat_responded": "yes",
+            "bridge_health_passed": "yes",
+            "setup_report_reviewed": "yes",
+        },
+    )
+
+    assert "Codex Hybrid Canary Evidence" in report
+    assert "verdict: `complete`" in report
+    assert "tested_provider: `cloud-main kind=cloud model=private-model route=bridge`" in report
+    assert "[x] yes Account information is visible" in report
+    assert "[x] yes A new test conversation responded" in report
+    assert "setup_report_reference: `codex-hybrid-setup-report.md`" in report
+    assert "private-provider.example" not in report
+    assert str(tmp_path) not in report
+    assert "do-not-print" not in report
+    assert "## Warnings" not in report
+
+
+def test_render_canary_report_warns_when_complete_lacks_evidence(tmp_path):
+    codex_home = write_codex_home(tmp_path)
+    config_path = write_private_config(tmp_path, codex_home)
+
+    report = render_canary_report(
+        str(config_path),
+        provider_id="missing-provider",
+        verdict="complete",
+        evidence={
+            "account_visible": "yes",
+            "plugins_visible": "no",
+        },
+    )
+
+    assert "missing-provider (not found in config)" in report
+    assert "[ ] no Plugin entry points are visible" in report
+    assert "[ ] not recorded Project list is visible" in report
+    assert "## Warnings" in report
+    assert "verdict is complete but one or more required UI evidence checks are not yes" in report
+    assert "one or more evidence checks are marked no" in report
+
+
+def test_run_canary_report_writes_output(tmp_path):
+    codex_home = write_codex_home(tmp_path)
+    config_path = write_private_config(tmp_path, codex_home)
+    output = tmp_path / "canary.md"
+
+    assert (
+        run_canary_report(
+            str(config_path),
+            output=str(output),
+            provider_id="cloud-main",
+            verdict="partial",
+            evidence={"account_visible": "yes", "test_chat_responded": "na"},
+        )
+        == 0
+    )
+
+    text = output.read_text(encoding="utf-8")
+    assert "Codex Hybrid Canary Evidence" in text
+    assert "verdict: `partial`" in text
+    assert "[x] yes Account information is visible" in text
+    assert "[-] not applicable A new test conversation responded" in text
     assert "private-provider.example" not in text

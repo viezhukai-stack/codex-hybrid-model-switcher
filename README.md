@@ -52,6 +52,7 @@ Start here:
 - Bridge health check: [`docs/bridge-health.md`](docs/bridge-health.md)
 - Safe English demo without touching a real profile: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
 - Redacted setup report: [`docs/setup-report.md`](docs/setup-report.md)
+- Final canary evidence report: [`docs/canary-report.md`](docs/canary-report.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
 - Stock Codex handoff validation: [`docs/stock-codex-handoff-validation.md`](docs/stock-codex-handoff-validation.md)
 - Visual demo gallery: [`docs/demo-gallery.md`](docs/demo-gallery.md)
@@ -200,6 +201,13 @@ file tells Codex how to proceed safely.
    codex-hybrid-switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json --output ~/Desktop/codex-hybrid-setup-report.md
    ```
 
+14. After visually confirming Codex Desktop account, plugins/MCP, project list,
+    and a responding test chat, generate a final canary evidence report:
+
+   ```sh
+   codex-hybrid-switcher canary-report --config ~/.codex-hybrid-model-switcher/config.json --provider-id cloud-gpt-main --account-visible yes --plugins-visible yes --mcp-visible yes --project-list-visible yes --test-chat-responded yes --bridge-health-passed yes --setup-report-reviewed yes --verdict complete --output ~/Desktop/codex-hybrid-canary-evidence.md
+   ```
+
 ## User Paths
 
 - Cloud provider path: initialize a private config, validate it, run
@@ -324,6 +332,13 @@ To create a redacted report after setup:
 
 ```sh
 python3 -m codex_hybrid_switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json --output ~/Desktop/codex-hybrid-setup-report.md
+```
+
+To record final user-visible evidence after Codex Desktop is reopened and a
+test chat responds:
+
+```sh
+python3 -m codex_hybrid_switcher canary-report --config ~/.codex-hybrid-model-switcher/config.json --provider-id cloud-gpt-main --account-visible yes --plugins-visible yes --mcp-visible yes --project-list-visible yes --test-chat-responded yes --bridge-health-passed yes --setup-report-reviewed yes --verdict complete --output ~/Desktop/codex-hybrid-canary-evidence.md
 ```
 
 ## What This Repository Must Not Contain

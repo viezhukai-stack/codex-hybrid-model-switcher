@@ -5,6 +5,7 @@ import sys
 
 from .bridge import run_bridge
 from .bridge_health import run_bridge_health
+from .canary_report import add_canary_report_args, evidence_from_args, run_canary_report
 from .doctor import run_doctor
 from .env_help import run_env_help
 from .local_smoke import run_local_smoke
@@ -53,6 +54,8 @@ def main(argv: list[str] | None = None) -> int:
     setup_report = sub.add_parser("setup-report")
     setup_report.add_argument("--config", dest="sub_config")
     setup_report.add_argument("--output")
+    canary_report = sub.add_parser("canary-report")
+    add_canary_report_args(canary_report)
     env_help = sub.add_parser("env-help")
     env_help.add_argument("--config", dest="sub_config")
     env_help.add_argument("--platform", choices=["macos", "windows"])
@@ -119,6 +122,15 @@ def main(argv: list[str] | None = None) -> int:
         return run_validate_config(config_path, check_paths=args.check_paths)
     if args.command == "setup-report":
         return run_setup_report(config_path, output=args.output)
+    if args.command == "canary-report":
+        return run_canary_report(
+            config_path,
+            output=args.output,
+            provider_id=args.provider_id,
+            setup_report=args.setup_report,
+            verdict=args.verdict,
+            evidence=evidence_from_args(args),
+        )
     if args.command == "env-help":
         return run_env_help(config_path, platform=args.platform, name=args.name)
     if args.command == "setup":
