@@ -101,6 +101,15 @@ For release history and project rules, see `CHANGELOG.md`, `SECURITY.md`, and
 
 For common setup and recovery questions, see `docs/faq.md`.
 
+## Documentation
+
+- Chinese tutorial: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
+- English quickstart demo: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
+- Safety model: [`docs/safety.md`](docs/safety.md)
+- Recovery guide: [`docs/recovery.md`](docs/recovery.md)
+- Windows beginner flow: [`docs/windows-user-flow.md`](docs/windows-user-flow.md)
+- Local llama.cpp smoke test: [`docs/local-llama-smoke.md`](docs/local-llama-smoke.md)
+
 ## Commands
 
 ```sh
