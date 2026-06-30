@@ -26,6 +26,8 @@ bundle.
   - llama.cpp release archives
 - Confirm docs do not include private LAN addresses, hostnames, usernames,
   private absolute paths, or personal provider endpoints.
+- Confirm scanner rules do not hard-code organization-specific private endpoint
+  names; project-specific deny-lists belong in private deployment checks.
 
 ## Project Boundary
 

@@ -47,3 +47,10 @@ def test_security_scan_rejects_token_key_and_password_assignments(tmp_path):
     (tmp_path / "notes.txt").write_text("\n".join(sensitive_lines), encoding="utf-8")
 
     assert run_security_scan(str(tmp_path)) == 1
+
+
+def test_security_scan_rejects_internal_endpoint_hostnames(tmp_path):
+    endpoint = "https://" + "provider" + ".internal/v1"
+    (tmp_path / "notes.txt").write_text(endpoint, encoding="utf-8")
+
+    assert run_security_scan(str(tmp_path)) == 1
