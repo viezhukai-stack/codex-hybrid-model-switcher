@@ -20,6 +20,8 @@ driver, CUDA runtime, llama.cpp build, and model size.
 - Install validation passes in a temporary directory.
 - Stock-Codex bootstrap-to-apply simulation passes in a temporary directory.
 - Redacted setup report generation passes in the stock-Codex simulation.
+- The stock-Codex handoff prompt in `START_HERE.md` is covered by documentation
+  tests.
 - At least one Windows canary has validated cloud provider switching.
 - At least one Windows canary has validated local llama.cpp text and image smoke.
 - At least one second-machine Windows canary has validated cloud switching and the guarded launcher.

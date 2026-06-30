@@ -41,6 +41,7 @@ flowchart LR
 
 Start here:
 
+- If you only have stock Codex Desktop: [`START_HERE.md`](START_HERE.md)
 - Hand this repo to Codex: [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md)
 - Zero-install bootstrap: [`docs/bootstrap.md`](docs/bootstrap.md)
 - New user walkthrough in Chinese: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
@@ -79,8 +80,8 @@ cache, rewrite old conversations, or install always-on recovery services.
 ## Quick Start
 
 If you want Codex itself to configure this project for you, open this repository
-in Codex and start with [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md).
-The root `AGENTS.md` file tells Codex how to proceed safely.
+in Codex and start with [`START_HERE.md`](START_HERE.md). The root `AGENTS.md`
+file tells Codex how to proceed safely.
 
 1. Run bootstrap directly from the repository. It creates a private config,
    validates it, and runs guarded dry-run without installing the package first:
@@ -189,6 +190,7 @@ For common setup and recovery questions, see `docs/faq.md`.
 ## Documentation
 
 - Agent-assisted setup: [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md)
+- Stock Codex handoff prompt: [`START_HERE.md`](START_HERE.md)
 - Setup intake checklist: [`docs/setup-intake.md`](docs/setup-intake.md)
 - Bootstrap entry: [`docs/bootstrap.md`](docs/bootstrap.md)
 - Setup report: [`docs/setup-report.md`](docs/setup-report.md)
