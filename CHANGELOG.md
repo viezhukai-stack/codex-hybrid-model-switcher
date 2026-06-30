@@ -5,6 +5,18 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.6.0
+
+- Strengthened the stock Codex bootstrap handoff by printing the full
+  post-apply completion path directly in command output.
+- `bootstrap.py` now prints setup-report, canary-report, and FINAL_CHECK next
+  steps after the guarded switch instructions.
+- The first-run setup wizard now prints the same final evidence/reporting
+  path for installed CLI users.
+- Stock handoff validation now requires bootstrap output to include
+  `canary-report` and `FINAL_CHECK.md`, reducing the chance that an agent stops
+  at dry-run or setup-report and incorrectly claims completion.
+
 ## v2.5.0
 
 - Added `canary-report`, a redacted final evidence report for real or simulated

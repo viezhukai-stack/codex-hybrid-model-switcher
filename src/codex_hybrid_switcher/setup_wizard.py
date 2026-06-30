@@ -148,7 +148,13 @@ def write_config(path: Path, data: dict, *, force: bool = False) -> int:
     return 0
 
 
-def print_next_steps(path: Path, provider_id: str) -> None:
+def print_next_steps(path: Path, provider_id: str, *, platform_name: str | None = None) -> None:
+    if platform_name == "windows":
+        setup_output = r"%USERPROFILE%\Desktop\codex-hybrid-setup-report.md"
+        canary_output = r"%USERPROFILE%\Desktop\codex-hybrid-canary-evidence.md"
+    else:
+        setup_output = "~/Desktop/codex-hybrid-setup-report.md"
+        canary_output = "~/Desktop/codex-hybrid-canary-evidence.md"
     print()
     print("Next safe steps:")
     print(f"  1. Set the API key in your shell or OS environment for this provider.")
@@ -156,6 +162,16 @@ def print_next_steps(path: Path, provider_id: str) -> None:
     print(f"  3. For bridge route, run: codex-hybrid-switcher bridge-health --config {path}")
     print(f"  4. Run: codex-hybrid-switcher guarded-switch {provider_id} --dry-run --config {path}")
     print("  5. For a real switch, quit Codex Desktop completely first.")
+    print(f"  6. After real apply, run: codex-hybrid-switcher setup-report --config {path} --output {setup_output}")
+    print(
+        "  7. After visible Codex checks pass, run: "
+        f"codex-hybrid-switcher canary-report --config {path} --provider-id {provider_id} "
+        f"--setup-report {setup_output} "
+        "--account-visible yes --plugins-visible yes --mcp-visible yes --project-list-visible yes "
+        "--test-chat-responded yes --bridge-health-passed yes --setup-report-reviewed yes --verdict complete "
+        f"--output {canary_output}"
+    )
+    print("  8. Use FINAL_CHECK.md for the final verdict.")
     print()
     print("History note:")
     print("  This setup does not rewrite Codex history. Existing official conversations may")
@@ -248,5 +264,5 @@ def run_setup_wizard(
             print(f"  - {error}")
         return 1
     run_validate_config(str(target))
-    print_next_steps(target, chosen_provider_id)
+    print_next_steps(target, chosen_provider_id, platform_name=platform_name)
     return 0

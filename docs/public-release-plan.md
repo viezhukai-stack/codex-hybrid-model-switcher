@@ -5,7 +5,7 @@ the repository public or publishing the GitHub release.
 
 ## Current Release
 
-The current public-readiness release is `v2.5.0`.
+The current public-readiness release is `v2.6.0`.
 
 Earlier `v1.0.0-rc.*`, `v1.0.0`, and v2.x tags are kept for audit history.
 Use the newest non-draft release unless a maintainer explicitly pins a

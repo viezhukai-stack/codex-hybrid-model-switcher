@@ -53,7 +53,27 @@ def test_setup_non_interactive_generates_private_config_only(tmp_path, capsys):
     assert not (codex_home / "config.toml").exists()
     assert "bridge-health" in out
     assert "guarded-switch cloud-main --dry-run" in out
+    assert "setup-report" in out
+    assert "canary-report" in out
+    assert "FINAL_CHECK.md" in out
     assert "does not rewrite Codex history" in out
+
+
+def test_setup_next_steps_are_platform_specific_for_windows(tmp_path, capsys):
+    output = tmp_path / "private" / "config.json"
+
+    code = run_setup_wizard(
+        output=str(output),
+        platform="windows",
+        base_url="https://provider.example/v1",
+        non_interactive=True,
+    )
+    out = capsys.readouterr().out
+
+    assert code == 0
+    assert r"%USERPROFILE%\Desktop\codex-hybrid-setup-report.md" in out
+    assert r"%USERPROFILE%\Desktop\codex-hybrid-canary-evidence.md" in out
+    assert "~/Desktop/codex-hybrid-setup-report.md" not in out
 
 
 def test_setup_non_interactive_requires_base_url(tmp_path):

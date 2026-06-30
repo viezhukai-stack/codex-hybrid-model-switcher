@@ -90,9 +90,35 @@ def print_apply_instructions(config_path: Path, provider_id: str) -> None:
     print()
     print("After applying, generate a redacted setup report with:")
     if os.name == "nt":
-        print(f"     set PYTHONPATH={SRC} && py -3 -m codex_hybrid_switcher setup-report --config {config_path}")
+        print(
+            f"     set PYTHONPATH={SRC} && py -3 -m codex_hybrid_switcher setup-report "
+            f"--config {config_path} --output %USERPROFILE%\\Desktop\\codex-hybrid-setup-report.md"
+        )
     else:
-        print(f"     PYTHONPATH={SRC} python3 -m codex_hybrid_switcher setup-report --config {config_path}")
+        print(
+            f"     PYTHONPATH={SRC} python3 -m codex_hybrid_switcher setup-report "
+            f"--config {config_path} --output ~/Desktop/codex-hybrid-setup-report.md"
+        )
+    print()
+    print("After Codex Desktop opens, account/plugins/MCP/project list are visible, and a test chat responds, record final canary evidence with:")
+    if os.name == "nt":
+        print(
+            f"     set PYTHONPATH={SRC} && py -3 -m codex_hybrid_switcher canary-report "
+            f"--config {config_path} --provider-id {provider_id} --setup-report %USERPROFILE%\\Desktop\\codex-hybrid-setup-report.md "
+            "--account-visible yes --plugins-visible yes --mcp-visible yes --project-list-visible yes "
+            "--test-chat-responded yes --bridge-health-passed yes --setup-report-reviewed yes --verdict complete "
+            "--output %USERPROFILE%\\Desktop\\codex-hybrid-canary-evidence.md"
+        )
+    else:
+        print(
+            f"     PYTHONPATH={SRC} python3 -m codex_hybrid_switcher canary-report "
+            f"--config {config_path} --provider-id {provider_id} --setup-report ~/Desktop/codex-hybrid-setup-report.md "
+            "--account-visible yes --plugins-visible yes --mcp-visible yes --project-list-visible yes "
+            "--test-chat-responded yes --bridge-health-passed yes --setup-report-reviewed yes --verdict complete "
+            "--output ~/Desktop/codex-hybrid-canary-evidence.md"
+        )
+    print()
+    print("Then use FINAL_CHECK.md for the final Complete / Partially complete / Not complete / Needs rollback verdict.")
 
 
 def run_bootstrap(args: argparse.Namespace) -> int:
