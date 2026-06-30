@@ -12,6 +12,7 @@ driver, CUDA runtime, llama.cpp build, and model size.
 | Windows canary 1 | Passed | Passed | Passed | Validated guarded cloud switch, local llama.cpp/Gemma text smoke, image smoke, and Codex Desktop UI behavior. |
 | Windows canary 2 | Passed | Not required | Passed | Validated second-machine migration, Python 3.10 compatibility, guarded cloud switch, user-facing launcher, account visibility, project conversations, plugin/MCP visibility, and a test chat. Local Qwen3.6 35B candidates were found but not tested because local hardware/model fit is not a release requirement. |
 | Stock Codex simulation | Passed | Not applicable | Simulated | `scripts/validate-stock-codex-flow.py` creates a temporary stock-like Codex home, runs bootstrap dry-run, runs guarded apply, verifies only `config.toml` changed while account/cache/history-like files stayed unchanged, and checks the generated setup report is redacted. |
+| Stock Codex handoff | Passed | Not applicable | Simulated | `scripts/validate-stock-codex-handoff.py` copies the repository to a clean temporary directory, starts from `START_HERE.md`, verifies bootstrap does not pollute the repository, and confirms private config plus guarded apply behavior. |
 
 ## Required Before a Release
 
@@ -19,6 +20,7 @@ driver, CUDA runtime, llama.cpp build, and model size.
 - `security-scan .` finds no sensitive-looking content.
 - Install validation passes in a temporary directory.
 - Stock-Codex bootstrap-to-apply simulation passes in a temporary directory.
+- Stock-Codex handoff validation passes from a clean temporary repository copy.
 - Redacted setup report generation passes in the stock-Codex simulation.
 - The stock-Codex handoff prompt in `START_HERE.md` is covered by documentation
   tests.

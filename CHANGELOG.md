@@ -5,6 +5,15 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v1.7.0
+
+- Added `scripts/validate-stock-codex-handoff.py`, a clean-copy validation for
+  the `START_HERE.md` handoff flow.
+- Added `docs/stock-codex-handoff-validation.md` to explain what the handoff
+  validation proves and what remains machine-specific.
+- Wired handoff validation into install validation, tests, README, AGENTS,
+  validation matrix, and the release checklist.
+
 ## v1.6.0
 
 - Added root `START_HERE.md`, a stock-Codex handoff page with a copy-paste

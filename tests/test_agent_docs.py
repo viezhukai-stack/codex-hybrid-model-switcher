@@ -31,6 +31,8 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "docs/agent-assisted-setup.md" in text
     assert "docs/recovery.md" in text
     assert "docs/local-llama-smoke.md" in text
+    assert "docs/stock-codex-handoff-validation.md" in text
+    assert "validate-stock-codex-handoff.py" in text
     assert "codex-hybrid-switcher local-smoke" in text
     assert "codex-hybrid-switcher guarded-switch local-gemma --allow-local" in text
     assert "setup-report" in text
@@ -69,6 +71,7 @@ def test_readme_links_agent_assisted_path():
     assert "docs/setup-intake.md" in text
     assert "docs/bootstrap.md" in text
     assert "docs/setup-report.md" in text
+    assert "docs/stock-codex-handoff-validation.md" in text
     assert "AGENTS.md" in text
 
 

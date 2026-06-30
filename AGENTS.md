@@ -49,7 +49,8 @@ Read these files before making changes:
 5. `docs/agent-assisted-setup.md`
 6. `docs/recovery.md`
 7. `docs/setup-report.md`
-8. `docs/local-llama-smoke.md` only if the user asks for local models
+8. `docs/stock-codex-handoff-validation.md`
+9. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 
@@ -194,6 +195,9 @@ Do not claim setup is complete until current evidence shows:
 - user confirms Codex account, plugins/MCP, and project list are visible
 - user confirms a new test conversation responds
 - a redacted setup report has been generated or the user explicitly skipped it
+
+For repository release work, also run `scripts/validate-stock-codex-handoff.py`
+to prove the `START_HERE.md` flow still works from a clean repository copy.
 
 If only setup/dry-run is complete, say exactly that. Do not imply the real
 Codex Desktop switch has been tested.
