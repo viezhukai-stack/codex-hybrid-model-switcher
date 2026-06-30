@@ -26,6 +26,7 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     text = read("AGENTS.md")
 
     assert "docs/first-run-wizard.md" in text
+    assert "docs/bootstrap.md" in text
     assert "docs/agent-assisted-setup.md" in text
     assert "docs/recovery.md" in text
     assert "docs/local-llama-smoke.md" in text
@@ -38,6 +39,7 @@ def test_agent_assisted_setup_has_copy_paste_prompt_and_history_caveat():
 
     assert "Copy-paste prompt for Codex" in text
     assert "AGENTS.md" in text
+    assert "bootstrap.py" in text
     assert "api_key_env" in text
     assert "不要修改 auth.json" in text
     assert "openai" in text
@@ -60,4 +62,5 @@ def test_readme_links_agent_assisted_path():
 
     assert "docs/agent-assisted-setup.md" in text
     assert "docs/setup-intake.md" in text
+    assert "docs/bootstrap.md" in text
     assert "AGENTS.md" in text

@@ -42,6 +42,7 @@ flowchart LR
 Start here:
 
 - Hand this repo to Codex: [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md)
+- Zero-install bootstrap: [`docs/bootstrap.md`](docs/bootstrap.md)
 - New user walkthrough in Chinese: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
 - Beginner first-run wizard: [`docs/first-run-wizard.md`](docs/first-run-wizard.md)
 - Setup intake checklist: [`docs/setup-intake.md`](docs/setup-intake.md)
@@ -80,13 +81,29 @@ If you want Codex itself to configure this project for you, open this repository
 in Codex and start with [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md).
 The root `AGENTS.md` file tells Codex how to proceed safely.
 
-1. Install locally:
+1. Run bootstrap directly from the repository. It creates a private config,
+   validates it, and runs guarded dry-run without installing the package first:
+
+   ```sh
+   python3 bootstrap.py
+   ```
+
+   Non-interactive bootstrap example:
+
+   ```sh
+   python3 bootstrap.py --non-interactive \
+     --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 \
+     --model provider-gpt-main \
+     --api-key-env OPENAI_COMPATIBLE_API_KEY
+   ```
+
+2. Optionally install locally if you prefer the `codex-hybrid-switcher` command:
 
    ```sh
    python3 -m pip install -e .
    ```
 
-2. Run the first-run wizard. It creates a private config only; it does not
+3. Run the first-run wizard. It creates a private config only; it does not
    switch Codex Desktop:
 
    ```sh
@@ -102,41 +119,41 @@ The root `AGENTS.md` file tells Codex how to proceed safely.
      --api-key-env OPENAI_COMPATIBLE_API_KEY
    ```
 
-3. Or copy an example config manually:
+4. Or copy an example config manually:
 
    ```sh
    codex-hybrid-switcher init-config --platform macos --output ~/.codex-hybrid-model-switcher/config.json
    ```
 
-4. Edit paths and provider endpoints in that private config if needed.
+5. Edit paths and provider endpoints in that private config if needed.
 
-5. Check the environment:
+6. Check the environment:
 
    ```sh
    codex-hybrid-switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-6. Preview the Codex config change without writing anything:
+7. Preview the Codex config change without writing anything:
 
    ```sh
    codex-hybrid-switcher guarded-switch cloud-gpt-main --dry-run --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-7. For a real cloud switch, quit Codex Desktop completely, then use guarded
+8. For a real cloud switch, quit Codex Desktop completely, then use guarded
    apply:
 
    ```sh
    codex-hybrid-switcher guarded-switch cloud-gpt-main --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-8. Test local models only on machines that have suitable hardware, llama.cpp,
+9. Test local models only on machines that have suitable hardware, llama.cpp,
    and model files:
 
    ```sh
    codex-hybrid-switcher local-smoke --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-9. Switch to a local provider only after local smoke passes:
+10. Switch to a local provider only after local smoke passes:
 
    ```sh
    codex-hybrid-switcher guarded-switch local-gemma --allow-local --config ~/.codex-hybrid-model-switcher/config.json
@@ -166,6 +183,7 @@ For common setup and recovery questions, see `docs/faq.md`.
 
 - Agent-assisted setup: [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md)
 - Setup intake checklist: [`docs/setup-intake.md`](docs/setup-intake.md)
+- Bootstrap entry: [`docs/bootstrap.md`](docs/bootstrap.md)
 - Chinese tutorial: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
 - English quickstart demo: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
 - Visual demo gallery: [`docs/demo-gallery.md`](docs/demo-gallery.md)
@@ -181,6 +199,8 @@ For common setup and recovery questions, see `docs/faq.md`.
 ## Commands
 
 ```sh
+python3 bootstrap.py
+python3 bootstrap.py --non-interactive --base-url https://YOUR-ENDPOINT.example/v1 --model provider-gpt-main --api-key-env OPENAI_COMPATIBLE_API_KEY
 python -m codex_hybrid_switcher status
 python -m codex_hybrid_switcher doctor
 python -m codex_hybrid_switcher doctor --strict

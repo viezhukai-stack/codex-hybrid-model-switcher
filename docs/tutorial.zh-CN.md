@@ -59,9 +59,37 @@ Codex Desktop 本身有自己的账号、插件、项目和对话历史。直接
 - 本地模型文件
 - 私有 endpoint、局域网 IP、真实机器路径
 
-## 第一步：安装项目
+## 第一步：优先使用 bootstrap
 
 从 GitHub clone 后，在项目目录中运行：
+
+```sh
+python3 bootstrap.py
+```
+
+`bootstrap.py` 不需要先安装项目。它会直接从仓库里运行：
+
+- 生成本机私有配置。
+- 校验配置。
+- 执行 guarded dry-run。
+- 提示下一步真实切换命令。
+
+如果你已经知道 provider 信息，可以这样：
+
+```sh
+python3 bootstrap.py --non-interactive \
+  --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 \
+  --model provider-gpt-main \
+  --api-key-env OPENAI_COMPATIBLE_API_KEY
+```
+
+Windows 使用：
+
+```powershell
+py -3 bootstrap.py
+```
+
+## 备用方式：安装项目后使用命令
 
 ```sh
 python3 -m pip install -e .

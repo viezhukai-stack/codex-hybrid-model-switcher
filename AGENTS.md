@@ -43,10 +43,11 @@ the private config, for example `OPENAI_COMPATIBLE_API_KEY`.
 Read these files before making changes:
 
 1. `README.md`
-2. `docs/first-run-wizard.md`
-3. `docs/agent-assisted-setup.md`
-4. `docs/recovery.md`
-5. `docs/local-llama-smoke.md` only if the user asks for local models
+2. `docs/bootstrap.md`
+3. `docs/first-run-wizard.md`
+4. `docs/agent-assisted-setup.md`
+5. `docs/recovery.md`
+6. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 
@@ -73,38 +74,50 @@ the cloud path works.
 
 ## Standard Cloud Setup Flow
 
+Use `bootstrap.py` first when possible. It runs from the repository without
+installing the package, creates a private config, validates it, and runs a
+guarded dry-run.
+
 Use the current Python executable where possible. On macOS, `python3` is usually
 available. On Windows, try `py -3` or `python`.
 
 1. Inspect the repository and current branch.
-2. Install the package locally:
+2. Run bootstrap:
 
    ```sh
-   python3 -m pip install -e .
+   python3 bootstrap.py
    ```
 
-3. Generate a private config only:
+   On Windows, use:
 
-   ```sh
-   codex-hybrid-switcher setup
+   ```powershell
+   py -3 bootstrap.py
    ```
 
-   If the user already provided all cloud fields, use non-interactive setup:
+   If the user already provided all cloud fields, use non-interactive bootstrap:
 
    ```sh
-   codex-hybrid-switcher setup --non-interactive \
+   python3 bootstrap.py --non-interactive \
      --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 \
      --model provider-gpt-main \
      --api-key-env OPENAI_COMPATIBLE_API_KEY
    ```
 
-4. Validate the private config:
+3. If bootstrap cannot run, install the package locally and use the setup
+   command:
+
+   ```sh
+   python3 -m pip install -e .
+   codex-hybrid-switcher setup
+   ```
+
+4. Validate the private config if bootstrap did not already do it:
 
    ```sh
    codex-hybrid-switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-5. Preview the change:
+5. Preview the change if bootstrap did not already do it:
 
    ```sh
    codex-hybrid-switcher guarded-switch cloud-gpt-main --dry-run --config ~/.codex-hybrid-model-switcher/config.json
@@ -115,11 +128,15 @@ available. On Windows, try `py -3` or `python`.
 
 7. Ask the user to fully quit Codex Desktop.
 
-8. Apply the guarded switch:
+8. Apply the guarded switch using the command printed by bootstrap. If running
+   from the repository on macOS, the command shape is:
 
    ```sh
-   codex-hybrid-switcher guarded-switch cloud-gpt-main --config ~/.codex-hybrid-model-switcher/config.json
+   PYTHONPATH=src python3 -m codex_hybrid_switcher guarded-switch cloud-gpt-main --config ~/.codex-hybrid-model-switcher/config.json
    ```
+
+   If the package was installed, `codex-hybrid-switcher guarded-switch ...` is
+   also acceptable.
 
 9. Ask the user to reopen Codex Desktop and create a new test conversation.
 

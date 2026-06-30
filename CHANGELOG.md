@@ -5,6 +5,20 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v1.3.0
+
+- Added root `bootstrap.py`, a zero-install first-run entry that creates a
+  private config, validates it, and runs guarded dry-run directly from the
+  repository.
+- Added macOS and Windows bootstrap launchers for users who prefer visible
+  double-click entry points.
+- Replaced the macOS desktop switcher launcher path with a guarded dry-run then
+  `APPLY` flow, matching the safer Windows provider menu behavior.
+- Added macOS guarded provider switch scripts and regression tests for launcher
+  safety.
+- Added bootstrap documentation and validation coverage in isolated install
+  tests.
+
 ## v1.2.0
 
 - Added root `AGENTS.md` so another Codex agent can safely configure a stock

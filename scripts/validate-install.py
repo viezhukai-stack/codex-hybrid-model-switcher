@@ -173,6 +173,40 @@ def validate_first_run_setup(python: Path, repo: Path, work: Path) -> None:
     run([str(python), "-m", "codex_hybrid_switcher", "validate-config", "--config", str(setup_config)], cwd=repo)
 
 
+def validate_bootstrap(python: Path, repo: Path, work: Path) -> None:
+    bootstrap_config = work / "bootstrap-generated" / "config.json"
+    bootstrap_codex_home = work / "bootstrap-codex-home"
+    proc = run(
+        [
+            str(python),
+            "-I",
+            "bootstrap.py",
+            "--non-interactive",
+            "--config",
+            str(bootstrap_config),
+            "--codex-home",
+            str(bootstrap_codex_home),
+            "--provider-id",
+            "cloud-gpt-main",
+            "--base-url",
+            "https://example.test/v1",
+            "--model",
+            "provider-gpt-main",
+            "--api-key-env",
+            "OPENAI_COMPATIBLE_API_KEY",
+        ],
+        cwd=repo,
+    )
+    if not bootstrap_config.exists():
+        raise SystemExit("bootstrap did not create the private config")
+    if (bootstrap_codex_home / "config.toml").exists():
+        raise SystemExit("bootstrap touched simulated Codex config.toml")
+    required_stdout = ["Guarded dry-run", "No files will be changed", "PYTHONPATH="]
+    missing = [item for item in required_stdout if item not in proc.stdout]
+    if missing:
+        raise SystemExit(f"bootstrap output missing expected content: {missing}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run isolated install validation without touching real Codex state.")
     parser.add_argument("--tmp-root", default="/private/tmp", help="temporary root; defaults to /private/tmp")
@@ -215,6 +249,7 @@ def main(argv: list[str] | None = None) -> int:
         write_validation_config(validation_config, codex_home)
         run([str(python), "-m", "codex_hybrid_switcher", "doctor", "--config", str(validation_config)], cwd=repo)
         validate_first_run_setup(python, repo, work)
+        validate_bootstrap(python, repo, work)
         validate_dry_run(python, repo, work)
         print("install validation passed")
     finally:

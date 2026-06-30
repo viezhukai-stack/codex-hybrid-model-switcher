@@ -4,6 +4,9 @@ The `setup` command is the safest beginner entry point. It creates a private
 machine-local config and tells the user how to run a dry-run. It does not switch
 Codex Desktop by itself.
 
+If the package is not installed yet, start with [`bootstrap.md`](bootstrap.md).
+Bootstrap runs from the repository and calls this setup flow for you.
+
 Use it for a stock Codex Desktop install when the user wants to try an
 OpenAI-compatible cloud provider without editing Codex files by hand.
 

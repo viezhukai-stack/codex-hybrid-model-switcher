@@ -13,6 +13,8 @@ simulated Codex home.
 - `init-config` into temporary macOS and Windows private config paths.
 - `validate-config` against the generated private config.
 - `doctor` against a temporary config.
+- `bootstrap.py --non-interactive` into a temporary private config path.
+- Bootstrap guarded dry-run without touching the simulated Codex home.
 - `switch --dry-run` against a simulated `config.toml`.
 - MCP/plugin-like config blocks remain visible in the dry-run diff.
 - The simulated `config.toml` is unchanged after dry-run.
