@@ -75,6 +75,12 @@ def print_apply_instructions(config_path: Path, provider_id: str) -> None:
         print(f"     python3 -m codex_hybrid_switcher guarded-switch {provider_id} --config {config_path}")
     print()
     print("Do not edit auth.json, models_cache.json, state_5.sqlite, or sessions.")
+    print()
+    print("After applying, generate a redacted setup report with:")
+    if os.name == "nt":
+        print(f"     set PYTHONPATH={SRC} && py -3 -m codex_hybrid_switcher setup-report --config {config_path}")
+    else:
+        print(f"     PYTHONPATH={SRC} python3 -m codex_hybrid_switcher setup-report --config {config_path}")
 
 
 def run_bootstrap(args: argparse.Namespace) -> int:

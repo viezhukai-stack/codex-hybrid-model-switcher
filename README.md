@@ -47,6 +47,7 @@ Start here:
 - Beginner first-run wizard: [`docs/first-run-wizard.md`](docs/first-run-wizard.md)
 - Setup intake checklist: [`docs/setup-intake.md`](docs/setup-intake.md)
 - Safe English demo without touching a real profile: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
+- Redacted setup report: [`docs/setup-report.md`](docs/setup-report.md)
 - Visual demo gallery: [`docs/demo-gallery.md`](docs/demo-gallery.md)
 - Windows click-through user flow: [`docs/windows-user-flow.md`](docs/windows-user-flow.md)
 - Optional local llama.cpp smoke test: [`docs/local-llama-smoke.md`](docs/local-llama-smoke.md)
@@ -159,6 +160,12 @@ The root `AGENTS.md` file tells Codex how to proceed safely.
    codex-hybrid-switcher guarded-switch local-gemma --allow-local --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
+11. Generate a redacted setup report after a real switch:
+
+   ```sh
+   codex-hybrid-switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json --output ~/Desktop/codex-hybrid-setup-report.md
+   ```
+
 ## User Paths
 
 - Cloud provider path: initialize a private config, validate it, run
@@ -184,6 +191,7 @@ For common setup and recovery questions, see `docs/faq.md`.
 - Agent-assisted setup: [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md)
 - Setup intake checklist: [`docs/setup-intake.md`](docs/setup-intake.md)
 - Bootstrap entry: [`docs/bootstrap.md`](docs/bootstrap.md)
+- Setup report: [`docs/setup-report.md`](docs/setup-report.md)
 - Chinese tutorial: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
 - English quickstart demo: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
 - Visual demo gallery: [`docs/demo-gallery.md`](docs/demo-gallery.md)
@@ -208,6 +216,7 @@ python -m codex_hybrid_switcher init-config --platform macos --output ~/.codex-h
 python -m codex_hybrid_switcher setup
 python -m codex_hybrid_switcher setup --non-interactive --base-url https://YOUR-ENDPOINT.example/v1 --model provider-gpt-main
 python -m codex_hybrid_switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
+python -m codex_hybrid_switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher bridge
 python -m codex_hybrid_switcher local-smoke
 python -m codex_hybrid_switcher smoke
@@ -268,6 +277,12 @@ python3 scripts/validate-stock-codex-flow.py
 It creates a simulated Codex home, runs bootstrap dry-run, performs a guarded
 apply against that simulated profile, and verifies only `config.toml` changed
 while account/cache/history-like files stayed unchanged.
+
+To create a redacted report after setup:
+
+```sh
+python3 -m codex_hybrid_switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json --output ~/Desktop/codex-hybrid-setup-report.md
+```
 
 ## What This Repository Must Not Contain
 

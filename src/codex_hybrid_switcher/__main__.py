@@ -7,6 +7,7 @@ from .bridge import run_bridge
 from .doctor import run_doctor
 from .local_smoke import run_local_smoke
 from .private_config import init_config, run_validate_config
+from .report import run_setup_report
 from .security import run_security_scan
 from .setup_wizard import run_setup_wizard
 from .smoke import run_smoke
@@ -43,6 +44,9 @@ def main(argv: list[str] | None = None) -> int:
     validate_config = sub.add_parser("validate-config")
     validate_config.add_argument("--config", dest="sub_config")
     validate_config.add_argument("--check-paths", action="store_true")
+    setup_report = sub.add_parser("setup-report")
+    setup_report.add_argument("--config", dest="sub_config")
+    setup_report.add_argument("--output")
     setup = sub.add_parser("setup")
     setup.add_argument("--output")
     setup.add_argument("--platform", choices=["macos", "windows"])
@@ -100,6 +104,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_security_scan(args.root)
     if args.command == "validate-config":
         return run_validate_config(config_path, check_paths=args.check_paths)
+    if args.command == "setup-report":
+        return run_setup_report(config_path, output=args.output)
     if args.command == "setup":
         return run_setup_wizard(
             output=args.output,

@@ -263,6 +263,17 @@ codex-hybrid-switcher guarded-switch cloud-gpt-main --config ~/.codex-hybrid-mod
 
 不要用重要历史线程做第一条测试。先新建一个测试聊天。
 
+## 第八步：生成脱敏配置报告
+
+测试正常后，生成一份可以自己保存或发给别人排查问题的脱敏报告：
+
+```sh
+codex-hybrid-switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json --output ~/Desktop/codex-hybrid-setup-report.md
+```
+
+这份报告会隐藏 provider host、本机路径、账号 token、session 内容和数据库内容。
+但你在公开分享前仍然应该自己看一眼。
+
 ## 本地 llama.cpp 模型怎么接
 
 本地模型是可选能力，取决于机器 GPU、驱动、CUDA、模型大小和 mmproj 文件。

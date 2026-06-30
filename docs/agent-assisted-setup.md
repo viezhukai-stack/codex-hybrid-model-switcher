@@ -49,6 +49,7 @@ Codex should:
 - ask you to quit Codex Desktop before a real switch
 - run guarded apply only after you confirm Codex Desktop is fully quit
 - verify protected Codex files did not change
+- generate a redacted setup report after the real switch
 
 Codex should not:
 
@@ -85,6 +86,18 @@ The first milestone is not "everything is switched." The first milestone is:
 - no real Codex files changed
 
 Only after that should you let Codex perform a real switch.
+
+## Final report
+
+After a real switch and a new test conversation, ask Codex to generate:
+
+```sh
+PYTHONPATH=src python3 -m codex_hybrid_switcher setup-report \
+  --config ~/.codex-hybrid-model-switcher/config.json \
+  --output ~/Desktop/codex-hybrid-setup-report.md
+```
+
+The report is redacted by design. Still review it before sharing it publicly.
 
 ## Bootstrap shortcut
 

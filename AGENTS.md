@@ -47,7 +47,8 @@ Read these files before making changes:
 3. `docs/first-run-wizard.md`
 4. `docs/agent-assisted-setup.md`
 5. `docs/recovery.md`
-6. `docs/local-llama-smoke.md` only if the user asks for local models
+6. `docs/setup-report.md`
+7. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 
@@ -140,7 +141,13 @@ available. On Windows, try `py -3` or `python`.
 
 9. Ask the user to reopen Codex Desktop and create a new test conversation.
 
-10. If anything looks wrong, quit Codex Desktop and restore the newest
+10. Generate a redacted setup report:
+
+    ```sh
+    PYTHONPATH=src python3 -m codex_hybrid_switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json --output ~/Desktop/codex-hybrid-setup-report.md
+    ```
+
+11. If anything looks wrong, quit Codex Desktop and restore the newest
     `config.toml.bak-codex-hybrid-*` backup. Do not edit databases or caches.
 
 ## History Visibility Caveat
@@ -185,6 +192,7 @@ Do not claim setup is complete until current evidence shows:
 - protected file hashes are unchanged
 - user confirms Codex account, plugins/MCP, and project list are visible
 - user confirms a new test conversation responds
+- a redacted setup report has been generated or the user explicitly skipped it
 
 If only setup/dry-run is complete, say exactly that. Do not imply the real
 Codex Desktop switch has been tested.

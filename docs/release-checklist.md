@@ -9,6 +9,7 @@ Use this checklist before marking a release candidate ready.
 - `python -m codex_hybrid_switcher security-scan .`
 - `python scripts/validate-install.py`
 - `python scripts/validate-stock-codex-flow.py`
+- `python -m codex_hybrid_switcher setup-report --config <temp-config>`
 - GitHub Actions passes on Python 3.10, 3.11, and 3.12.
 - Working tree is clean before tagging.
 
@@ -38,6 +39,8 @@ Confirm the repository does not contain:
 - Protected Codex files are hashed before and after apply.
 - Stock-Codex simulation changes only `config.toml` and adds a
   `config.toml.bak-codex-hybrid-*` backup.
+- Setup report redacts provider hostnames, local paths, session content, and
+  database content.
 - Local providers require explicit local approval and run local smoke before writing config.
 - Desktop launchers do not use the unsafe raw Python `menu` command.
 
