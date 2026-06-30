@@ -30,6 +30,7 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "docs/first-run-wizard.md" in text
     assert "docs/bootstrap.md" in text
     assert "docs/agent-assisted-setup.md" in text
+    assert "docs/api-key-environment.md" in text
     assert "docs/recovery.md" in text
     assert "docs/local-llama-smoke.md" in text
     assert "docs/stock-codex-handoff-validation.md" in text
@@ -48,6 +49,7 @@ def test_agent_assisted_setup_has_copy_paste_prompt_and_history_caveat():
     assert "AGENTS.md" in text
     assert "bootstrap.py" in text
     assert "api_key_env" in text
+    assert "env-help" in text
     assert "cloud_route" in text
     assert "--cloud-route bridge" in text
     assert "不要修改 auth.json" in text
@@ -74,6 +76,7 @@ def test_readme_links_agent_assisted_path():
     assert "FINAL_CHECK.md" in text
     assert "docs/agent-assisted-setup.md" in text
     assert "docs/setup-intake.md" in text
+    assert "docs/api-key-environment.md" in text
     assert "docs/bootstrap.md" in text
     assert "docs/setup-report.md" in text
     assert "docs/user-success-criteria.md" in text
@@ -113,6 +116,7 @@ def test_start_here_is_safe_stock_codex_handoff():
     assert "base_url" in text
     assert "model" in text
     assert "api_key_env" in text
+    assert "env-help" in text
     assert "cloud_route" in text
     assert "--cloud-route bridge" in text
     assert "不要填 API key 原文" in text
@@ -121,6 +125,17 @@ def test_start_here_is_safe_stock_codex_handoff():
     for forbidden in ("LaunchAgent", "KeepAlive", "scheduled", "recovery loops"):
         assert forbidden in text
     assert "config.toml.bak-codex-hybrid-*" in text
+
+
+def test_api_key_environment_doc_explains_env_help_boundary():
+    text = read("docs/api-key-environment.md")
+
+    assert "env-help" in text
+    assert "does not read, print, or store API keys" in text
+    assert "OPENAI_COMPATIBLE_API_KEY" in text
+    assert "route=bridge" in text
+    for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions"):
+        assert protected in text
 
 
 def test_final_check_prompt_defines_completion_verdicts_and_safety_boundary():

@@ -93,6 +93,15 @@ After setup, validate:
 codex-hybrid-switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
 ```
 
+If validation shows `api_key_env(...unset)`, run:
+
+```sh
+codex-hybrid-switcher env-help --config ~/.codex-hybrid-model-switcher/config.json
+```
+
+Follow the printed OS-specific instructions outside the repository, then run
+`validate-config` again.
+
 Preview the Codex config change:
 
 ```sh

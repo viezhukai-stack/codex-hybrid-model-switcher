@@ -42,6 +42,8 @@ Confirm the repository does not contain:
   `config.toml.bak-codex-hybrid-*` backup.
 - Stock-Codex handoff validation passes from a clean repository copy.
 - Bridge-routed cloud providers refuse real apply when `api_key_env` is unset.
+- `env-help` prints OS-specific setup instructions without reading, printing,
+  or storing API keys.
 - Bridge-routed cloud providers render Codex's `base_url` to the local bridge,
   not the private upstream provider hostname.
 - Setup report redacts provider hostnames, local paths, session content, and

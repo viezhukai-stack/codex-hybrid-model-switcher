@@ -48,11 +48,12 @@ Read these files before making changes:
 4. `docs/bootstrap.md`
 5. `docs/first-run-wizard.md`
 6. `docs/agent-assisted-setup.md`
-7. `docs/recovery.md`
-8. `docs/setup-report.md`
-9. `docs/stock-codex-handoff-validation.md`
-10. `docs/user-success-criteria.md`
-11. `docs/local-llama-smoke.md` only if the user asks for local models
+7. `docs/api-key-environment.md`
+8. `docs/recovery.md`
+9. `docs/setup-report.md`
+10. `docs/stock-codex-handoff-validation.md`
+11. `docs/user-success-criteria.md`
+12. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 
@@ -125,22 +126,37 @@ available. On Windows, try `py -3` or `python`.
    codex-hybrid-switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-5. Preview the change if bootstrap did not already do it:
+5. If validation shows `api_key_env(...unset)`, print safe OS-specific setup
+   instructions:
+
+   ```sh
+   codex-hybrid-switcher env-help --config ~/.codex-hybrid-model-switcher/config.json
+   ```
+
+   If running from the repository without installation, use:
+
+   ```sh
+   PYTHONPATH=src python3 -m codex_hybrid_switcher env-help --config ~/.codex-hybrid-model-switcher/config.json
+   ```
+
+   Do not ask the user to paste the API key into repository files or commit it.
+
+6. Preview the change if bootstrap did not already do it:
 
    ```sh
    codex-hybrid-switcher guarded-switch cloud-gpt-main --dry-run --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-6. Confirm the dry-run only changes provider/model settings and preserves MCP,
+7. Confirm the dry-run only changes provider/model settings and preserves MCP,
    plugins, desktop, projects, and unrelated settings.
 
-7. For bridge-routed cloud providers, confirm the API key environment variable
+8. For bridge-routed cloud providers, confirm the API key environment variable
    is set before the real switch. If it is unset, stop and help the user set it
    outside the repository.
 
-8. Ask the user to fully quit Codex Desktop.
+9. Ask the user to fully quit Codex Desktop.
 
-9. Apply the guarded switch using the command printed by bootstrap. If running
+10. Apply the guarded switch using the command printed by bootstrap. If running
    from the repository on macOS, the command shape is:
 
    ```sh
@@ -150,15 +166,15 @@ available. On Windows, try `py -3` or `python`.
    If the package was installed, `codex-hybrid-switcher guarded-switch ...` is
    also acceptable.
 
-10. Ask the user to reopen Codex Desktop and create a new test conversation.
+11. Ask the user to reopen Codex Desktop and create a new test conversation.
 
-11. Generate a redacted setup report:
+12. Generate a redacted setup report:
 
     ```sh
     PYTHONPATH=src python3 -m codex_hybrid_switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json --output ~/Desktop/codex-hybrid-setup-report.md
     ```
 
-12. If anything looks wrong, quit Codex Desktop and restore the newest
+13. If anything looks wrong, quit Codex Desktop and restore the newest
     `config.toml.bak-codex-hybrid-*` backup. Do not edit databases or caches.
 
 ## History Visibility Caveat

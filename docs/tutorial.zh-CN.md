@@ -216,6 +216,15 @@ codex-hybrid-switcher validate-config --config ~/.codex-hybrid-model-switcher/co
 
 如果你只测试云端 provider，本地 llama.cpp 路径缺失不是阻塞项。
 
+如果输出里看到 `api_key_env(...unset)`，先不要真实切换。运行：
+
+```sh
+codex-hybrid-switcher env-help --config ~/.codex-hybrid-model-switcher/config.json
+```
+
+它会告诉你在 macOS 或 Windows 上怎么设置环境变量。它不会读取、显示或保存你的
+API key。
+
 ## 第五步：先 dry-run，不要直接切换
 
 云端 provider 示例：
