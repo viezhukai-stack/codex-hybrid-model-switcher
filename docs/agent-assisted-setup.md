@@ -23,7 +23,8 @@ Use this prompt after opening the repository in Codex:
 - 先只配置一个 OpenAI-compatible 云端模型。
 - 不要修改 auth.json、models_cache.json、state_5.sqlite 或 sessions。
 - 不要安装后台自启动服务。
-- 先 dry-run，确认安全后再让我退出 Codex 并执行真实切换。
+- 优先用 bootstrap.py 生成私有配置并 dry-run。
+- 确认安全后再让我退出 Codex 并执行真实切换。
 
 我的 provider 信息：
 - base_url: <填你的 OpenAI-compatible endpoint，例如 https://example.com/v1>
@@ -39,7 +40,8 @@ Replace the angle-bracket placeholders before sending it.
 
 Codex should:
 
-- install this package locally if needed
+- run `bootstrap.py` first when possible
+- install this package locally only if bootstrap cannot run
 - generate `~/.codex-hybrid-model-switcher/config.json`
 - validate the private config
 - run `guarded-switch --dry-run`
@@ -83,6 +85,19 @@ The first milestone is not "everything is switched." The first milestone is:
 - no real Codex files changed
 
 Only after that should you let Codex perform a real switch.
+
+## Bootstrap shortcut
+
+If you already know the provider details, Codex can start with:
+
+```sh
+python3 bootstrap.py --non-interactive \
+  --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 \
+  --model provider-gpt-main \
+  --api-key-env OPENAI_COMPATIBLE_API_KEY
+```
+
+On Windows, use `py -3 bootstrap.py ...`.
 
 ## About old project conversations
 
