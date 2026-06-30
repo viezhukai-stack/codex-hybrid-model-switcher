@@ -12,8 +12,9 @@ Security reports are accepted for the latest tagged release and the current
 
 ## Reporting a Vulnerability
 
-For now, report privately through the repository owner's preferred private
-channel. Do not open a public issue that includes:
+Report privately by email: `viezhukai@gmail.com`.
+
+Do not open a public issue that includes:
 
 - API keys or bearer tokens
 - account files

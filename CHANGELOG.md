@@ -5,6 +5,8 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+- Updated public repository links, security contact details, and release
+  visibility documentation after moving the project under `viezhukai-stack`.
 - Added public issue templates for bug reports, setup help, and security-report
   redirection.
 - Added FAQ and troubleshooting documentation for switching, recovery, local
