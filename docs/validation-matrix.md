@@ -11,12 +11,14 @@ driver, CUDA runtime, llama.cpp build, and model size.
 | macOS working setup | Proven in the original field workflow | Proven in the original field workflow | Proven in the original field workflow | The current repository has not replaced the existing Mac field scripts. Mac remains the active working Codex environment and should not be used for risky canaries. |
 | Windows canary 1 | Passed | Passed | Passed | Validated guarded cloud switch, local llama.cpp/Gemma text smoke, image smoke, and Codex Desktop UI behavior. |
 | Windows canary 2 | Passed | Not required | Passed | Validated second-machine migration, Python 3.10 compatibility, guarded cloud switch, user-facing launcher, account visibility, project conversations, plugin/MCP visibility, and a test chat. Local Qwen3.6 35B candidates were found but not tested because local hardware/model fit is not a release requirement. |
+| Stock Codex simulation | Passed | Not applicable | Simulated | `scripts/validate-stock-codex-flow.py` creates a temporary stock-like Codex home, runs bootstrap dry-run, runs guarded apply, and verifies only `config.toml` changed while account/cache/history-like files stayed unchanged. |
 
 ## Required Before a Release
 
 - CI passes on Python 3.10, 3.11, and 3.12.
 - `security-scan .` finds no sensitive-looking content.
 - Install validation passes in a temporary directory.
+- Stock-Codex bootstrap-to-apply simulation passes in a temporary directory.
 - At least one Windows canary has validated cloud provider switching.
 - At least one Windows canary has validated local llama.cpp text and image smoke.
 - At least one second-machine Windows canary has validated cloud switching and the guarded launcher.
