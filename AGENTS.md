@@ -52,9 +52,10 @@ Read these files before making changes:
 8. `docs/bridge-health.md`
 9. `docs/recovery.md`
 10. `docs/setup-report.md`
-11. `docs/stock-codex-handoff-validation.md`
-12. `docs/user-success-criteria.md`
-13. `docs/local-llama-smoke.md` only if the user asks for local models
+11. `docs/canary-report.md`
+12. `docs/stock-codex-handoff-validation.md`
+13. `docs/user-success-criteria.md`
+14. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 
@@ -190,7 +191,14 @@ available. On Windows, try `py -3` or `python`.
     PYTHONPATH=src python3 -m codex_hybrid_switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json --output ~/Desktop/codex-hybrid-setup-report.md
     ```
 
-13. If anything looks wrong, quit Codex Desktop and restore the newest
+15. After the user confirms account, plugins/MCP, project list, and a new test
+    conversation, generate a canary evidence report:
+
+    ```sh
+    PYTHONPATH=src python3 -m codex_hybrid_switcher canary-report --config ~/.codex-hybrid-model-switcher/config.json --provider-id cloud-gpt-main --account-visible yes --plugins-visible yes --mcp-visible yes --project-list-visible yes --test-chat-responded yes --bridge-health-passed yes --setup-report-reviewed yes --verdict complete --output ~/Desktop/codex-hybrid-canary-evidence.md
+    ```
+
+16. If anything looks wrong, quit Codex Desktop and restore the newest
     `config.toml.bak-codex-hybrid-*` backup. Do not edit databases or caches.
 
 ## History Visibility Caveat
@@ -238,6 +246,8 @@ Do not claim setup is complete until current evidence shows:
 - user confirms Codex account, plugins/MCP, and project list are visible
 - user confirms a new test conversation responds
 - a redacted setup report has been generated or the user explicitly skipped it
+- a canary evidence report has recorded the visible checks or the user
+  explicitly skipped it
 - the user success checklist has been reviewed, or the user explicitly skipped
   it
 - final verdict from `FINAL_CHECK.md` is `Complete`, or the user explicitly

@@ -10,6 +10,7 @@ who need to decide whether the hybrid Codex setup actually worked.
 - The output said protected Codex files were unchanged.
 - A `config.toml.bak-codex-hybrid-*` backup was created.
 - A redacted setup report was generated or is about to be generated.
+- A canary evidence report will be generated after the visible checks.
 
 ## In Codex Desktop
 
@@ -29,6 +30,8 @@ Mark setup as successful only when all of these are true:
 - [ ] The generated setup report does not contain API keys, tokens, raw
   provider hostnames, private paths, account data, session text, or database
   content.
+- [ ] A `canary-report` was generated with account, plugins/MCP, project list,
+  test chat, bridge health, and setup report review recorded as `yes` or `na`.
 
 ## What Counts as Not Finished
 
@@ -39,6 +42,7 @@ The setup is not complete yet if:
 - Codex Desktop has not been reopened after the real switch
 - no new test conversation has responded
 - the user has not checked account, plugins/MCP, and project visibility
+- no `canary-report` has recorded the visible checks
 
 Say exactly which milestone passed instead of claiming the full setup is done.
 

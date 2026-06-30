@@ -5,6 +5,22 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.5.0
+
+- Added `canary-report`, a redacted final evidence report for real or simulated
+  Codex Desktop canaries.
+- The new report records manual UI confirmations for account visibility,
+  plugin entry points, MCP entry points, project list visibility, a responding
+  test chat, bridge health, setup report review, and an explicit completion
+  verdict.
+- `canary-report` is read-only for Codex state and writes only the chosen
+  Markdown output file.
+- Added warnings when a `complete` verdict is claimed without required visible
+  evidence.
+- Wired canary evidence into the stock Codex handoff validation, release
+  acceptance gate, README, START_HERE, FINAL_CHECK, AGENTS runbook, validation
+  matrix, release checklist, and setup-report guidance.
+
 ## v2.4.0
 
 - Added `scripts/validate-release-acceptance.py`, a read-only release

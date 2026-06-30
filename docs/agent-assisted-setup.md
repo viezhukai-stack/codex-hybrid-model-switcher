@@ -57,6 +57,7 @@ Codex should:
 - run guarded apply only after you confirm Codex Desktop is fully quit
 - verify protected Codex files did not change
 - generate a redacted setup report after the real switch
+- generate a canary evidence report after visible Codex Desktop checks pass
 - walk through `docs/user-success-criteria.md` before saying setup is complete
 - use `FINAL_CHECK.md` for the final completion verdict
 
@@ -110,8 +111,25 @@ PYTHONPATH=src python3 -m codex_hybrid_switcher setup-report \
 
 The report is redacted by design. Still review it before sharing it publicly.
 
-Then use [`user-success-criteria.md`](user-success-criteria.md) to confirm
-whether the setup is complete or only partially complete.
+Then ask Codex to record the visible UI evidence:
+
+```sh
+PYTHONPATH=src python3 -m codex_hybrid_switcher canary-report \
+  --config ~/.codex-hybrid-model-switcher/config.json \
+  --provider-id cloud-gpt-main \
+  --account-visible yes \
+  --plugins-visible yes \
+  --mcp-visible yes \
+  --project-list-visible yes \
+  --test-chat-responded yes \
+  --bridge-health-passed yes \
+  --setup-report-reviewed yes \
+  --verdict complete \
+  --output ~/Desktop/codex-hybrid-canary-evidence.md
+```
+
+Use [`user-success-criteria.md`](user-success-criteria.md) to confirm whether
+the setup is complete or only partially complete.
 
 For the final verdict, copy the prompt in [`../FINAL_CHECK.md`](../FINAL_CHECK.md)
 into Codex.

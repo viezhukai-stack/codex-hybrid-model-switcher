@@ -28,11 +28,15 @@ of the repository and a simulated stock Codex home.
 - The redacted setup report is generated and does not leak the simulated
   endpoint, private temp path, session text, database placeholder, or rollout
   content.
+- The canary evidence command is available for recording live UI confirmations
+  after a real user-visible test.
 
 ## What It Does Not Prove
 
 - It does not prove a real user's provider credentials are correct.
 - It does not open Codex Desktop or verify a live UI.
+- It does not replace the need for a real `canary-report` after the user checks
+  account, plugin/MCP, project list, and test-chat behavior in Codex Desktop.
 - It does not start a real bridge service during the default bridge validation.
 - It does not validate a real local llama.cpp model.
 - It does not migrate old conversations between provider buckets.

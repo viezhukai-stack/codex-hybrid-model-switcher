@@ -18,6 +18,7 @@ REQUIRED_HANDOFF_FILES = (
     "README.md",
     "bootstrap.py",
     "src/codex_hybrid_switcher/__main__.py",
+    "docs/canary-report.md",
     "scripts/validate-stock-codex-flow.py",
 )
 
@@ -88,6 +89,7 @@ def assert_handoff_docs(repo: Path) -> None:
         "bootstrap.py",
         "guarded-switch --dry-run",
         "setup-report",
+        "canary-report",
         "不要填 API key 原文",
         "config.toml.bak-codex-hybrid-*",
         "auth.json",
@@ -105,6 +107,39 @@ def assert_handoff_docs(repo: Path) -> None:
         raise SystemExit("AGENTS.md does not point agents to START_HERE.md")
     if "START_HERE.md" not in readme:
         raise SystemExit("README.md does not point users to START_HERE.md")
+    if "canary-report" not in readme:
+        raise SystemExit("README.md does not point users to canary-report")
+
+
+def assert_canary_report_is_redacted(report_path: Path, work: Path) -> None:
+    text = report_path.read_text(encoding="utf-8")
+    required = [
+        "Codex Hybrid Canary Evidence",
+        "verdict: `complete`",
+        "tested_provider: `cloud-gpt-main kind=cloud model=provider-gpt-main route=direct`",
+        "[x] yes Account information is visible",
+        "[x] yes Plugin entry points are visible",
+        "[x] yes MCP entry points are visible",
+        "[x] yes Project list is visible",
+        "[x] yes A new test conversation responded",
+        "`auth.json`: present sha256=",
+        "`models_cache.json`: present sha256=",
+        "`state_5.sqlite`: present sha256=",
+    ]
+    for item in required:
+        if item not in text:
+            raise SystemExit(f"canary evidence missing expected content: {item}")
+    forbidden = [
+        "example.test",
+        str(work),
+        "stock-codex-placeholder",
+        "do not mutate",
+        "sqlite placeholder",
+        "rollout logs",
+    ]
+    for item in forbidden:
+        if item in text:
+            raise SystemExit(f"canary evidence leaked private content: {item}")
 
 
 def validate_default_bridge_handoff(
@@ -200,6 +235,7 @@ def validate_handoff(python: Path, source_repo: Path, work: Path) -> None:
     codex_home = work / "stock-codex-home"
     temp_home = work / "home"
     report_path = work / "handoff-report.md"
+    canary_path = work / "handoff-canary-evidence.md"
 
     copy_clean_repo(source_repo, clean_repo)
     assert_handoff_docs(clean_repo)
@@ -297,6 +333,42 @@ def validate_handoff(python: Path, source_repo: Path, work: Path) -> None:
             env=env,
         )
         stock_flow.assert_report_is_redacted(report_path, work)
+        run(
+            [
+                str(python),
+                "-B",
+                "-m",
+                "codex_hybrid_switcher",
+                "canary-report",
+                "--config",
+                str(direct_private_config),
+                "--provider-id",
+                "cloud-gpt-main",
+                "--setup-report",
+                str(report_path),
+                "--account-visible",
+                "yes",
+                "--plugins-visible",
+                "yes",
+                "--mcp-visible",
+                "yes",
+                "--project-list-visible",
+                "yes",
+                "--test-chat-responded",
+                "yes",
+                "--bridge-health-passed",
+                "yes",
+                "--setup-report-reviewed",
+                "yes",
+                "--verdict",
+                "complete",
+                "--output",
+                str(canary_path),
+            ],
+            cwd=clean_repo,
+            env=env,
+        )
+        assert_canary_report_is_redacted(canary_path, work)
         print("stock Codex handoff validation passed")
     finally:
         stock_flow.cleanup_bridge(temp_home)

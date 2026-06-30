@@ -5,7 +5,7 @@ the repository public or publishing the GitHub release.
 
 ## Current Release
 
-The current public-readiness release is `v2.4.0`.
+The current public-readiness release is `v2.5.0`.
 
 Earlier `v1.0.0-rc.*`, `v1.0.0`, and v2.x tags are kept for audit history.
 Use the newest non-draft release unless a maintainer explicitly pins a
@@ -23,7 +23,8 @@ manually review:
 - `docs/open-source-readiness.md`
 - `docs/release-checklist.md`
 - `docs/validation-matrix.md`
-- draft release notes for `v1.0.0`
+- `docs/canary-report.md`
+- draft release notes for the current release
 
 Confirm the docs do not include:
 
@@ -57,6 +58,7 @@ If the repository is private, switch visibility only after:
 - GitHub Actions is green on `main`
 - `docs/open-source-readiness.md` has been checked manually
 - the draft `v1.0.0` release notes have been reviewed
+- final canary evidence report guidance has been reviewed
 
 Changing repository visibility is a manual owner action. It should not be done
 by automation.
