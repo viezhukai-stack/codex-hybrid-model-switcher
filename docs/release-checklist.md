@@ -8,6 +8,7 @@ Use this checklist before marking a release candidate ready.
 - `pytest`
 - `python -m codex_hybrid_switcher security-scan .`
 - `python scripts/validate-release-acceptance.py`
+- `python scripts/validate-github-entrypoint.py`
 - `python scripts/validate-install.py`
 - `python scripts/validate-stock-codex-flow.py`
 - `python scripts/validate-stock-codex-handoff.py`
@@ -45,6 +46,7 @@ Confirm the repository does not contain:
 - Stock-Codex simulation changes only `config.toml` and adds a
   `config.toml.bak-codex-hybrid-*` backup.
 - Stock-Codex handoff validation passes from a clean repository copy.
+- GitHub handoff entrypoint validation passes for the root copy-paste prompt.
 - Agent handoff drill passes and writes a redacted temporary drill report.
 - Real clean-machine canary template validation passes.
 - Release acceptance validation passes and confirms the stock Codex handoff
@@ -70,6 +72,8 @@ Confirm the repository does not contain:
 ## Documentation Checks
 
 - README points new users toward dry-run and guarded canary flows.
+- `HANDOFF_TO_CODEX.md` gives stock Codex users a single copy-paste prompt from
+  the GitHub page.
 - `CHANGELOG.md`, `SECURITY.md`, and `CONTRIBUTING.md` are present and current.
 - Windows docs describe the guarded launcher.
 - Local model docs say local validation is optional and machine-dependent.

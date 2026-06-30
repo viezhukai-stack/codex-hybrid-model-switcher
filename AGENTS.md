@@ -42,22 +42,23 @@ the private config, for example `OPENAI_COMPATIBLE_API_KEY`.
 
 Read these files before making changes:
 
-1. `START_HERE.md`
-2. `FINAL_CHECK.md`
-3. `README.md`
-4. `docs/bootstrap.md`
-5. `docs/first-run-wizard.md`
-6. `docs/agent-assisted-setup.md`
-7. `docs/api-key-environment.md`
-8. `docs/bridge-health.md`
-9. `docs/recovery.md`
-10. `docs/setup-report.md`
-11. `docs/canary-report.md`
-12. `docs/real-clean-machine-canary.md`
-13. `docs/agent-handoff-drill.md`
-14. `docs/stock-codex-handoff-validation.md`
-15. `docs/user-success-criteria.md`
-16. `docs/local-llama-smoke.md` only if the user asks for local models
+1. `HANDOFF_TO_CODEX.md`
+2. `START_HERE.md`
+3. `FINAL_CHECK.md`
+4. `README.md`
+5. `docs/bootstrap.md`
+6. `docs/first-run-wizard.md`
+7. `docs/agent-assisted-setup.md`
+8. `docs/api-key-environment.md`
+9. `docs/bridge-health.md`
+10. `docs/recovery.md`
+11. `docs/setup-report.md`
+12. `docs/canary-report.md`
+13. `docs/real-clean-machine-canary.md`
+14. `docs/agent-handoff-drill.md`
+15. `docs/stock-codex-handoff-validation.md`
+16. `docs/user-success-criteria.md`
+17. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 

@@ -5,6 +5,19 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.9.0
+
+- Added `HANDOFF_TO_CODEX.md`, a root copy-paste prompt for users who only have
+  stock Codex Desktop and a GitHub repository URL.
+- Added `scripts/validate-github-entrypoint.py` to verify the root handoff
+  prompt includes provider inputs, safety boundaries, bootstrap, dry-run,
+  reports, and final verdict guidance.
+- Wired the GitHub entrypoint validation into release acceptance and install
+  validation.
+- Updated README, START_HERE, AGENTS, release checklist, install validation,
+  public release plan, and validation matrix to make the GitHub handoff path a
+  first-class entrypoint.
+
 ## v2.8.0
 
 - Added `real-canary-template`, a redacted checklist generator for real

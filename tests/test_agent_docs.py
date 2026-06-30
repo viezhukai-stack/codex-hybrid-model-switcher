@@ -25,6 +25,7 @@ def test_agents_runbook_contains_required_safety_invariants():
 def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     text = read("AGENTS.md")
 
+    assert "HANDOFF_TO_CODEX.md" in text
     assert "START_HERE.md" in text
     assert "FINAL_CHECK.md" in text
     assert "docs/first-run-wizard.md" in text
@@ -83,6 +84,7 @@ def test_setup_intake_warns_against_raw_secret_collection():
 def test_readme_links_agent_assisted_path():
     text = read("README.md")
 
+    assert "HANDOFF_TO_CODEX.md" in text
     assert "START_HERE.md" in text
     assert "FINAL_CHECK.md" in text
     assert "docs/agent-assisted-setup.md" in text
@@ -124,6 +126,7 @@ def test_chinese_tutorial_points_to_stock_handoff():
 def test_start_here_is_safe_stock_codex_handoff():
     text = read("START_HERE.md")
 
+    assert "HANDOFF_TO_CODEX.md" in text
     assert "stock Codex Desktop" in text
     assert "Copy This Prompt Into Codex" in text
     assert "FINAL_CHECK.md" in text
@@ -146,6 +149,25 @@ def test_start_here_is_safe_stock_codex_handoff():
     for forbidden in ("LaunchAgent", "KeepAlive", "scheduled", "recovery loops"):
         assert forbidden in text
     assert "config.toml.bak-codex-hybrid-*" in text
+
+
+def test_handoff_to_codex_is_single_prompt_entrypoint():
+    text = read("HANDOFF_TO_CODEX.md")
+
+    assert "https://github.com/viezhukai-stack/codex-hybrid-model-switcher" in text
+    assert "stock Codex Desktop" in text
+    assert "base_url" in text
+    assert "model" in text
+    assert "api_key_env" in text
+    assert "cloud_route: bridge" in text
+    assert "Do not paste a raw API key" in text
+    assert "validate-agent-handoff-drill.py" in text
+    assert "guarded-switch --dry-run" in text
+    assert "real-canary-template" in text
+    for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
+        assert protected in text
+    for forbidden in ("LaunchAgent", "KeepAlive", "scheduled tasks", "recovery loops"):
+        assert forbidden in text
 
 
 def test_api_key_environment_doc_explains_env_help_boundary():
