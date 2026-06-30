@@ -3,6 +3,16 @@
 All notable changes to this project are summarized here. This project follows a
 conservative release process because it edits Codex provider configuration.
 
+## v1.0.0-rc.2
+
+- Removed organization-specific private endpoint names from the built-in
+  security scanner before public-readiness review.
+- Replaced that check with a generic internal-hostname rule for `.local`,
+  `.lan`, and `.internal` endpoints.
+- Added a regression test for internal endpoint hostname detection.
+- Documented that project-specific deny-lists belong in private deployment
+  checks, not in the public repository.
+
 ## v1.0.0-rc.1
 
 - Prepared the repository as a private release candidate.
