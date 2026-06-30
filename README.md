@@ -41,8 +41,10 @@ flowchart LR
 
 Start here:
 
+- Hand this repo to Codex: [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md)
 - New user walkthrough in Chinese: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
 - Beginner first-run wizard: [`docs/first-run-wizard.md`](docs/first-run-wizard.md)
+- Setup intake checklist: [`docs/setup-intake.md`](docs/setup-intake.md)
 - Safe English demo without touching a real profile: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
 - Visual demo gallery: [`docs/demo-gallery.md`](docs/demo-gallery.md)
 - Windows click-through user flow: [`docs/windows-user-flow.md`](docs/windows-user-flow.md)
@@ -73,6 +75,10 @@ cache, rewrite old conversations, or install always-on recovery services.
   llama.cpp server stays behind it on `127.0.0.1:19031`.
 
 ## Quick Start
+
+If you want Codex itself to configure this project for you, open this repository
+in Codex and start with [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md).
+The root `AGENTS.md` file tells Codex how to proceed safely.
 
 1. Install locally:
 
@@ -158,6 +164,8 @@ For common setup and recovery questions, see `docs/faq.md`.
 
 ## Documentation
 
+- Agent-assisted setup: [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md)
+- Setup intake checklist: [`docs/setup-intake.md`](docs/setup-intake.md)
 - Chinese tutorial: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
 - English quickstart demo: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
 - Visual demo gallery: [`docs/demo-gallery.md`](docs/demo-gallery.md)
