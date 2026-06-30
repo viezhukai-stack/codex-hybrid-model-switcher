@@ -49,6 +49,7 @@ def test_bootstrap_noninteractive_creates_private_config_and_dry_runs(tmp_path):
     assert "PYTHONPATH=" in proc.stdout
     assert "state_5.sqlite" in proc.stdout
     assert "env-help" in proc.stdout
+    assert "bridge-health" in proc.stdout
 
 
 def test_bootstrap_requires_base_url_for_noninteractive_new_config(tmp_path):

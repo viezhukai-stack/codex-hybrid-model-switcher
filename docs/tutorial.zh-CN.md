@@ -225,6 +225,16 @@ codex-hybrid-switcher env-help --config ~/.codex-hybrid-model-switcher/config.js
 它会告诉你在 macOS 或 Windows 上怎么设置环境变量。它不会读取、显示或保存你的
 API key。
 
+如果你使用默认的 `route=bridge`，还可以检查本机 bridge 入口：
+
+```sh
+codex-hybrid-switcher bridge-health --config ~/.codex-hybrid-model-switcher/config.json
+```
+
+真实切换前 bridge 端口没开不一定是错误，因为 guarded switch 可以启动托管 bridge。
+但如果 Codex 打开后新对话没有回复，就先运行 `bridge-health`，不要盲目改
+`auth.json`、`models_cache.json` 或 `state_5.sqlite`。
+
 ## 第五步：先 dry-run，不要直接切换
 
 云端 provider 示例：

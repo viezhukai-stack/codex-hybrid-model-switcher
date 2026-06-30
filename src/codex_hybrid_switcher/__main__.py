@@ -4,6 +4,7 @@ import argparse
 import sys
 
 from .bridge import run_bridge
+from .bridge_health import run_bridge_health
 from .doctor import run_doctor
 from .env_help import run_env_help
 from .local_smoke import run_local_smoke
@@ -25,6 +26,10 @@ def main(argv: list[str] | None = None) -> int:
         return parser
 
     add_config(sub.add_parser("bridge"))
+    bridge_health = sub.add_parser("bridge-health")
+    bridge_health.add_argument("--config", dest="sub_config")
+    bridge_health.add_argument("--strict", action="store_true")
+    bridge_health.add_argument("--timeout", type=float, default=2.0)
     local_smoke = sub.add_parser("local-smoke")
     local_smoke.add_argument("--config", dest="sub_config")
     local_smoke.add_argument("--use-existing-bridge", action="store_true")
@@ -91,6 +96,8 @@ def main(argv: list[str] | None = None) -> int:
     config_path = getattr(args, "sub_config", None) or args.config
     if args.command == "bridge":
         return run_bridge(config_path)
+    if args.command == "bridge-health":
+        return run_bridge_health(config_path, strict=args.strict, timeout=args.timeout)
     if args.command == "local-smoke":
         return run_local_smoke(
             config_path,

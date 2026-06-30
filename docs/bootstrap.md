@@ -100,3 +100,13 @@ set PYTHONPATH=src && py -3 -m codex_hybrid_switcher env-help --config "%USERPRO
 
 `env-help` prints copy-paste instructions for setting the environment variable.
 It does not read, print, or store API keys.
+
+For bridge-routed providers, Codex can also check the local bridge entry point:
+
+```sh
+PYTHONPATH=src python3 -m codex_hybrid_switcher bridge-health --config ~/.codex-hybrid-model-switcher/config.json
+```
+
+Before the real guarded switch, a closed bridge port can be normal because the
+managed bridge is started during apply. After Codex Desktop is reopened, use
+`bridge-health` whenever a test chat does not reply.

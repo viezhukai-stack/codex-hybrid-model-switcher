@@ -31,6 +31,7 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "docs/bootstrap.md" in text
     assert "docs/agent-assisted-setup.md" in text
     assert "docs/api-key-environment.md" in text
+    assert "docs/bridge-health.md" in text
     assert "docs/recovery.md" in text
     assert "docs/local-llama-smoke.md" in text
     assert "docs/stock-codex-handoff-validation.md" in text
@@ -50,6 +51,7 @@ def test_agent_assisted_setup_has_copy_paste_prompt_and_history_caveat():
     assert "bootstrap.py" in text
     assert "api_key_env" in text
     assert "env-help" in text
+    assert "bridge-health" in text
     assert "cloud_route" in text
     assert "--cloud-route bridge" in text
     assert "不要修改 auth.json" in text
@@ -77,6 +79,7 @@ def test_readme_links_agent_assisted_path():
     assert "docs/agent-assisted-setup.md" in text
     assert "docs/setup-intake.md" in text
     assert "docs/api-key-environment.md" in text
+    assert "docs/bridge-health.md" in text
     assert "docs/bootstrap.md" in text
     assert "docs/setup-report.md" in text
     assert "docs/user-success-criteria.md" in text
@@ -92,6 +95,7 @@ def test_user_success_criteria_covers_visible_codex_completion():
     assert "Plugin and MCP entry points are still visible" in text
     assert "project list is still visible" in text
     assert "A new test conversation responds" in text
+    assert "bridge-health" in text
     assert "not complete yet" in text
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
         assert protected in text
@@ -117,6 +121,7 @@ def test_start_here_is_safe_stock_codex_handoff():
     assert "model" in text
     assert "api_key_env" in text
     assert "env-help" in text
+    assert "bridge-health" in text
     assert "cloud_route" in text
     assert "--cloud-route bridge" in text
     assert "不要填 API key 原文" in text
@@ -134,7 +139,21 @@ def test_api_key_environment_doc_explains_env_help_boundary():
     assert "does not read, print, or store API keys" in text
     assert "OPENAI_COMPATIBLE_API_KEY" in text
     assert "route=bridge" in text
+    assert "bridge-health" in text
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions"):
+        assert protected in text
+
+
+def test_bridge_health_doc_explains_read_only_diagnostics():
+    text = read("docs/bridge-health.md")
+
+    assert "read-only" in text
+    assert "/v1/health" in text
+    assert "/v1/models" in text
+    assert "api_key_env" in text
+    assert "does not edit" in text
+    assert "does not start the bridge" in text
+    for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
         assert protected in text
 
 
@@ -150,6 +169,7 @@ def test_final_check_prompt_defines_completion_verdicts_and_safety_boundary():
         "项目列表",
         "新建测试对话",
         "setup report",
+        "bridge-health",
     ):
         assert visible in text
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions", "rollout logs"):

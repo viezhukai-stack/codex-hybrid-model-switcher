@@ -13,6 +13,8 @@ simulated Codex home.
 - `init-config` into temporary macOS and Windows private config paths.
 - `validate-config` against the generated private config.
 - `doctor` against a temporary config.
+- `bridge-health` against a temporary bridge-routed config with the bridge port
+  closed, confirming it gives safe next steps without touching Codex state.
 - `bootstrap.py --non-interactive` into a temporary private config path.
 - Bootstrap guarded dry-run without touching the simulated Codex home.
 - Stock-Codex bootstrap-to-apply simulation using a temporary `.codex` home.

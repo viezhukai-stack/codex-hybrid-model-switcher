@@ -42,8 +42,9 @@ prompt.
 3. 生成用户目录里的私有 config.json。
 4. 运行 validate-config。
 5. 如果看到 `api_key_env(...unset)`，运行 env-help 并告诉我怎么设置环境变量。
-6. 运行 guarded-switch --dry-run。
-7. 用人话解释 dry-run 会改什么、不会改什么。
+6. 如果使用 bridge 路由，运行 bridge-health，告诉我 bridge、key、模型列表目前是什么状态。
+7. 运行 guarded-switch --dry-run。
+8. 用人话解释 dry-run 会改什么、不会改什么。
 
 只有 dry-run 安全后，再让我完全退出 Codex Desktop，然后再执行真实 guarded-switch。
 真实切换后，请验证受保护文件 hash 没变，并生成脱敏 setup report。
@@ -102,6 +103,8 @@ First milestone, before any real switch:
 - config validation passes
 - `api_key_env` is set, or Codex has shown the env-help instructions needed to
   set it
+- for `cloud_route=bridge`, `bridge-health` has either passed or clearly
+  explained that the bridge can be started during guarded apply
 - guarded dry-run prints a redacted diff
 - no real Codex files changed
 - for `cloud_route=bridge`, the API key environment variable is set before the
@@ -122,6 +125,8 @@ Final user-visible milestone:
 - plugins/MCP/project list are still visible
 - a new test conversation responds
 - a redacted setup report exists
+- if a bridge-routed test chat does not reply, `bridge-health` has been run and
+  its next steps have been followed
 - the user success checklist in `docs/user-success-criteria.md` has been
   reviewed
 - the final check in `FINAL_CHECK.md` reports `Complete`
@@ -187,3 +192,20 @@ PYTHONPATH=src python3 -m codex_hybrid_switcher env-help --config ~/.codex-hybri
 
 The command prints OS-specific setup instructions. It does not ask for, print,
 or store the API key.
+
+## If A Bridge-Routed Test Chat Does Not Reply
+
+Ask Codex to run:
+
+```sh
+python3 -m codex_hybrid_switcher bridge-health --config ~/.codex-hybrid-model-switcher/config.json
+```
+
+If running from the repository without installing:
+
+```sh
+PYTHONPATH=src python3 -m codex_hybrid_switcher bridge-health --config ~/.codex-hybrid-model-switcher/config.json
+```
+
+This checks the bridge port, `/v1/health`, `/v1/models`, expected model ids, and
+`api_key_env` status without editing Codex files.

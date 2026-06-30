@@ -60,6 +60,7 @@ def write_validation_config(path: Path, codex_home: Path) -> None:
                         "api_key_env": "OPENAI_COMPATIBLE_API_KEY",
                         "model": "provider-gpt-main",
                         "wire_api": "responses",
+                        "route": "bridge",
                     },
                     {
                         "id": "local-gemma",
@@ -168,6 +169,8 @@ def validate_first_run_setup(python: Path, repo: Path, work: Path) -> None:
         raise SystemExit("setup should create official + one cloud provider by default")
     if "guarded-switch cloud-gpt-main --dry-run" not in proc.stdout:
         raise SystemExit("setup output did not print the guarded dry-run next step")
+    if "bridge-health" not in proc.stdout:
+        raise SystemExit("setup output did not print the bridge-health next step")
     if (work / "setup-codex-home" / "config.toml").exists():
         raise SystemExit("setup touched simulated Codex config.toml")
     run([str(python), "-m", "codex_hybrid_switcher", "validate-config", "--config", str(setup_config)], cwd=repo)
@@ -175,6 +178,53 @@ def validate_first_run_setup(python: Path, repo: Path, work: Path) -> None:
     for expected in ("API key environment help", "OPENAI_COMPATIBLE_API_KEY", "does not read, print, or store API keys"):
         if expected not in env_proc.stdout:
             raise SystemExit(f"env-help output missing expected content: {expected}")
+
+
+def validate_bridge_health_closed_port(python: Path, repo: Path, work: Path) -> None:
+    codex_home = work / "bridge-health-codex-home"
+    codex_home.mkdir()
+    config_json = work / "bridge-health-config.json"
+    write_validation_config(config_json, codex_home)
+    data = json.loads(config_json.read_text(encoding="utf-8"))
+    data["bridge"]["port"] = 9
+    data["bridge"]["llama_port"] = 10
+    config_json.write_text(json.dumps(data), encoding="utf-8")
+
+    env = os.environ.copy()
+    env.pop("OPENAI_COMPATIBLE_API_KEY", None)
+    proc = subprocess.run(
+        [
+            str(python),
+            "-m",
+            "codex_hybrid_switcher",
+            "bridge-health",
+            "--config",
+            str(config_json),
+        ],
+        cwd=repo,
+        env=env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    print("+ " + " ".join([str(python), "-m", "codex_hybrid_switcher", "bridge-health", "--config", str(config_json)]), flush=True)
+    if proc.stdout:
+        print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
+    if proc.returncode != 1:
+        raise SystemExit(f"bridge-health closed-port check should return 1, got {proc.returncode}")
+    required_stdout = [
+        "Bridge health",
+        "CLOSED bridge TCP port",
+        "OPENAI_COMPATIBLE_API_KEY (unset)",
+        "env-help",
+        "codex_hybrid_switcher bridge",
+    ]
+    missing = [item for item in required_stdout if item not in proc.stdout]
+    if missing:
+        raise SystemExit(f"bridge-health output missing expected content: {missing}")
+    if "example.test" in proc.stdout:
+        raise SystemExit("bridge-health leaked private upstream hostname")
 
 
 def validate_bootstrap(python: Path, repo: Path, work: Path) -> None:
@@ -205,7 +255,7 @@ def validate_bootstrap(python: Path, repo: Path, work: Path) -> None:
         raise SystemExit("bootstrap did not create the private config")
     if (bootstrap_codex_home / "config.toml").exists():
         raise SystemExit("bootstrap touched simulated Codex config.toml")
-    required_stdout = ["Guarded dry-run", "No files will be changed", "PYTHONPATH="]
+    required_stdout = ["Guarded dry-run", "No files will be changed", "PYTHONPATH=", "bridge-health"]
     missing = [item for item in required_stdout if item not in proc.stdout]
     if missing:
         raise SystemExit(f"bootstrap output missing expected content: {missing}")
@@ -252,6 +302,7 @@ def main(argv: list[str] | None = None) -> int:
         codex_home.mkdir()
         write_validation_config(validation_config, codex_home)
         run([str(python), "-m", "codex_hybrid_switcher", "doctor", "--config", str(validation_config)], cwd=repo)
+        validate_bridge_health_closed_port(python, repo, work)
         validate_first_run_setup(python, repo, work)
         validate_bootstrap(python, repo, work)
         run([str(python), "scripts/validate-stock-codex-flow.py", "--tmp-root", str(work)], cwd=repo)

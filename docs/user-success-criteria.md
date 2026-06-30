@@ -24,6 +24,8 @@ Mark setup as successful only when all of these are true:
 - [ ] Existing conversations are not deleted. Some may appear under a different
   provider bucket; that is visibility behavior, not deletion.
 - [ ] A new test conversation responds using the configured provider.
+- [ ] For bridge-routed providers, `bridge-health` passes or clearly identifies
+  the remaining bridge/key/model-list issue.
 - [ ] The generated setup report does not contain API keys, tokens, raw
   provider hostnames, private paths, account data, session text, or database
   content.
@@ -66,4 +68,3 @@ cloud provider already works.
 After walking through this checklist, use the copy-paste prompt in
 [`../FINAL_CHECK.md`](../FINAL_CHECK.md). It asks Codex to classify the result as
 `Complete`, `Partially complete`, `Not complete`, or `Needs rollback`.
-

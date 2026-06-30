@@ -26,11 +26,13 @@ The goal is to make Codex say one of these clearly:
 - 新建测试对话是否已经成功回复？
 - setup report 是否已经生成？
 - setup report 中是否没有 API key、token、原始 provider hostname、本机路径、账号数据、会话文本或数据库内容？
+- 如果 provider 使用 bridge 路由，bridge-health 是否通过，或者是否明确指出了 bridge/key/model list 的问题？
 
 请同时核对命令侧证据：
 - guarded-switch 是否显示 protected files unchanged？
 - 是否有 config.toml.bak-codex-hybrid-* 备份？
 - 是否没有修改 auth.json、models_cache.json、state_5.sqlite、sessions 或 rollout logs？
+- 如果新对话没有回复，是否已经运行 bridge-health，而不是猜测问题原因？
 
 最后请只给出一个结论：
 - Complete：全部通过。
@@ -62,4 +64,3 @@ If the result is `Needs rollback`, the default rollback is:
 3. Do not edit `auth.json`, `models_cache.json`, `state_5.sqlite`, `sessions/`,
    or rollout logs.
 4. Reopen Codex Desktop and re-check account, plugins/MCP, and project list.
-
