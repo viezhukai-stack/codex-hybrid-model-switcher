@@ -16,6 +16,7 @@ simulated Codex home.
 - `bootstrap.py --non-interactive` into a temporary private config path.
 - Bootstrap guarded dry-run without touching the simulated Codex home.
 - Stock-Codex bootstrap-to-apply simulation using a temporary `.codex` home.
+- Redacted setup report generation after the stock-Codex simulation.
 - `switch --dry-run` against a simulated `config.toml`.
 - MCP/plugin-like config blocks remain visible in the dry-run diff.
 - The simulated `config.toml` is unchanged after dry-run.
@@ -80,3 +81,5 @@ The script creates a temporary Codex home with `auth.json`,
 `models_cache.json`, `state_5.sqlite`, `sessions/`, rollout logs, and
 MCP/plugin/project config blocks. It verifies bootstrap dry-run writes nothing,
 then verifies guarded apply changes only `config.toml` and creates a backup.
+It also generates a redacted setup report and checks that private hostnames,
+temporary paths, and session/database contents are not leaked.

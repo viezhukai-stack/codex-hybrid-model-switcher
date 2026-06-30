@@ -125,6 +125,36 @@ def assert_guarded_apply_scope(before: dict[str, str], codex_home: Path) -> None
             raise SystemExit(f"updated config lost preserved block: {marker}")
 
 
+def assert_report_is_redacted(report_path: Path, work: Path) -> None:
+    text = report_path.read_text(encoding="utf-8")
+    required = [
+        "Codex Hybrid Setup Report",
+        "config_validation: `passed`",
+        "active_model_provider: `custom`",
+        "active_model: `provider-gpt-main`",
+        "`auth.json`: present sha256=",
+        "`models_cache.json`: present sha256=",
+        "`state_5.sqlite`: present sha256=",
+        "`mcp`: present",
+        "`plugins`: present",
+        "`projects`: present",
+    ]
+    for item in required:
+        if item not in text:
+            raise SystemExit(f"setup report missing expected content: {item}")
+    forbidden = [
+        "example.test",
+        str(work),
+        "stock-codex-placeholder",
+        "do not mutate",
+        "sqlite placeholder",
+        "rollout logs",
+    ]
+    for item in forbidden:
+        if item in text:
+            raise SystemExit(f"setup report leaked private content: {item}")
+
+
 def validate_stock_flow(python: Path, repo: Path, work: Path) -> None:
     codex_home = work / "stock-codex-home"
     private_config = work / "private" / "config.json"
@@ -175,6 +205,22 @@ def validate_stock_flow(python: Path, repo: Path, work: Path) -> None:
         env=env,
     )
     assert_guarded_apply_scope(before_bootstrap, codex_home)
+    report_path = work / "stock-flow-report.md"
+    run(
+        [
+            str(python),
+            "-m",
+            "codex_hybrid_switcher",
+            "setup-report",
+            "--config",
+            str(private_config),
+            "--output",
+            str(report_path),
+        ],
+        cwd=repo,
+        env=env,
+    )
+    assert_report_is_redacted(report_path, work)
     print("stock Codex flow validation passed")
 
 

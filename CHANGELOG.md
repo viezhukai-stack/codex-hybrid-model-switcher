@@ -5,6 +5,18 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v1.5.0
+
+- Added `setup-report`, a redacted Markdown report for completed or in-progress
+  Codex hybrid setup.
+- Added report coverage for active provider/model, provider ids, protected file
+  hash prefixes, preserved config sections, backups, and local model path
+  status.
+- Added setup report generation and redaction checks to the stock-Codex
+  validation flow.
+- Documented setup reports in README, AGENTS, install validation, validation
+  matrix, release checklist, agent-assisted setup, and the Chinese tutorial.
+
 ## v1.4.0
 
 - Added stock-Codex bootstrap-to-apply validation using a temporary simulated
