@@ -8,6 +8,7 @@ from .doctor import run_doctor
 from .local_smoke import run_local_smoke
 from .private_config import init_config, run_validate_config
 from .security import run_security_scan
+from .setup_wizard import run_setup_wizard
 from .smoke import run_smoke
 from .switcher import guarded_switch_provider, interactive_menu, switch_provider
 
@@ -42,6 +43,22 @@ def main(argv: list[str] | None = None) -> int:
     validate_config = sub.add_parser("validate-config")
     validate_config.add_argument("--config", dest="sub_config")
     validate_config.add_argument("--check-paths", action="store_true")
+    setup = sub.add_parser("setup")
+    setup.add_argument("--output")
+    setup.add_argument("--platform", choices=["macos", "windows"])
+    setup.add_argument("--codex-home")
+    setup.add_argument("--provider-id")
+    setup.add_argument("--provider-label")
+    setup.add_argument("--base-url")
+    setup.add_argument("--model")
+    setup.add_argument("--api-key-env")
+    setup.add_argument("--wire-api")
+    setup.add_argument("--include-local", action="store_true")
+    setup.add_argument("--llama-server-path")
+    setup.add_argument("--model-path")
+    setup.add_argument("--mmproj-path")
+    setup.add_argument("--non-interactive", action="store_true")
+    setup.add_argument("--force", action="store_true")
     menu = sub.add_parser("menu")
     menu.add_argument("--config", dest="sub_config")
     menu.add_argument("--force", action="store_true")
@@ -83,6 +100,24 @@ def main(argv: list[str] | None = None) -> int:
         return run_security_scan(args.root)
     if args.command == "validate-config":
         return run_validate_config(config_path, check_paths=args.check_paths)
+    if args.command == "setup":
+        return run_setup_wizard(
+            output=args.output,
+            platform=args.platform,
+            codex_home=args.codex_home,
+            provider_id=args.provider_id,
+            provider_label=args.provider_label,
+            base_url=args.base_url,
+            model=args.model,
+            api_key_env=args.api_key_env,
+            wire_api=args.wire_api,
+            include_local=args.include_local,
+            llama_server_path=args.llama_server_path,
+            model_path=args.model_path,
+            mmproj_path=args.mmproj_path,
+            non_interactive=args.non_interactive,
+            force=args.force,
+        )
     if args.command == "menu":
         return interactive_menu(config_path, force=args.force, dry_run=args.dry_run)
     if args.command == "switch":

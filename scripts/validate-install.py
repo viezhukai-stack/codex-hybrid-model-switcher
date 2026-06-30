@@ -137,6 +137,42 @@ def validate_dry_run(python: Path, repo: Path, work: Path) -> None:
         raise SystemExit("guarded dry-run did not print protected hash preflight")
 
 
+def validate_first_run_setup(python: Path, repo: Path, work: Path) -> None:
+    setup_config = work / "setup-generated" / "config.json"
+    proc = run(
+        [
+            str(python),
+            "-m",
+            "codex_hybrid_switcher",
+            "setup",
+            "--non-interactive",
+            "--output",
+            str(setup_config),
+            "--codex-home",
+            str(work / "setup-codex-home"),
+            "--base-url",
+            "https://example.test/v1",
+            "--model",
+            "provider-gpt-main",
+            "--api-key-env",
+            "OPENAI_COMPATIBLE_API_KEY",
+        ],
+        cwd=repo,
+    )
+    if not setup_config.exists():
+        raise SystemExit("setup did not create the private config")
+    data = json.loads(setup_config.read_text(encoding="utf-8"))
+    if data["codex_home"] != str(work / "setup-codex-home"):
+        raise SystemExit("setup did not write the requested codex_home")
+    if len(data["providers"]) != 2:
+        raise SystemExit("setup should create official + one cloud provider by default")
+    if "guarded-switch cloud-gpt-main --dry-run" not in proc.stdout:
+        raise SystemExit("setup output did not print the guarded dry-run next step")
+    if (work / "setup-codex-home" / "config.toml").exists():
+        raise SystemExit("setup touched simulated Codex config.toml")
+    run([str(python), "-m", "codex_hybrid_switcher", "validate-config", "--config", str(setup_config)], cwd=repo)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run isolated install validation without touching real Codex state.")
     parser.add_argument("--tmp-root", default="/private/tmp", help="temporary root; defaults to /private/tmp")
@@ -178,6 +214,7 @@ def main(argv: list[str] | None = None) -> int:
         codex_home.mkdir()
         write_validation_config(validation_config, codex_home)
         run([str(python), "-m", "codex_hybrid_switcher", "doctor", "--config", str(validation_config)], cwd=repo)
+        validate_first_run_setup(python, repo, work)
         validate_dry_run(python, repo, work)
         print("install validation passed")
     finally:
