@@ -15,6 +15,7 @@ DEFAULT_PROVIDER_LABEL = "Cloud GPT Main"
 DEFAULT_API_KEY_ENV = "OPENAI_COMPATIBLE_API_KEY"
 DEFAULT_MODEL = "provider-gpt-main"
 DEFAULT_WIRE_API = "responses"
+DEFAULT_CLOUD_ROUTE = "bridge"
 SECRET_SHAPED_RE = re.compile(r"(sk-[A-Za-z0-9_-]{12,}|Bearer\s+[A-Za-z0-9._-]{12,}|[A-Za-z0-9_-]{32,})")
 
 
@@ -57,6 +58,7 @@ def build_first_run_config(
     model: str = DEFAULT_MODEL,
     api_key_env: str = DEFAULT_API_KEY_ENV,
     wire_api: str = DEFAULT_WIRE_API,
+    cloud_route: str = DEFAULT_CLOUD_ROUTE,
     include_official: bool = True,
     include_local: bool = False,
     local_model_id: str = "local/gemma",
@@ -84,6 +86,7 @@ def build_first_run_config(
             "api_key_env": api_key_env,
             "model": model,
             "wire_api": wire_api,
+            "route": cloud_route,
         }
     )
 
@@ -169,6 +172,7 @@ def run_setup_wizard(
     model: str | None = None,
     api_key_env: str | None = None,
     wire_api: str | None = None,
+    cloud_route: str | None = None,
     include_local: bool = False,
     llama_server_path: str | None = None,
     model_path: str | None = None,
@@ -182,6 +186,7 @@ def run_setup_wizard(
     chosen_provider_id = provider_id or DEFAULT_PROVIDER_ID
     chosen_provider_label = provider_label or DEFAULT_PROVIDER_LABEL
     chosen_wire_api = wire_api or DEFAULT_WIRE_API
+    chosen_cloud_route = cloud_route or DEFAULT_CLOUD_ROUTE
 
     if non_interactive:
         if not base_url:
@@ -200,6 +205,7 @@ def run_setup_wizard(
         base_url = prompt_default("OpenAI-compatible base_url", base_url or "https://YOUR-ENDPOINT.example/v1", input_func=input_func)
         chosen_model = prompt_default("Model id", model or DEFAULT_MODEL, input_func=input_func)
         chosen_api_key_env = prompt_default("API key environment variable name", api_key_env or DEFAULT_API_KEY_ENV, input_func=input_func)
+        chosen_cloud_route = prompt_default("Cloud route (bridge or direct)", chosen_cloud_route, input_func=input_func)
         include_local = prompt_yes_no("Add a local llama.cpp provider now", include_local, input_func=input_func)
         if include_local:
             llama_server_path = prompt_default("llama-server path", llama_server_path or "~/path/to/llama-server", input_func=input_func)
@@ -209,6 +215,9 @@ def run_setup_wizard(
     assert base_url is not None
     if looks_like_secret(chosen_api_key_env):
         print("api_key_env should be an environment variable name, not the API key itself.")
+        return 2
+    if chosen_cloud_route not in {"bridge", "direct"}:
+        print("cloud route must be either 'bridge' or 'direct'.")
         return 2
 
     data = build_first_run_config(
@@ -220,6 +229,7 @@ def run_setup_wizard(
         model=chosen_model,
         api_key_env=chosen_api_key_env,
         wire_api=chosen_wire_api,
+        cloud_route=chosen_cloud_route,
         include_local=include_local,
         llama_server_path=llama_server_path,
         model_path=model_path,

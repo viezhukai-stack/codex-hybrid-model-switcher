@@ -84,6 +84,9 @@ def validate_config(config: AppConfig, *, check_paths: bool = False) -> list[str
         if not provider.get("model"):
             errors.append(f"{provider_id}: model is required")
         if kind == "cloud":
+            route = str(provider.get("route") or "direct")
+            if route not in {"direct", "bridge"}:
+                errors.append(f"{provider_id}: route must be direct or bridge")
             if not provider.get("base_url"):
                 errors.append(f"{provider_id}: base_url is required")
             if not provider.get("api_key_env"):
@@ -114,7 +117,8 @@ def print_validation(config: AppConfig, *, check_paths: bool = False) -> None:
         line = f"  - {provider_id} [{kind}] model={model}"
         if kind == "cloud":
             env_name = str(provider.get("api_key_env") or "<missing>")
-            line += f" base_url={redact_url(provider.get('base_url'))} api_key_env={env_name}({env_status(env_name)})"
+            route = str(provider.get("route") or "direct")
+            line += f" route={route} base_url={redact_url(provider.get('base_url'))} api_key_env={env_name}({env_status(env_name)})"
         print(line)
     if any(provider.get("kind") == "local" for provider in config.providers):
         print("local_model:")

@@ -19,6 +19,7 @@ def write_private_config(tmp_path, *, cloud_base_url="https://private.example/v1
                         "base_url": cloud_base_url,
                         "api_key_env": "PRIVATE_PROVIDER_KEY",
                         "model": "private-model",
+                        "route": "bridge",
                     },
                     {
                         "id": "local-gemma",
@@ -69,6 +70,31 @@ def test_validate_config_reports_missing_cloud_fields(tmp_path):
     assert "cloud-main: api_key_env is required" in errors
 
 
+def test_validate_config_reports_unknown_cloud_route(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "providers": [
+                    {
+                        "id": "cloud-main",
+                        "kind": "cloud",
+                        "base_url": "https://private.example/v1",
+                        "api_key_env": "PRIVATE_PROVIDER_KEY",
+                        "model": "private-model",
+                        "route": "sideways",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    errors = validate_config(load_config(str(config_path)))
+
+    assert "cloud-main: route must be direct or bridge" in errors
+
+
 def test_run_validate_config_redacts_private_endpoint_and_paths(tmp_path, capsys):
     host = "private-" + "endpoint.example"
     private_path = "/private/" + "models/model.gguf"
@@ -79,5 +105,6 @@ def test_run_validate_config_redacts_private_endpoint_and_paths(tmp_path, capsys
 
     assert host not in out
     assert private_path not in out
+    assert "route=bridge" in out
     assert "https://<redacted>/v1" in out
     assert "model_path: configured" in out

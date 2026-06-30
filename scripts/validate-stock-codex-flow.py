@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import os
+import signal
 import shutil
 import subprocess
 import sys
@@ -44,6 +45,23 @@ def snapshot_tree(root: Path) -> dict[str, str]:
         if path.is_file():
             snapshot[path.relative_to(root).as_posix()] = sha256(path)
     return snapshot
+
+
+def cleanup_bridge(temp_home: Path) -> None:
+    pid_path = temp_home / ".codex-hybrid-model-switcher" / "bridge.pid"
+    if not pid_path.exists():
+        return
+    try:
+        pid = int(pid_path.read_text(encoding="utf-8").strip())
+    except ValueError:
+        return
+    if sys.platform == "win32":
+        subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        return
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except OSError:
+        return
 
 
 def write_stock_codex_home(codex_home: Path) -> None:
@@ -166,62 +184,68 @@ def validate_stock_flow(python: Path, repo: Path, work: Path) -> None:
     env = os.environ.copy()
     env["HOME"] = str(temp_home)
     env["PYTHONPATH"] = str(repo / "src")
-    run(
-        [
-            str(python),
-            "-I",
-            "bootstrap.py",
-            "--non-interactive",
-            "--config",
-            str(private_config),
-            "--codex-home",
-            str(codex_home),
-            "--provider-id",
-            "cloud-gpt-main",
-            "--base-url",
-            "https://example.test/v1",
-            "--model",
-            "provider-gpt-main",
-            "--api-key-env",
-            "OPENAI_COMPATIBLE_API_KEY",
-        ],
-        cwd=repo,
-        env=env,
-    )
-    assert_dry_run_unchanged(before_bootstrap, codex_home)
+    env["OPENAI_COMPATIBLE_API_KEY"] = "test-provider-key"
+    try:
+        run(
+            [
+                str(python),
+                "-I",
+                "bootstrap.py",
+                "--non-interactive",
+                "--config",
+                str(private_config),
+                "--codex-home",
+                str(codex_home),
+                "--provider-id",
+                "cloud-gpt-main",
+                "--base-url",
+                "https://example.test/v1",
+                "--model",
+                "provider-gpt-main",
+                "--api-key-env",
+                "OPENAI_COMPATIBLE_API_KEY",
+                "--cloud-route",
+                "direct",
+            ],
+            cwd=repo,
+            env=env,
+        )
+        assert_dry_run_unchanged(before_bootstrap, codex_home)
 
-    run(
-        [
-            str(python),
-            "-m",
-            "codex_hybrid_switcher",
-            "guarded-switch",
-            "cloud-gpt-main",
-            "--config",
-            str(private_config),
-            "--force",
-        ],
-        cwd=repo,
-        env=env,
-    )
-    assert_guarded_apply_scope(before_bootstrap, codex_home)
-    report_path = work / "stock-flow-report.md"
-    run(
-        [
-            str(python),
-            "-m",
-            "codex_hybrid_switcher",
-            "setup-report",
-            "--config",
-            str(private_config),
-            "--output",
-            str(report_path),
-        ],
-        cwd=repo,
-        env=env,
-    )
-    assert_report_is_redacted(report_path, work)
-    print("stock Codex flow validation passed")
+        run(
+            [
+                str(python),
+                "-m",
+                "codex_hybrid_switcher",
+                "guarded-switch",
+                "cloud-gpt-main",
+                "--config",
+                str(private_config),
+                "--force",
+            ],
+            cwd=repo,
+            env=env,
+        )
+        assert_guarded_apply_scope(before_bootstrap, codex_home)
+        report_path = work / "stock-flow-report.md"
+        run(
+            [
+                str(python),
+                "-m",
+                "codex_hybrid_switcher",
+                "setup-report",
+                "--config",
+                str(private_config),
+                "--output",
+                str(report_path),
+            ],
+            cwd=repo,
+            env=env,
+        )
+        assert_report_is_redacted(report_path, work)
+        print("stock Codex flow validation passed")
+    finally:
+        cleanup_bridge(temp_home)
 
 
 def main(argv: list[str] | None = None) -> int:

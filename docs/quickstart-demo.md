@@ -82,7 +82,8 @@ The cloud provider section should look conceptually like this:
   "base_url": "https://your-openai-compatible-provider.example/v1",
   "model": "provider-gpt-main",
   "api_key_env": "OPENAI_COMPATIBLE_API_KEY",
-  "wire_api": "responses"
+  "wire_api": "responses",
+  "route": "bridge"
 }
 ```
 
@@ -121,7 +122,7 @@ codex_home: configured
 bridge: 127.0.0.1:19030 -> llama:19031
 providers:
   - openai-official [official] model=gpt-5.5
-  - cloud-gpt-main [cloud] model=provider-gpt-main base_url=https://<redacted>/v1 api_key_env=OPENAI_COMPATIBLE_API_KEY(set)
+  - cloud-gpt-main [cloud] model=provider-gpt-main route=bridge base_url=https://<redacted>/v1 api_key_env=OPENAI_COMPATIBLE_API_KEY(set)
 Config validation passed.
 ```
 
@@ -157,6 +158,10 @@ Expected shape:
  base_url = "<redacted>"
  wire_api = "responses"
 ```
+
+With `route=bridge`, the planned `base_url` points Codex to the local bridge.
+The real upstream provider URL stays in the private config and is redacted from
+the diff.
 
 Dry-run means:
 

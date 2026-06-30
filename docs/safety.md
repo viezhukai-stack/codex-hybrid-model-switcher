@@ -10,6 +10,9 @@
 - Keep bridge runtime files outside the repository. The Windows local provider
   may create `%USERPROFILE%\.codex-hybrid-model-switcher\bridge.pid` and
   `bridge.log`.
+- Bridge-routed cloud providers may start the same local bridge, but this is a
+  manual runtime process, not a LaunchAgent, KeepAlive job, scheduled task, or
+  recovery loop.
 - Use one canary machine for the first real cloud-provider switch before
   repeating the workflow elsewhere.
 - Require explicit `--allow-local` before switching Codex Desktop to a local

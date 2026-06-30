@@ -61,6 +61,7 @@ def write_private_config(tmp_path, codex_home):
                         "api_key_env": "PRIVATE_PROVIDER_KEY",
                         "model": "private-model",
                         "wire_api": "responses",
+                        "route": "bridge",
                     },
                     {
                         "id": "local-gemma",
@@ -90,6 +91,7 @@ def test_render_report_redacts_private_values(tmp_path):
 
     assert "Codex Hybrid Setup Report" in report
     assert "https://<redacted>/v1" in report
+    assert "route=`bridge`" in report
     assert "private-provider.example" not in report
     assert str(tmp_path) not in report
     assert "do-not-print" not in report

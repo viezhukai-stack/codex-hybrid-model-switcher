@@ -21,7 +21,8 @@
       "base_url": "https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1",
       "api_key_env": "OPENAI_COMPATIBLE_API_KEY",
       "model": "provider-gpt-main",
-      "wire_api": "responses"
+      "wire_api": "responses",
+      "route": "bridge"
     },
     {
       "id": "local-gemma",

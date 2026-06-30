@@ -89,7 +89,8 @@ def provider_lines(config: AppConfig) -> list[str]:
         model = provider.get("model") or "<missing>"
         line = f"- `{provider_id}`: kind=`{kind}` model=`{model}`"
         if kind == "cloud":
-            line += f" base_url=`{redact_url(provider.get('base_url'))}`"
+            route = str(provider.get("route") or "direct")
+            line += f" route=`{route}` base_url=`{redact_url(provider.get('base_url'))}`"
             env_name = str(provider.get("api_key_env") or "<missing>")
             line += f" api_key_env=`{env_name}` status=`{'set' if os.environ.get(env_name) else 'unset'}`"
         lines.append(line)

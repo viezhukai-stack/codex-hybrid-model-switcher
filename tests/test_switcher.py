@@ -38,6 +38,33 @@ def write_config(tmp_path, *, codex_home=None):
     return config_path, codex_home
 
 
+def write_bridge_cloud_config(tmp_path, *, codex_home=None):
+    codex_home = codex_home or tmp_path / "codex-home"
+    config_path = tmp_path / "switcher-config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "codex_home": str(codex_home),
+                "bridge": {"host": "127.0.0.1", "port": 19030, "llama_port": 19031, "idle_seconds": 600},
+                "providers": [
+                    {
+                        "id": "cloud-gpt-main",
+                        "label": "Cloud GPT Main",
+                        "kind": "cloud",
+                        "base_url": "https://example.test/v1",
+                        "api_key_env": "PRIVATE_PROVIDER_KEY",
+                        "model": "provider-gpt-main",
+                        "wire_api": "responses",
+                        "route": "bridge",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return config_path, codex_home
+
+
 def write_realistic_codex_home(codex_home):
     codex_home.mkdir()
     (codex_home / "config.toml").write_text(
@@ -105,6 +132,17 @@ command = "example"
     assert "[mcp_servers.example]" in rendered
     assert 'command = "example"' in rendered
     assert rendered.index('model_provider = "custom"') < rendered.index("[mcp_servers.example]")
+
+
+def test_rendered_bridge_cloud_provider_uses_local_bridge_base_url(tmp_path):
+    config_path, _codex_home = write_bridge_cloud_config(tmp_path)
+    config = load_config(str(config_path))
+    provider = config.provider("cloud-gpt-main")
+
+    rendered = switcher.render_config(provider, config)
+
+    assert 'base_url = "http://127.0.0.1:19030/v1"' in rendered
+    assert "example.test" not in rendered
 
 
 def test_rendered_config_preserves_custom_provider_extra_fields(tmp_path):
@@ -280,6 +318,46 @@ def test_guarded_switch_changes_only_config_toml(tmp_path, monkeypatch, capsys):
     assert switcher.protected_hashes(load_config(str(config_path))) == protected_before
     assert 'model_provider = "custom"' in (codex_home / "config.toml").read_text(encoding="utf-8")
     assert list(codex_home.glob("config.toml.bak-codex-hybrid-*"))
+
+
+def test_guarded_switch_bridge_cloud_requires_api_key_env_before_writing(tmp_path, monkeypatch, capsys):
+    config_path, codex_home = write_bridge_cloud_config(tmp_path)
+    write_realistic_codex_home(codex_home)
+    before = (codex_home / "config.toml").read_text(encoding="utf-8")
+
+    monkeypatch.delenv("PRIVATE_PROVIDER_KEY", raising=False)
+    monkeypatch.setattr(switcher, "codex_is_running", lambda: (_ for _ in ()).throw(AssertionError("should not check Codex")))
+    monkeypatch.setattr(switcher, "start_bridge", lambda _config: (_ for _ in ()).throw(AssertionError("should not start bridge")))
+
+    code = switcher.guarded_switch_provider("cloud-gpt-main", str(config_path))
+    out = capsys.readouterr().out
+
+    assert code == 2
+    assert "requires API key environment variable" in out
+    assert (codex_home / "config.toml").read_text(encoding="utf-8") == before
+
+
+def test_guarded_switch_bridge_cloud_starts_bridge_and_preserves_protected_files(tmp_path, monkeypatch, capsys):
+    config_path, codex_home = write_bridge_cloud_config(tmp_path)
+    write_realistic_codex_home(codex_home)
+    protected_before = switcher.protected_hashes(load_config(str(config_path)))
+    calls = {"bridge": False, "stop": False}
+
+    monkeypatch.setenv("PRIVATE_PROVIDER_KEY", "test-provider-key")
+    monkeypatch.setattr(switcher, "codex_is_running", lambda: False)
+    monkeypatch.setattr(switcher, "start_bridge", lambda _config: calls.__setitem__("bridge", True))
+    monkeypatch.setattr(switcher, "stop_bridge", lambda _config: calls.__setitem__("stop", True))
+
+    code = switcher.guarded_switch_provider("cloud-gpt-main", str(config_path))
+    out = capsys.readouterr().out
+
+    assert code == 0
+    assert calls == {"bridge": True, "stop": False}
+    assert "Protected Codex files unchanged." in out
+    assert switcher.protected_hashes(load_config(str(config_path))) == protected_before
+    config_text = (codex_home / "config.toml").read_text(encoding="utf-8")
+    assert 'base_url = "http://127.0.0.1:19030/v1"' in config_text
+    assert "example.test" not in config_text
 
 
 def test_guarded_switch_rejects_local_provider_without_explicit_allow(tmp_path, monkeypatch, capsys):

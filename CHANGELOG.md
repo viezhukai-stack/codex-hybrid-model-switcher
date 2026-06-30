@@ -5,6 +5,23 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.0.0
+
+- Added `bridge` and `direct` cloud-provider routing.
+- Made `bridge` the beginner default so Codex Desktop can point at the local
+  bridge while the bridge forwards to the real OpenAI-compatible provider using
+  `api_key_env`.
+- Kept `direct` routing available for providers known to work with Codex
+  Desktop's direct custom-provider authentication path.
+- Added guarded-switch checks that refuse a bridge-routed cloud switch when the
+  required API key environment variable is not set.
+- Updated START_HERE, AGENTS, bootstrap, first-run wizard, setup intake,
+  private-config dry-run, README, architecture, safety, and tutorial docs for
+  the new routing model.
+- Added tests for route validation, bridge-routed rendering, protected-file
+  preservation, missing API-key refusal, setup reports, and stock-Codex handoff
+  validation.
+
 ## v1.9.0
 
 - Added root `FINAL_CHECK.md`, a copy-paste final verification prompt for Codex.

@@ -116,75 +116,81 @@ def validate_handoff(python: Path, source_repo: Path, work: Path) -> None:
     env["HOME"] = str(temp_home)
     env["PYTHONPATH"] = str(clean_repo / "src")
     env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["OPENAI_COMPATIBLE_API_KEY"] = "test-provider-key"
 
-    proc = run(
-        [
-            str(python),
-            "-B",
-            "-I",
-            "bootstrap.py",
-            "--non-interactive",
-            "--config",
-            str(private_config),
-            "--codex-home",
-            str(codex_home),
-            "--provider-id",
-            "cloud-gpt-main",
-            "--base-url",
-            "https://example.test/v1",
-            "--model",
-            "provider-gpt-main",
-            "--api-key-env",
-            "OPENAI_COMPATIBLE_API_KEY",
-        ],
-        cwd=clean_repo,
-        env=env,
-    )
-    for expected in ("Guarded dry-run", "No files will be changed", "setup-report"):
-        if expected not in proc.stdout:
-            raise SystemExit(f"bootstrap output missing expected handoff text: {expected}")
-    if not private_config.exists():
-        raise SystemExit("bootstrap did not create private config")
-    if clean_repo in private_config.parents:
-        raise SystemExit("private config was created inside the repository")
-    if stock_flow.snapshot_tree(clean_repo) != before_repo:
-        raise SystemExit("bootstrap polluted the clean handoff repository")
-    stock_flow.assert_dry_run_unchanged(before_codex, codex_home)
+    try:
+        proc = run(
+            [
+                str(python),
+                "-B",
+                "-I",
+                "bootstrap.py",
+                "--non-interactive",
+                "--config",
+                str(private_config),
+                "--codex-home",
+                str(codex_home),
+                "--provider-id",
+                "cloud-gpt-main",
+                "--base-url",
+                "https://example.test/v1",
+                "--model",
+                "provider-gpt-main",
+                "--api-key-env",
+                "OPENAI_COMPATIBLE_API_KEY",
+                "--cloud-route",
+                "direct",
+            ],
+            cwd=clean_repo,
+            env=env,
+        )
+        for expected in ("Guarded dry-run", "No files will be changed", "setup-report"):
+            if expected not in proc.stdout:
+                raise SystemExit(f"bootstrap output missing expected handoff text: {expected}")
+        if not private_config.exists():
+            raise SystemExit("bootstrap did not create private config")
+        if clean_repo in private_config.parents:
+            raise SystemExit("private config was created inside the repository")
+        if stock_flow.snapshot_tree(clean_repo) != before_repo:
+            raise SystemExit("bootstrap polluted the clean handoff repository")
+        stock_flow.assert_dry_run_unchanged(before_codex, codex_home)
 
-    run(
-        [
-            str(python),
-            "-B",
-            "-m",
-            "codex_hybrid_switcher",
-            "guarded-switch",
-            "cloud-gpt-main",
-            "--config",
-            str(private_config),
-            "--force",
-        ],
-        cwd=clean_repo,
-        env=env,
-    )
-    stock_flow.assert_guarded_apply_scope(before_codex, codex_home)
+        run(
+            [
+                str(python),
+                "-B",
+                "-m",
+                "codex_hybrid_switcher",
+                "guarded-switch",
+                "cloud-gpt-main",
+                "--config",
+                str(private_config),
+                "--force",
+            ],
+            cwd=clean_repo,
+            env=env,
+        )
+        stock_flow.assert_guarded_apply_scope(before_codex, codex_home)
 
-    run(
-        [
-            str(python),
-            "-B",
-            "-m",
-            "codex_hybrid_switcher",
-            "setup-report",
-            "--config",
-            str(private_config),
-            "--output",
-            str(report_path),
-        ],
-        cwd=clean_repo,
-        env=env,
-    )
-    stock_flow.assert_report_is_redacted(report_path, work)
-    print("stock Codex handoff validation passed")
+        run(
+            [
+                str(python),
+                "-B",
+                "-m",
+                "codex_hybrid_switcher",
+                "setup-report",
+                "--config",
+                str(private_config),
+                "--output",
+                str(report_path),
+            ],
+            cwd=clean_repo,
+            env=env,
+        )
+        stock_flow.assert_report_is_redacted(report_path, work)
+        print("stock Codex handoff validation passed")
+    finally:
+        stock_flow.cleanup_bridge(temp_home)
 
 
 def main(argv: list[str] | None = None) -> int:
