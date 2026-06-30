@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import os
 import shutil
 import subprocess
@@ -39,6 +40,16 @@ def run(cmd: list[str], *, cwd: Path, env: dict[str, str]) -> subprocess.Complet
         print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
     if proc.returncode != 0:
         raise SystemExit(proc.returncode)
+    return proc
+
+
+def run_expect_code(cmd: list[str], *, cwd: Path, env: dict[str, str], expected_code: int) -> subprocess.CompletedProcess[str]:
+    print("+ " + " ".join(cmd), flush=True)
+    proc = subprocess.run(cmd, cwd=cwd, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
+    if proc.stdout:
+        print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
+    if proc.returncode != expected_code:
+        raise SystemExit(f"expected exit code {expected_code}, got {proc.returncode}")
     return proc
 
 
@@ -96,9 +107,96 @@ def assert_handoff_docs(repo: Path) -> None:
         raise SystemExit("README.md does not point users to START_HERE.md")
 
 
+def validate_default_bridge_handoff(
+    *,
+    python: Path,
+    clean_repo: Path,
+    private_config: Path,
+    codex_home: Path,
+    before_repo: dict[str, str],
+    before_codex: dict[str, str],
+    env: dict[str, str],
+    stock_flow,
+) -> None:
+    bridge_env = env.copy()
+    bridge_env.pop("OPENAI_COMPATIBLE_API_KEY", None)
+    proc = run(
+        [
+            str(python),
+            "-B",
+            "-I",
+            "bootstrap.py",
+            "--non-interactive",
+            "--config",
+            str(private_config),
+            "--codex-home",
+            str(codex_home),
+            "--provider-id",
+            "cloud-gpt-main",
+            "--base-url",
+            "https://example.test/v1",
+            "--model",
+            "provider-gpt-main",
+            "--api-key-env",
+            "OPENAI_COMPATIBLE_API_KEY",
+        ],
+        cwd=clean_repo,
+        env=bridge_env,
+    )
+    required = [
+        "route=bridge",
+        "api_key_env=OPENAI_COMPATIBLE_API_KEY(unset)",
+        "Bridge route selected",
+        "bridge-health",
+        "No files will be changed",
+    ]
+    missing = [item for item in required if item not in proc.stdout]
+    if missing:
+        raise SystemExit(f"default bridge bootstrap output missing expected text: {missing}")
+    if not private_config.exists():
+        raise SystemExit("default bridge bootstrap did not create private config")
+    if clean_repo in private_config.parents:
+        raise SystemExit("default bridge private config was created inside the repository")
+    if stock_flow.snapshot_tree(clean_repo) != before_repo:
+        raise SystemExit("default bridge bootstrap polluted the clean handoff repository")
+    stock_flow.assert_dry_run_unchanged(before_codex, codex_home)
+
+    data = json.loads(private_config.read_text(encoding="utf-8"))
+    data["bridge"]["port"] = 9
+    data["bridge"]["llama_port"] = 10
+    private_config.write_text(json.dumps(data), encoding="utf-8")
+    health = run_expect_code(
+        [
+            str(python),
+            "-B",
+            "-m",
+            "codex_hybrid_switcher",
+            "bridge-health",
+            "--config",
+            str(private_config),
+        ],
+        cwd=clean_repo,
+        env=bridge_env,
+        expected_code=1,
+    )
+    required_health = [
+        "CLOSED bridge TCP port",
+        "OPENAI_COMPATIBLE_API_KEY (unset)",
+        "env-help",
+        "codex_hybrid_switcher bridge",
+    ]
+    missing_health = [item for item in required_health if item not in health.stdout]
+    if missing_health:
+        raise SystemExit(f"default bridge-health output missing expected text: {missing_health}")
+    if "example.test" in health.stdout:
+        raise SystemExit("default bridge-health leaked private upstream hostname")
+    print("default bridge handoff dry-run validation passed")
+
+
 def validate_handoff(python: Path, source_repo: Path, work: Path) -> None:
     clean_repo = work / "downloaded-repo"
-    private_config = work / "private" / "config.json"
+    bridge_private_config = work / "private-bridge" / "config.json"
+    direct_private_config = work / "private-direct" / "config.json"
     codex_home = work / "stock-codex-home"
     temp_home = work / "home"
     report_path = work / "handoff-report.md"
@@ -116,9 +214,20 @@ def validate_handoff(python: Path, source_repo: Path, work: Path) -> None:
     env["HOME"] = str(temp_home)
     env["PYTHONPATH"] = str(clean_repo / "src")
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    env["OPENAI_COMPATIBLE_API_KEY"] = "test-provider-key"
 
     try:
+        validate_default_bridge_handoff(
+            python=python,
+            clean_repo=clean_repo,
+            private_config=bridge_private_config,
+            codex_home=codex_home,
+            before_repo=before_repo,
+            before_codex=before_codex,
+            env=env,
+            stock_flow=stock_flow,
+        )
+
+        env["OPENAI_COMPATIBLE_API_KEY"] = "test-provider-key"
         proc = run(
             [
                 str(python),
@@ -127,7 +236,7 @@ def validate_handoff(python: Path, source_repo: Path, work: Path) -> None:
                 "bootstrap.py",
                 "--non-interactive",
                 "--config",
-                str(private_config),
+                str(direct_private_config),
                 "--codex-home",
                 str(codex_home),
                 "--provider-id",
@@ -147,9 +256,9 @@ def validate_handoff(python: Path, source_repo: Path, work: Path) -> None:
         for expected in ("Guarded dry-run", "No files will be changed", "setup-report"):
             if expected not in proc.stdout:
                 raise SystemExit(f"bootstrap output missing expected handoff text: {expected}")
-        if not private_config.exists():
+        if not direct_private_config.exists():
             raise SystemExit("bootstrap did not create private config")
-        if clean_repo in private_config.parents:
+        if clean_repo in direct_private_config.parents:
             raise SystemExit("private config was created inside the repository")
         if stock_flow.snapshot_tree(clean_repo) != before_repo:
             raise SystemExit("bootstrap polluted the clean handoff repository")
@@ -164,7 +273,7 @@ def validate_handoff(python: Path, source_repo: Path, work: Path) -> None:
                 "guarded-switch",
                 "cloud-gpt-main",
                 "--config",
-                str(private_config),
+                str(direct_private_config),
                 "--force",
             ],
             cwd=clean_repo,
@@ -180,7 +289,7 @@ def validate_handoff(python: Path, source_repo: Path, work: Path) -> None:
                 "codex_hybrid_switcher",
                 "setup-report",
                 "--config",
-                str(private_config),
+                str(direct_private_config),
                 "--output",
                 str(report_path),
             ],

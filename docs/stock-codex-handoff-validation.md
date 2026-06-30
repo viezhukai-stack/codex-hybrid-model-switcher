@@ -17,8 +17,11 @@ of the repository and a simulated stock Codex home.
   file list, backup rule, and setup report instruction.
 - `bootstrap.py` can run from the clean copy without installing the package.
 - The private config is created outside the repository.
-- Bootstrap dry-run does not mutate the clean repository or simulated Codex
-  home.
+- The default `bridge` bootstrap dry-run does not mutate the clean repository
+  or simulated Codex home.
+- The default `bridge` path points users to `bridge-health` and confirms a
+  closed bridge port plus unset `api_key_env` produces safe next steps without
+  leaking the upstream provider hostname.
 - A guarded apply changes only `config.toml` and creates a
   `config.toml.bak-codex-hybrid-*` backup.
 - Simulated protected files, session files, and rollout logs are unchanged.
@@ -30,6 +33,7 @@ of the repository and a simulated stock Codex home.
 
 - It does not prove a real user's provider credentials are correct.
 - It does not open Codex Desktop or verify a live UI.
+- It does not start a real bridge service during the default bridge validation.
 - It does not validate a real local llama.cpp model.
 - It does not migrate old conversations between provider buckets.
 
@@ -53,4 +57,3 @@ Expected ending:
 ```text
 stock Codex handoff validation passed
 ```
-
