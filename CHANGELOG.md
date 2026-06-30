@@ -3,6 +3,16 @@
 All notable changes to this project are summarized here. This project follows a
 conservative release process because it edits Codex provider configuration.
 
+## v1.0.0
+
+- Promoted the validated `v1.0.0-rc.3` release candidate to the final
+  source-only `v1.0.0` release.
+- Kept the release scoped to GitHub source, tag, and draft release artifacts.
+  No PyPI, Homebrew, winget, or installer packaging is included.
+- Preserved the established safety boundary: guarded config switching only,
+  no edits to Codex account/cache/history files, and no autostart or recovery
+  loop services.
+
 ## v1.0.0-rc.3
 
 - Added a public release plan for promoting a validated release candidate to
