@@ -5,6 +5,8 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+- Added a Chinese getting-started tutorial and an English quickstart demo for
+  safer first-time adoption.
 - Updated public repository links, security contact details, and release
   visibility documentation after moving the project under `viezhukai-stack`.
 - Added public issue templates for bug reports, setup help, and security-report
