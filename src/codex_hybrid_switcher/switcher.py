@@ -41,6 +41,28 @@ def protected_hashes(config: AppConfig) -> dict[str, str | None]:
     return {path.name: file_hash(path) for path in protected_codex_paths(config)}
 
 
+def provider_requires_bridge(provider: dict, config: AppConfig) -> bool:
+    kind = provider.get("kind")
+    if kind == "local":
+        return True
+    return kind == "cloud" and str(provider.get("route") or "direct") == "bridge"
+
+
+def codex_base_url(provider: dict, config: AppConfig) -> str:
+    if provider_requires_bridge(provider, config):
+        return f"http://{config.bridge.host}:{config.bridge.port}/v1"
+    return str(provider.get("base_url") or f"http://127.0.0.1:{config.bridge.port}/v1")
+
+
+def missing_cloud_api_key_env(provider: dict) -> str | None:
+    if provider.get("kind") != "cloud" or str(provider.get("route") or "direct") != "bridge":
+        return None
+    env_name = str(provider.get("api_key_env") or "")
+    if not env_name or not os.environ.get(env_name):
+        return env_name or "<missing>"
+    return None
+
+
 def codex_is_running() -> bool:
     try:
         if sys.platform == "win32":
@@ -178,7 +200,7 @@ def render_config(provider: dict, config: AppConfig, *, root_extras: str = "", c
         return text
 
     provider_id = "custom"
-    base_url = str(provider.get("base_url") or f"http://127.0.0.1:{config.bridge.port}/v1")
+    base_url = codex_base_url(provider, config)
     wire_api = str(provider.get("wire_api") or "responses")
     text = (
         f'model_provider = "{provider_id}"\n'
@@ -323,18 +345,29 @@ def switch_provider(provider_id: str, config_path: str | None = None, *, force: 
     text = build_config_text(existing, provider, config)
     if dry_run:
         print("Dry run: no files changed, no backup created, bridge not started or stopped.")
+        if provider_requires_bridge(provider, config):
+            print(f"Bridge route selected: Codex will point to http://{config.bridge.host}:{config.bridge.port}/v1 on apply.")
+            missing_env = missing_cloud_api_key_env(provider)
+            if missing_env:
+                print(f"Note: API key environment variable is not set for this shell: {missing_env}")
         diff = unified_diff(path, existing, text)
         print(diff if diff else "No config changes required.")
         return 0
+    missing_env = missing_cloud_api_key_env(provider)
+    if missing_env:
+        print(f"Cloud bridge route requires API key environment variable to be set: {missing_env}")
+        print("Set it in your shell or OS environment, then rerun guarded-switch.")
+        return 2
     if codex_is_running() and not force:
         print("Codex Desktop appears to be running. Quit Codex completely, then rerun the switch.")
         return 2
-    if provider.get("kind") == "local":
+    requires_bridge = provider_requires_bridge(provider, config)
+    if requires_bridge:
         start_bridge(config)
     path.parent.mkdir(parents=True, exist_ok=True)
     backup = backup_file(path)
     path.write_text(text, encoding="utf-8")
-    if provider.get("kind") != "local":
+    if not requires_bridge:
         stop_bridge(config)
     if backup:
         print(f"Backed up previous config: {backup}")

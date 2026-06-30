@@ -48,6 +48,8 @@ def test_agent_assisted_setup_has_copy_paste_prompt_and_history_caveat():
     assert "AGENTS.md" in text
     assert "bootstrap.py" in text
     assert "api_key_env" in text
+    assert "cloud_route" in text
+    assert "--cloud-route bridge" in text
     assert "不要修改 auth.json" in text
     assert "openai" in text
     assert "custom" in text
@@ -111,6 +113,8 @@ def test_start_here_is_safe_stock_codex_handoff():
     assert "base_url" in text
     assert "model" in text
     assert "api_key_env" in text
+    assert "cloud_route" in text
+    assert "--cloud-route bridge" in text
     assert "不要填 API key 原文" in text
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
         assert protected in text

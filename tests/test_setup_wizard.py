@@ -24,6 +24,7 @@ def test_build_first_run_config_defaults_to_cloud_without_local_provider():
     assert provider_ids == ["openai-official", "cloud-gpt-main"]
     assert data["providers"][1]["kind"] == "cloud"
     assert data["providers"][1]["api_key_env"] == "OPENAI_COMPATIBLE_API_KEY"
+    assert data["providers"][1]["route"] == "bridge"
     assert data["local_model"]["model_path"] == "~/path/to/model.gguf"
 
 
@@ -72,6 +73,39 @@ def test_setup_refuses_api_key_literal_in_env_field(tmp_path, capsys):
     assert code == 2
     assert "environment variable name" in out
     assert not output.exists()
+
+
+def test_setup_refuses_unknown_cloud_route(tmp_path, capsys):
+    output = tmp_path / "config.json"
+
+    code = run_setup_wizard(
+        output=str(output),
+        base_url="https://provider.example/v1",
+        cloud_route="sideways",
+        non_interactive=True,
+    )
+    out = capsys.readouterr().out
+
+    assert code == 2
+    assert "cloud route" in out
+    assert not output.exists()
+
+
+def test_setup_can_generate_direct_cloud_route(tmp_path):
+    output = tmp_path / "config.json"
+
+    assert (
+        run_setup_wizard(
+            output=str(output),
+            base_url="https://provider.example/v1",
+            cloud_route="direct",
+            non_interactive=True,
+        )
+        == 0
+    )
+
+    config = load_config(str(output))
+    assert config.provider("cloud-gpt-main")["route"] == "direct"
 
 
 def test_setup_can_include_local_provider_when_explicit(tmp_path):

@@ -28,12 +28,18 @@ Edit only your local private config:
 - provider `base_url`
 - provider `api_key_env`
 - provider `model`
+- provider `route` (`bridge` for normal API-key providers, `direct` only for
+  providers known to work with Codex Desktop direct auth)
 - local `llama_server_path`
 - local `model_path`
 - local `mmproj_path`
 
 Keep API keys in environment variables or your local provider manager. Do not
 write key values into the config.
+
+With `route=bridge`, Codex's planned `config.toml` points at
+`127.0.0.1:19030`; the bridge uses `api_key_env` to forward to the real
+provider. With `route=direct`, Codex points directly at the provider `base_url`.
 
 ## 3. Validate Without Leaking Details
 

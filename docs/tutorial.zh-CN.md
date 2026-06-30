@@ -152,10 +152,14 @@ codex-hybrid-switcher setup
 codex-hybrid-switcher setup --non-interactive \
   --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 \
   --model provider-gpt-main \
-  --api-key-env OPENAI_COMPATIBLE_API_KEY
+  --api-key-env OPENAI_COMPATIBLE_API_KEY \
+  --cloud-route bridge
 ```
 
 注意：`--api-key-env` 填的是环境变量名，不是 API key 原文。
+默认 `bridge` 路由适合大多数需要 API key 的 OpenAI-compatible provider：
+Codex 连本机 `127.0.0.1:19030`，bridge 再用环境变量转发到真实 provider。
+只有确认 provider 能被 Codex 直连时，才使用 `--cloud-route direct`。
 
 ## 备用方式：复制示例配置
 
@@ -181,6 +185,7 @@ codex-hybrid-switcher init-config --platform windows --output "$env:USERPROFILE\
 - `base_url`
 - `model`
 - `api_key_env`
+- `route`，新手默认用 `bridge`
 - `local_model.llama_server_path`
 - `local_model.model_path`
 - `local_model.mmproj_path`
@@ -234,6 +239,7 @@ codex-hybrid-switcher guarded-switch cloud-gpt-main --dry-run --config ~/.codex-
 ```
 
 如果 diff 删除了插件、MCP、projects 或其他无关配置，停止，不要真实切换。
+如果你使用 `route=bridge`，真实切换前还要确认 `api_key_env` 对应的环境变量已经设置。
 
 ## 第六步：真实切换前退出 Codex Desktop
 

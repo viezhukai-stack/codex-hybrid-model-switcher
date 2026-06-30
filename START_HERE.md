@@ -34,6 +34,7 @@ prompt.
 - base_url: <填你的 OpenAI-compatible endpoint，例如 https://example.com/v1>
 - model: <填模型 ID，例如 provider-gpt-main>
 - api_key_env: <填保存 API key 的环境变量名，不要填 API key 原文>
+- cloud_route: bridge（默认；Codex 连本机 bridge，bridge 用 api_key_env 转发到 provider）
 
 请先：
 1. 检查仓库和当前系统环境。
@@ -72,7 +73,8 @@ macOS:
 python3 bootstrap.py --non-interactive \
   --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 \
   --model provider-gpt-main \
-  --api-key-env OPENAI_COMPATIBLE_API_KEY
+  --api-key-env OPENAI_COMPATIBLE_API_KEY \
+  --cloud-route bridge
 ```
 
 Windows:
@@ -82,8 +84,14 @@ py -3 bootstrap.py --non-interactive `
   --platform windows `
   --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 `
   --model provider-gpt-main `
-  --api-key-env OPENAI_COMPATIBLE_API_KEY
+  --api-key-env OPENAI_COMPATIBLE_API_KEY `
+  --cloud-route bridge
 ```
+
+`bridge` is the beginner default. It writes Codex to `127.0.0.1:19030` and lets
+the local bridge forward to the real provider using `api_key_env`. Use
+`--cloud-route direct` only when the provider is known to work with Codex
+Desktop's own custom-provider authentication path.
 
 ## Safe Milestones
 
@@ -93,6 +101,8 @@ First milestone, before any real switch:
 - config validation passes
 - guarded dry-run prints a redacted diff
 - no real Codex files changed
+- for `cloud_route=bridge`, the API key environment variable is set before the
+  real switch
 
 Real switch milestone:
 

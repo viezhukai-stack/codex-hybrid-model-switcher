@@ -31,6 +31,7 @@ Use this prompt after opening the repository in Codex:
 - base_url: <填你的 OpenAI-compatible endpoint，例如 https://example.com/v1>
 - model: <填模型 ID>
 - api_key_env: <填保存 API key 的环境变量名，不要填 API key 原文>
+- cloud_route: bridge（默认；Codex 连本机 bridge，bridge 用环境变量转发）
 
 请先检查环境并生成私有配置，然后把 dry-run 结果解释给我。
 ```
@@ -47,6 +48,8 @@ Codex should:
 - validate the private config
 - run `guarded-switch --dry-run`
 - explain the redacted diff
+- for bridge-routed cloud providers, confirm the API key environment variable is
+  set before a real switch
 - ask you to quit Codex Desktop before a real switch
 - run guarded apply only after you confirm Codex Desktop is fully quit
 - verify protected Codex files did not change
@@ -116,7 +119,8 @@ If you already know the provider details, Codex can start with:
 python3 bootstrap.py --non-interactive \
   --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 \
   --model provider-gpt-main \
-  --api-key-env OPENAI_COMPATIBLE_API_KEY
+  --api-key-env OPENAI_COMPATIBLE_API_KEY \
+  --cloud-route bridge
 ```
 
 On Windows, use `py -3 bootstrap.py ...`.

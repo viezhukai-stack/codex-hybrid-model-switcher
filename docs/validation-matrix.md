@@ -13,6 +13,7 @@ driver, CUDA runtime, llama.cpp build, and model size.
 | Windows canary 2 | Passed | Not required | Passed | Validated second-machine migration, Python 3.10 compatibility, guarded cloud switch, user-facing launcher, account visibility, project conversations, plugin/MCP visibility, and a test chat. Local Qwen3.6 35B candidates were found but not tested because local hardware/model fit is not a release requirement. |
 | Stock Codex simulation | Passed | Not applicable | Simulated | `scripts/validate-stock-codex-flow.py` creates a temporary stock-like Codex home, runs bootstrap dry-run, runs guarded apply, verifies only `config.toml` changed while account/cache/history-like files stayed unchanged, and checks the generated setup report is redacted. |
 | Stock Codex handoff | Passed | Not applicable | Simulated | `scripts/validate-stock-codex-handoff.py` copies the repository to a clean temporary directory, starts from `START_HERE.md`, verifies bootstrap does not pollute the repository, and confirms private config plus guarded apply behavior. |
+| Bridge-routed cloud unit path | Passed | Not applicable | Simulated | Unit tests verify `route=bridge` renders Codex to `127.0.0.1:19030`, refuses real switches when `api_key_env` is unset, starts the bridge when the env var is set, and preserves protected Codex files. |
 
 ## Required Before a Release
 
@@ -28,6 +29,8 @@ driver, CUDA runtime, llama.cpp build, and model size.
   as complete, partial, incomplete, or rollback-needed.
 - The stock-Codex handoff prompt in `START_HERE.md` is covered by documentation
   tests.
+- Bridge-routed cloud providers have tests for local bridge rendering,
+  missing API-key refusal, and protected-file preservation.
 - At least one Windows canary has validated cloud provider switching.
 - At least one Windows canary has validated local llama.cpp text and image smoke.
 - At least one second-machine Windows canary has validated cloud switching and the guarded launcher.

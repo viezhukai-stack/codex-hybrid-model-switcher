@@ -41,6 +41,9 @@ Confirm the repository does not contain:
 - Stock-Codex simulation changes only `config.toml` and adds a
   `config.toml.bak-codex-hybrid-*` backup.
 - Stock-Codex handoff validation passes from a clean repository copy.
+- Bridge-routed cloud providers refuse real apply when `api_key_env` is unset.
+- Bridge-routed cloud providers render Codex's `base_url` to the local bridge,
+  not the private upstream provider hostname.
 - Setup report redacts provider hostnames, local paths, session content, and
   database content.
 - Setup report includes the user-visible success checklist.
@@ -58,6 +61,8 @@ Confirm the repository does not contain:
   complete.
 - Final check prompt asks Codex to classify completion without making new
   changes.
+- Cloud route documentation explains `bridge` versus `direct` and recommends
+  `bridge` for normal API-key providers.
 - Validation matrix reflects the actual canaries performed.
 - Public release plan explains how to promote the accepted release candidate to
   a final `v1.0.0` tag without moving existing tags.

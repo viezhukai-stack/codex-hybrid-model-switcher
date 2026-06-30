@@ -12,6 +12,8 @@ my Codex Desktop."
 - creates a private config if one does not already exist
 - validates that private config
 - runs `guarded-switch --dry-run`
+- defaults cloud providers to `bridge` routing, where Codex talks to
+  `127.0.0.1:19030` and the bridge forwards with `api_key_env`
 - prints the real guarded-switch command for later
 
 ## What bootstrap does not do
@@ -49,7 +51,8 @@ macOS:
 python3 bootstrap.py --non-interactive \
   --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 \
   --model provider-gpt-main \
-  --api-key-env OPENAI_COMPATIBLE_API_KEY
+  --api-key-env OPENAI_COMPATIBLE_API_KEY \
+  --cloud-route bridge
 ```
 
 Windows:
@@ -59,11 +62,15 @@ py -3 bootstrap.py --non-interactive `
   --platform windows `
   --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 `
   --model provider-gpt-main `
-  --api-key-env OPENAI_COMPATIBLE_API_KEY
+  --api-key-env OPENAI_COMPATIBLE_API_KEY `
+  --cloud-route bridge
 ```
 
 `--api-key-env` is the name of the environment variable containing the API key.
 It is not the API key itself.
+
+Use `--cloud-route direct` only when the provider is known to work with Codex
+Desktop's direct custom-provider authentication path.
 
 ## Double-click helpers
 
@@ -75,5 +82,6 @@ For users who prefer a visible launcher:
 These launchers run bootstrap. They still only create/validate private config
 and dry-run. They do not apply a real provider switch.
 
-After dry-run looks correct, quit Codex Desktop completely and run the guarded
-apply command that bootstrap prints.
+After dry-run looks correct, set the API key environment variable for
+bridge-routed cloud providers, quit Codex Desktop completely, and run the
+guarded apply command that bootstrap prints.

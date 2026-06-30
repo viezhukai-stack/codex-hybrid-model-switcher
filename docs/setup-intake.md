@@ -11,11 +11,17 @@ Codex Desktop can open normally: yes/no
 Provider base_url:
 Model id:
 API key environment variable name:
+Cloud route: bridge/direct
 Do you want cloud-only setup first: yes/no
 ```
 
 Do not write the API key itself here. Put the key in your operating system or
 shell environment, then give the variable name to the setup wizard.
+
+For most OpenAI-compatible providers, use `bridge`. It keeps the provider API
+key outside Codex Desktop and lets the local bridge forward requests. Use
+`direct` only when the provider is known to work with Codex Desktop's direct
+custom-provider authentication path.
 
 ## Optional for local llama.cpp
 

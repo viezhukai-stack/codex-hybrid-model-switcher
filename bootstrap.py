@@ -102,6 +102,7 @@ def run_bootstrap(args: argparse.Namespace) -> int:
             base_url=args.base_url,
             model=args.model,
             api_key_env=args.api_key_env,
+            cloud_route=args.cloud_route,
             include_local=args.include_local,
             llama_server_path=args.llama_server_path,
             model_path=args.model_path,
@@ -135,6 +136,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--base-url")
     parser.add_argument("--model")
     parser.add_argument("--api-key-env")
+    parser.add_argument("--cloud-route", choices=["bridge", "direct"], help="cloud provider route; bridge uses the local bridge and api_key_env, direct writes provider base_url into Codex config")
     parser.add_argument("--include-local", action="store_true", help="include local llama.cpp provider in generated config")
     parser.add_argument("--llama-server-path")
     parser.add_argument("--model-path")

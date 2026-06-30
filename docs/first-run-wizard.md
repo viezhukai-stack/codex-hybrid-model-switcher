@@ -15,6 +15,9 @@ OpenAI-compatible cloud provider without editing Codex files by hand.
 - Detects a default platform-specific Codex home.
 - Asks for one cloud provider endpoint and model id.
 - Stores the API key reference as an environment variable name.
+- Uses `bridge` cloud routing by default, so Codex talks to the local bridge
+  and the bridge forwards to the real provider with the API key from the
+  environment.
 - Creates `~/.codex-hybrid-model-switcher/config.json`.
 - Validates the generated config.
 - Prints the next `guarded-switch --dry-run` command.
@@ -48,6 +51,7 @@ The wizard asks for:
 - OpenAI-compatible `base_url`
 - model id
 - API key environment variable name
+- cloud route: `bridge` or `direct`
 - whether to add a local llama.cpp provider now
 
 For most new users, answer `no` to the local llama.cpp provider during first
@@ -77,6 +81,10 @@ codex-hybrid-switcher setup --non-interactive `
 The `api_key_env` value must be the name of an environment variable, not the
 API key itself.
 
+Use the default `bridge` route for normal OpenAI-compatible providers that need
+their own API key. Use `direct` only when the provider is known to work with
+Codex Desktop's direct custom-provider authentication path.
+
 ## Safe first switch
 
 After setup, validate:
@@ -94,9 +102,10 @@ codex-hybrid-switcher guarded-switch cloud-gpt-main --dry-run --config ~/.codex-
 Only after the dry-run looks correct:
 
 1. Quit Codex Desktop completely.
-2. Run the real guarded switch.
-3. Reopen Codex Desktop.
-4. Create a new test conversation.
+2. For `bridge` cloud route, make sure the API key environment variable is set.
+3. Run the real guarded switch.
+4. Reopen Codex Desktop.
+5. Create a new test conversation.
 
 ```sh
 codex-hybrid-switcher guarded-switch cloud-gpt-main --config ~/.codex-hybrid-model-switcher/config.json

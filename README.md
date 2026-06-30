@@ -77,7 +77,10 @@ cache, rewrite old conversations, or install always-on recovery services.
 - Keep project history unified under the `custom` provider bucket.
 - Keep API keys outside the repository. Use environment variables or your local
   provider manager.
-- Route local models through the bridge on `127.0.0.1:19030`; the raw
+- For beginner cloud setup, route Codex through the bridge on
+  `127.0.0.1:19030`; the bridge forwards to the real OpenAI-compatible provider
+  using the configured `api_key_env`.
+- Route local models through the same bridge on `127.0.0.1:19030`; the raw
   llama.cpp server stays behind it on `127.0.0.1:19031`.
 
 ## Quick Start
@@ -99,8 +102,14 @@ file tells Codex how to proceed safely.
    python3 bootstrap.py --non-interactive \
      --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 \
      --model provider-gpt-main \
-     --api-key-env OPENAI_COMPATIBLE_API_KEY
+     --api-key-env OPENAI_COMPATIBLE_API_KEY \
+     --cloud-route bridge
    ```
+
+   `bridge` is the beginner default: Codex talks to `127.0.0.1:19030`, and the
+   bridge reads the API key from the environment variable. Use
+   `--cloud-route direct` only for providers known to support direct Codex
+   custom-provider auth.
 
 2. Optionally install locally if you prefer the `codex-hybrid-switcher` command:
 
@@ -216,13 +225,13 @@ For common setup and recovery questions, see `docs/faq.md`.
 
 ```sh
 python3 bootstrap.py
-python3 bootstrap.py --non-interactive --base-url https://YOUR-ENDPOINT.example/v1 --model provider-gpt-main --api-key-env OPENAI_COMPATIBLE_API_KEY
+python3 bootstrap.py --non-interactive --base-url https://YOUR-ENDPOINT.example/v1 --model provider-gpt-main --api-key-env OPENAI_COMPATIBLE_API_KEY --cloud-route bridge
 python -m codex_hybrid_switcher status
 python -m codex_hybrid_switcher doctor
 python -m codex_hybrid_switcher doctor --strict
 python -m codex_hybrid_switcher init-config --platform macos --output ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher setup
-python -m codex_hybrid_switcher setup --non-interactive --base-url https://YOUR-ENDPOINT.example/v1 --model provider-gpt-main
+python -m codex_hybrid_switcher setup --non-interactive --base-url https://YOUR-ENDPOINT.example/v1 --model provider-gpt-main --cloud-route bridge
 python -m codex_hybrid_switcher validate-config --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher bridge

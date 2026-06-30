@@ -62,6 +62,8 @@ For a first cloud setup, collect:
 - OpenAI-compatible `base_url`
 - model id
 - environment variable name that contains the API key
+- cloud route: use `bridge` by default; use `direct` only when the provider is
+  known to work with Codex Desktop's direct custom-provider auth
 - whether the user wants only cloud setup now or also local llama.cpp later
 
 Do not ask the user to paste API keys into the repository. If they paste a key
@@ -105,7 +107,8 @@ available. On Windows, try `py -3` or `python`.
    python3 bootstrap.py --non-interactive \
      --base-url https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 \
      --model provider-gpt-main \
-     --api-key-env OPENAI_COMPATIBLE_API_KEY
+     --api-key-env OPENAI_COMPATIBLE_API_KEY \
+     --cloud-route bridge
    ```
 
 3. If bootstrap cannot run, install the package locally and use the setup
@@ -131,9 +134,13 @@ available. On Windows, try `py -3` or `python`.
 6. Confirm the dry-run only changes provider/model settings and preserves MCP,
    plugins, desktop, projects, and unrelated settings.
 
-7. Ask the user to fully quit Codex Desktop.
+7. For bridge-routed cloud providers, confirm the API key environment variable
+   is set before the real switch. If it is unset, stop and help the user set it
+   outside the repository.
 
-8. Apply the guarded switch using the command printed by bootstrap. If running
+8. Ask the user to fully quit Codex Desktop.
+
+9. Apply the guarded switch using the command printed by bootstrap. If running
    from the repository on macOS, the command shape is:
 
    ```sh
@@ -143,15 +150,15 @@ available. On Windows, try `py -3` or `python`.
    If the package was installed, `codex-hybrid-switcher guarded-switch ...` is
    also acceptable.
 
-9. Ask the user to reopen Codex Desktop and create a new test conversation.
+10. Ask the user to reopen Codex Desktop and create a new test conversation.
 
-10. Generate a redacted setup report:
+11. Generate a redacted setup report:
 
     ```sh
     PYTHONPATH=src python3 -m codex_hybrid_switcher setup-report --config ~/.codex-hybrid-model-switcher/config.json --output ~/Desktop/codex-hybrid-setup-report.md
     ```
 
-11. If anything looks wrong, quit Codex Desktop and restore the newest
+12. If anything looks wrong, quit Codex Desktop and restore the newest
     `config.toml.bak-codex-hybrid-*` backup. Do not edit databases or caches.
 
 ## History Visibility Caveat
