@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codex-hybrid-model-switcher"
-version = "1.0.0rc3"
+version = "1.0.0"
 description = "Cross-platform Codex model switcher for OpenAI-compatible providers and local llama.cpp models."
 readme = "README.md"
 requires-python = ">=3.10"
