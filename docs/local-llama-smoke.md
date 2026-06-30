@@ -4,6 +4,11 @@ Use this after cloud-provider canary verification. This workflow validates the
 local bridge and llama.cpp multimodal model without switching Codex Desktop to a
 local provider.
 
+Local validation is optional and machine-dependent. It is acceptable to skip it
+on machines without suitable GPU, CUDA runtime, llama.cpp build, model file, or
+mmproj file. Release readiness only requires that at least one canary machine
+has passed local text and image validation.
+
 ## Boundary
 
 This smoke test may start:

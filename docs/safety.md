@@ -14,6 +14,9 @@
   repeating the workflow elsewhere.
 - Require explicit `--allow-local` before switching Codex Desktop to a local
   provider.
+- Treat local model validation as optional per machine. A failed or skipped
+  local smoke on one machine is not a release blocker if another canary already
+  validated the local bridge and llama.cpp path.
 
 Before publishing, run:
 

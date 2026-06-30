@@ -45,25 +45,27 @@ does not mutate Codex session history, and does not install KeepAlive services.
 5. Preview the Codex config change without writing anything:
 
    ```sh
-   codex-hybrid-switcher switch cloud-gpt-main --dry-run --config ~/.codex-hybrid-model-switcher/config.json
+   codex-hybrid-switcher guarded-switch cloud-gpt-main --dry-run --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-6. Run the bridge in one terminal when testing a local model:
+6. For a real cloud switch, quit Codex Desktop completely, then use guarded
+   apply:
 
    ```sh
-   codex-hybrid-switcher bridge --config ~/.codex-hybrid-model-switcher/config.json
+   codex-hybrid-switcher guarded-switch cloud-gpt-main --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-7. Run local bridge smoke tests in another terminal:
+7. Test local models only on machines that have suitable hardware, llama.cpp,
+   and model files:
 
    ```sh
-   codex-hybrid-switcher smoke --config ~/.codex-hybrid-model-switcher/config.json
+   codex-hybrid-switcher local-smoke --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
-8. Switch providers only after Codex Desktop is fully closed:
+8. Switch to a local provider only after local smoke passes:
 
    ```sh
-   codex-hybrid-switcher switch cloud-gpt-main --config ~/.codex-hybrid-model-switcher/config.json
+   codex-hybrid-switcher guarded-switch local-gemma --allow-local --config ~/.codex-hybrid-model-switcher/config.json
    ```
 
 ## Commands
@@ -120,6 +122,9 @@ For the Windows end-user switching flow after both canaries pass, use
 
 To repeat the validation on another Windows machine, follow
 `docs/windows-second-canary.md` before installing the end-user launcher.
+
+For the current validation coverage and release gate, see
+`docs/validation-matrix.md` and `docs/release-checklist.md`.
 
 ## What This Repository Must Not Contain
 
