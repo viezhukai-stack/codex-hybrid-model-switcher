@@ -1,0 +1,52 @@
+name: Config or setup help
+description: Ask for help with a redacted config, dry-run, or local smoke setup.
+title: "[Help]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share only redacted snippets. Do not paste API keys, bearer tokens, passwords, real private endpoints, account files, session databases, or local model files.
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Workflow
+      options:
+        - Cloud provider dry-run
+        - Windows guarded launcher
+        - Local llama.cpp smoke
+        - Recovery
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS
+        - Windows
+        - Linux or other
+    validations:
+      required: true
+  - type: textarea
+    id: redacted_config
+    attributes:
+      label: Redacted config or command
+      description: Replace private paths, endpoints, and tokens with placeholders.
+      render: shell
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I removed API keys, tokens, passwords, private endpoints, real usernames, machine names, and absolute personal paths.
+          required: true
+        - label: I did not upload Codex account/cache/history files or local model binaries.
+          required: true
