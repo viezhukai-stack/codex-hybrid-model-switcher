@@ -43,15 +43,16 @@ the private config, for example `OPENAI_COMPATIBLE_API_KEY`.
 Read these files before making changes:
 
 1. `START_HERE.md`
-2. `README.md`
-3. `docs/bootstrap.md`
-4. `docs/first-run-wizard.md`
-5. `docs/agent-assisted-setup.md`
-6. `docs/recovery.md`
-7. `docs/setup-report.md`
-8. `docs/stock-codex-handoff-validation.md`
-9. `docs/user-success-criteria.md`
-10. `docs/local-llama-smoke.md` only if the user asks for local models
+2. `FINAL_CHECK.md`
+3. `README.md`
+4. `docs/bootstrap.md`
+5. `docs/first-run-wizard.md`
+6. `docs/agent-assisted-setup.md`
+7. `docs/recovery.md`
+8. `docs/setup-report.md`
+9. `docs/stock-codex-handoff-validation.md`
+10. `docs/user-success-criteria.md`
+11. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 
@@ -198,6 +199,8 @@ Do not claim setup is complete until current evidence shows:
 - a redacted setup report has been generated or the user explicitly skipped it
 - the user success checklist has been reviewed, or the user explicitly skipped
   it
+- final verdict from `FINAL_CHECK.md` is `Complete`, or the user explicitly
+  skipped final verification
 
 For repository release work, also run `scripts/validate-stock-codex-handoff.py`
 to prove the `START_HERE.md` flow still works from a clean repository copy.

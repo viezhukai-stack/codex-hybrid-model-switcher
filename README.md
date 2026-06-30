@@ -42,6 +42,7 @@ flowchart LR
 Start here:
 
 - If you only have stock Codex Desktop: [`START_HERE.md`](START_HERE.md)
+- Final self-check after setup: [`FINAL_CHECK.md`](FINAL_CHECK.md)
 - Hand this repo to Codex: [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md)
 - Zero-install bootstrap: [`docs/bootstrap.md`](docs/bootstrap.md)
 - New user walkthrough in Chinese: [`docs/tutorial.zh-CN.md`](docs/tutorial.zh-CN.md)
@@ -193,6 +194,7 @@ For common setup and recovery questions, see `docs/faq.md`.
 
 - Agent-assisted setup: [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md)
 - Stock Codex handoff prompt: [`START_HERE.md`](START_HERE.md)
+- Final agent check prompt: [`FINAL_CHECK.md`](FINAL_CHECK.md)
 - Setup intake checklist: [`docs/setup-intake.md`](docs/setup-intake.md)
 - Bootstrap entry: [`docs/bootstrap.md`](docs/bootstrap.md)
 - Setup report: [`docs/setup-report.md`](docs/setup-report.md)

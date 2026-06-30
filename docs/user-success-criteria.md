@@ -61,3 +61,9 @@ successful only when:
 Do not treat a local model failure as a cloud-provider setup failure when the
 cloud provider already works.
 
+## Final Agent Verdict
+
+After walking through this checklist, use the copy-paste prompt in
+[`../FINAL_CHECK.md`](../FINAL_CHECK.md). It asks Codex to classify the result as
+`Complete`, `Partially complete`, `Not complete`, or `Needs rollback`.
+

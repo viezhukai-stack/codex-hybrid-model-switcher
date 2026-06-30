@@ -24,6 +24,8 @@ driver, CUDA runtime, llama.cpp build, and model size.
 - Redacted setup report generation passes in the stock-Codex simulation.
 - The setup report includes user-visible success criteria for account,
   plugins/MCP, project list, and a new responding test conversation.
+- `FINAL_CHECK.md` gives users a final agent prompt for classifying completion
+  as complete, partial, incomplete, or rollback-needed.
 - The stock-Codex handoff prompt in `START_HERE.md` is covered by documentation
   tests.
 - At least one Windows canary has validated cloud provider switching.
