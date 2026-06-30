@@ -12,6 +12,7 @@ Use this checklist before marking a release candidate ready.
 - `python scripts/validate-stock-codex-flow.py`
 - `python scripts/validate-stock-codex-handoff.py`
 - `python scripts/validate-agent-handoff-drill.py`
+- `python scripts/validate-real-clean-machine-canary.py`
 - `python -m codex_hybrid_switcher setup-report --config <temp-config>`
 - `python -m codex_hybrid_switcher canary-report --config <temp-config> --verdict partial`
 - GitHub Actions passes on Python 3.10, 3.11, and 3.12.
@@ -45,6 +46,7 @@ Confirm the repository does not contain:
   `config.toml.bak-codex-hybrid-*` backup.
 - Stock-Codex handoff validation passes from a clean repository copy.
 - Agent handoff drill passes and writes a redacted temporary drill report.
+- Real clean-machine canary template validation passes.
 - Release acceptance validation passes and confirms the stock Codex handoff
   evidence is present.
 - Bridge-routed cloud providers refuse real apply when `api_key_env` is unset.
@@ -78,6 +80,7 @@ Confirm the repository does not contain:
 - Final check prompt asks Codex to classify completion without making new
   changes.
 - Agent handoff drill docs explain how to rehearse the full stock Codex path.
+- Real clean-machine canary docs explain how to collect final field evidence.
 - Cloud route documentation explains `bridge` versus `direct` and recommends
   `bridge` for normal API-key providers.
 - Bridge health documentation explains what to do when Codex opens but a

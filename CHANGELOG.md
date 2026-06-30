@@ -5,6 +5,17 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.8.0
+
+- Added `real-canary-template`, a redacted checklist generator for real
+  clean-machine stock Codex field tests.
+- Added `docs/real-clean-machine-canary.md` with the required evidence chain for
+  public-readiness canaries.
+- Added `scripts/validate-real-clean-machine-canary.py` and wired it into
+  release acceptance and install validation.
+- Updated START_HERE, AGENTS, README, validation matrix, and release checklist so
+  real-machine canary evidence is part of the final handoff path.
+
 ## v2.7.0
 
 - Added `scripts/validate-agent-handoff-drill.py`, an end-to-end simulated

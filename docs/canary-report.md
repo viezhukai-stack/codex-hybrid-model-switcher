@@ -116,5 +116,7 @@ final user-visible evidence. For support or release validation, keep both files:
 
 1. `codex-hybrid-setup-report.md`
 2. `codex-hybrid-canary-evidence.md`
+3. `codex-hybrid-real-clean-machine-canary.md` for real clean-machine
+   public-readiness tests
 
-Review both files before sharing them.
+Review these files before sharing them.

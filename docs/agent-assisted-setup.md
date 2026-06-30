@@ -128,6 +128,18 @@ PYTHONPATH=src python3 -m codex_hybrid_switcher canary-report \
   --output ~/Desktop/codex-hybrid-canary-evidence.md
 ```
 
+For a real clean-machine public-readiness test, ask Codex to create the final
+field checklist:
+
+```sh
+PYTHONPATH=src python3 -m codex_hybrid_switcher real-canary-template \
+  --config ~/.codex-hybrid-model-switcher/config.json \
+  --provider-id cloud-gpt-main \
+  --setup-report ~/Desktop/codex-hybrid-setup-report.md \
+  --canary-report ~/Desktop/codex-hybrid-canary-evidence.md \
+  --output ~/Desktop/codex-hybrid-real-clean-machine-canary.md
+```
+
 Use [`user-success-criteria.md`](user-success-criteria.md) to confirm whether
 the setup is complete or only partially complete.
 

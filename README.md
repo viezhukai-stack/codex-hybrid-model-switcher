@@ -53,6 +53,7 @@ Start here:
 - Safe English demo without touching a real profile: [`docs/quickstart-demo.md`](docs/quickstart-demo.md)
 - Redacted setup report: [`docs/setup-report.md`](docs/setup-report.md)
 - Final canary evidence report: [`docs/canary-report.md`](docs/canary-report.md)
+- Real clean-machine canary: [`docs/real-clean-machine-canary.md`](docs/real-clean-machine-canary.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
 - Agent handoff drill: [`docs/agent-handoff-drill.md`](docs/agent-handoff-drill.md)
 - Stock Codex handoff validation: [`docs/stock-codex-handoff-validation.md`](docs/stock-codex-handoff-validation.md)
@@ -239,6 +240,7 @@ For common setup and recovery questions, see `docs/faq.md`.
 - Bridge health check: [`docs/bridge-health.md`](docs/bridge-health.md)
 - Bootstrap entry: [`docs/bootstrap.md`](docs/bootstrap.md)
 - Setup report: [`docs/setup-report.md`](docs/setup-report.md)
+- Real clean-machine canary: [`docs/real-clean-machine-canary.md`](docs/real-clean-machine-canary.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
 - Agent handoff drill: [`docs/agent-handoff-drill.md`](docs/agent-handoff-drill.md)
 - Stock Codex handoff validation: [`docs/stock-codex-handoff-validation.md`](docs/stock-codex-handoff-validation.md)
@@ -348,6 +350,12 @@ test chat responds:
 
 ```sh
 python3 -m codex_hybrid_switcher canary-report --config ~/.codex-hybrid-model-switcher/config.json --provider-id cloud-gpt-main --account-visible yes --plugins-visible yes --mcp-visible yes --project-list-visible yes --test-chat-responded yes --bridge-health-passed yes --setup-report-reviewed yes --verdict complete --output ~/Desktop/codex-hybrid-canary-evidence.md
+```
+
+To prepare the final real clean-machine canary checklist:
+
+```sh
+python3 -m codex_hybrid_switcher real-canary-template --config ~/.codex-hybrid-model-switcher/config.json --provider-id cloud-gpt-main --setup-report ~/Desktop/codex-hybrid-setup-report.md --canary-report ~/Desktop/codex-hybrid-canary-evidence.md --output ~/Desktop/codex-hybrid-real-clean-machine-canary.md
 ```
 
 ## What This Repository Must Not Contain

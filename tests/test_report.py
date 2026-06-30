@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from codex_hybrid_switcher.canary_report import render_canary_report, run_canary_report
+from codex_hybrid_switcher.real_canary import render_real_canary_template, run_real_canary_template
 from codex_hybrid_switcher.report import render_report, run_setup_report
 
 
@@ -196,4 +197,50 @@ def test_run_canary_report_writes_output(tmp_path):
     assert "verdict: `partial`" in text
     assert "[x] yes Account information is visible" in text
     assert "[-] not applicable A new test conversation responded" in text
+    assert "private-provider.example" not in text
+
+
+def test_render_real_canary_template_redacts_private_values(tmp_path):
+    codex_home = write_codex_home(tmp_path)
+    config_path = write_private_config(tmp_path, codex_home)
+
+    report = render_real_canary_template(
+        str(config_path),
+        provider_id="cloud-main",
+        setup_report=str(tmp_path / "codex-hybrid-setup-report.md"),
+        canary_report=str(tmp_path / "codex-hybrid-canary-evidence.md"),
+    )
+
+    assert "Real Clean Machine Canary" in report
+    assert "stock Codex Desktop" in report
+    assert "guarded-switch --dry-run" in report
+    assert "provider_under_test: `cloud-main kind=cloud model=private-model route=bridge`" in report
+    assert "setup_report_reference: `codex-hybrid-setup-report.md`" in report
+    assert "canary_report_reference: `codex-hybrid-canary-evidence.md`" in report
+    assert "A new test conversation responded" in report
+    assert "FINAL_CHECK.md" in report
+    assert "private-provider.example" not in report
+    assert str(tmp_path) not in report
+    assert "do-not-print" not in report
+
+
+def test_run_real_canary_template_writes_output(tmp_path):
+    codex_home = write_codex_home(tmp_path)
+    config_path = write_private_config(tmp_path, codex_home)
+    output = tmp_path / "real-canary.md"
+
+    assert (
+        run_real_canary_template(
+            str(config_path),
+            output=str(output),
+            provider_id="cloud-main",
+            setup_report=str(tmp_path / "codex-hybrid-setup-report.md"),
+            canary_report=str(tmp_path / "codex-hybrid-canary-evidence.md"),
+        )
+        == 0
+    )
+
+    text = output.read_text(encoding="utf-8")
+    assert "Real Clean Machine Canary" in text
+    assert "Do not attach `auth.json`" in text
     assert "private-provider.example" not in text

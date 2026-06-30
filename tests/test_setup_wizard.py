@@ -55,6 +55,7 @@ def test_setup_non_interactive_generates_private_config_only(tmp_path, capsys):
     assert "guarded-switch cloud-main --dry-run" in out
     assert "setup-report" in out
     assert "canary-report" in out
+    assert "real-canary-template" in out
     assert "FINAL_CHECK.md" in out
     assert "does not rewrite Codex history" in out
 
@@ -73,6 +74,7 @@ def test_setup_next_steps_are_platform_specific_for_windows(tmp_path, capsys):
     assert code == 0
     assert r"%USERPROFILE%\Desktop\codex-hybrid-setup-report.md" in out
     assert r"%USERPROFILE%\Desktop\codex-hybrid-canary-evidence.md" in out
+    assert r"%USERPROFILE%\Desktop\codex-hybrid-real-clean-machine-canary.md" in out
     assert "~/Desktop/codex-hybrid-setup-report.md" not in out
 
 

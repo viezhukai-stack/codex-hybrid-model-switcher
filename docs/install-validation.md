@@ -20,6 +20,7 @@ simulated Codex home.
 - Stock-Codex bootstrap-to-apply simulation using a temporary `.codex` home.
 - Agent handoff drill through bootstrap, dry-run, env-help, bridge-health,
   guarded apply, setup-report, canary-report, and final verdict guidance.
+- Real clean-machine canary template generation.
 - Redacted setup report generation after the stock-Codex simulation.
 - `switch --dry-run` against a simulated `config.toml`.
 - MCP/plugin-like config blocks remain visible in the dry-run diff.
@@ -99,3 +100,15 @@ python3 scripts/validate-agent-handoff-drill.py
 The drill writes a temporary redacted report and verifies the handoff path
 reaches setup report, canary evidence, and final verdict guidance without
 touching a real Codex profile.
+
+## Real Clean-Machine Canary Template Only
+
+To validate only the real clean-machine canary template generator:
+
+```sh
+python3 scripts/validate-real-clean-machine-canary.py
+```
+
+The validation uses a temporary private config and verifies the generated
+template has the required stock Codex evidence fields without leaking provider
+hostnames, local paths, tokens, or Codex state content.

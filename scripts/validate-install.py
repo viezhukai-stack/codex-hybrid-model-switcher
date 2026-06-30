@@ -308,6 +308,7 @@ def main(argv: list[str] | None = None) -> int:
         run([str(python), "scripts/validate-stock-codex-flow.py", "--tmp-root", str(work)], cwd=repo)
         run([str(python), "scripts/validate-stock-codex-handoff.py", "--tmp-root", str(work)], cwd=repo)
         run([str(python), "scripts/validate-agent-handoff-drill.py", "--tmp-root", str(work)], cwd=repo)
+        run([str(python), "scripts/validate-real-clean-machine-canary.py", "--tmp-root", str(work)], cwd=repo)
         validate_dry_run(python, repo, work)
         print("install validation passed")
     finally:

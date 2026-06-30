@@ -71,6 +71,26 @@ def test_agent_handoff_drill_validation_script(tmp_path):
     assert "agent handoff drill report:" in proc.stdout
 
 
+def test_real_clean_machine_canary_validation_script(tmp_path):
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "validate-real-clean-machine-canary.py"),
+            "--tmp-root",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert proc.returncode == 0, proc.stdout
+    assert "real clean machine canary validation passed" in proc.stdout
+    assert "real clean machine canary template:" in proc.stdout
+
+
 def test_release_acceptance_quick_validation_script():
     proc = subprocess.run(
         [

@@ -11,8 +11,10 @@ The intended workflow is:
 4. Quit Codex Desktop only when Codex asks for the real guarded switch.
 5. Reopen Codex Desktop and test a new conversation.
 6. Ask Codex to generate the redacted setup report.
-7. Use `docs/user-success-criteria.md` to confirm the setup is really done.
-8. Use `FINAL_CHECK.md` for Codex's final completion verdict.
+7. Ask Codex to generate canary evidence and the real clean-machine canary
+   template.
+8. Use `docs/user-success-criteria.md` to confirm the setup is really done.
+9. Use `FINAL_CHECK.md` for Codex's final completion verdict.
 
 ## Copy This Prompt Into Codex
 
@@ -125,6 +127,8 @@ Final user-visible milestone:
 - plugins/MCP/project list are still visible
 - a new test conversation responds
 - a redacted setup report exists
+- a redacted canary evidence report exists
+- a real clean-machine canary template exists
 - if a bridge-routed test chat does not reply, `bridge-health` has been run and
   its next steps have been followed
 - the user success checklist in `docs/user-success-criteria.md` has been
@@ -186,6 +190,17 @@ python3 -m codex_hybrid_switcher canary-report \
   --setup-report-reviewed yes \
   --verdict complete \
   --output ~/Desktop/codex-hybrid-canary-evidence.md
+```
+
+Generate the real clean-machine canary checklist:
+
+```sh
+python3 -m codex_hybrid_switcher real-canary-template \
+  --config ~/.codex-hybrid-model-switcher/config.json \
+  --provider-id cloud-gpt-main \
+  --setup-report ~/Desktop/codex-hybrid-setup-report.md \
+  --canary-report ~/Desktop/codex-hybrid-canary-evidence.md \
+  --output ~/Desktop/codex-hybrid-real-clean-machine-canary.md
 ```
 
 Then use [`docs/user-success-criteria.md`](docs/user-success-criteria.md) to
