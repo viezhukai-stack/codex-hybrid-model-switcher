@@ -183,6 +183,8 @@ def validate_default_bridge_handoff(
         "api_key_env=OPENAI_COMPATIBLE_API_KEY(unset)",
         "Bridge route selected",
         "bridge-health",
+        "canary-report",
+        "FINAL_CHECK.md",
         "No files will be changed",
     ]
     missing = [item for item in required if item not in proc.stdout]
@@ -289,7 +291,7 @@ def validate_handoff(python: Path, source_repo: Path, work: Path) -> None:
             cwd=clean_repo,
             env=env,
         )
-        for expected in ("Guarded dry-run", "No files will be changed", "setup-report"):
+        for expected in ("Guarded dry-run", "No files will be changed", "setup-report", "canary-report", "FINAL_CHECK.md"):
             if expected not in proc.stdout:
                 raise SystemExit(f"bootstrap output missing expected handoff text: {expected}")
         if not direct_private_config.exists():

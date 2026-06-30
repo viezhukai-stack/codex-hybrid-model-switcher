@@ -50,6 +50,9 @@ def test_bootstrap_noninteractive_creates_private_config_and_dry_runs(tmp_path):
     assert "state_5.sqlite" in proc.stdout
     assert "env-help" in proc.stdout
     assert "bridge-health" in proc.stdout
+    assert "setup-report" in proc.stdout
+    assert "canary-report" in proc.stdout
+    assert "FINAL_CHECK.md" in proc.stdout
 
 
 def test_bootstrap_requires_base_url_for_noninteractive_new_config(tmp_path):
