@@ -153,10 +153,12 @@ def print_next_steps(path: Path, provider_id: str, *, platform_name: str | None 
         setup_output = r"%USERPROFILE%\Desktop\codex-hybrid-setup-report.md"
         canary_output = r"%USERPROFILE%\Desktop\codex-hybrid-canary-evidence.md"
         real_canary_output = r"%USERPROFILE%\Desktop\codex-hybrid-real-clean-machine-canary.md"
+        final_check_output = r"%USERPROFILE%\Desktop\codex-hybrid-final-check.md"
     else:
         setup_output = "~/Desktop/codex-hybrid-setup-report.md"
         canary_output = "~/Desktop/codex-hybrid-canary-evidence.md"
         real_canary_output = "~/Desktop/codex-hybrid-real-clean-machine-canary.md"
+        final_check_output = "~/Desktop/codex-hybrid-final-check.md"
     print()
     print("Next safe steps:")
     print(f"  1. Set the API key in your shell or OS environment for this provider.")
@@ -178,7 +180,13 @@ def print_next_steps(path: Path, provider_id: str, *, platform_name: str | None 
         f"codex-hybrid-switcher real-canary-template --config {path} --provider-id {provider_id} "
         f"--setup-report {setup_output} --canary-report {canary_output} --output {real_canary_output}"
     )
-    print("  9. Use FINAL_CHECK.md for the final verdict.")
+    print(
+        "  9. Generate the read-only final verdict: "
+        f"codex-hybrid-switcher final-check --config {path} "
+        f"--setup-report {setup_output} --canary-report {canary_output} "
+        f"--real-canary-template {real_canary_output} --output {final_check_output}"
+    )
+    print("  10. Use FINAL_CHECK.md to review the final verdict.")
     print()
     print("History note:")
     print("  This setup does not rewrite Codex history. Existing official conversations may")

@@ -16,8 +16,9 @@ The intended workflow is:
 6. Ask Codex to generate the redacted setup report.
 7. Ask Codex to generate canary evidence and the real clean-machine canary
    template.
-8. Use `docs/user-success-criteria.md` to confirm the setup is really done.
-9. Use `FINAL_CHECK.md` for Codex's final completion verdict.
+8. Ask Codex to run `final-check` and generate `codex-hybrid-final-check.md`.
+9. Use `docs/user-success-criteria.md` to confirm the setup is really done.
+10. Use `FINAL_CHECK.md` for Codex's final completion verdict.
 
 ## Copy This Prompt Into Codex
 
@@ -132,6 +133,7 @@ Final user-visible milestone:
 - a redacted setup report exists
 - a redacted canary evidence report exists
 - a real clean-machine canary template exists
+- a read-only final check report exists
 - if a bridge-routed test chat does not reply, `bridge-health` has been run and
   its next steps have been followed
 - the user success checklist in `docs/user-success-criteria.md` has been
@@ -208,6 +210,17 @@ python3 -m codex_hybrid_switcher real-canary-template \
 
 Then use [`docs/user-success-criteria.md`](docs/user-success-criteria.md) to
 decide whether setup is complete or only partially complete.
+
+Generate the read-only final check:
+
+```sh
+python3 -m codex_hybrid_switcher final-check \
+  --config ~/.codex-hybrid-model-switcher/config.json \
+  --setup-report ~/Desktop/codex-hybrid-setup-report.md \
+  --canary-report ~/Desktop/codex-hybrid-canary-evidence.md \
+  --real-canary-template ~/Desktop/codex-hybrid-real-clean-machine-canary.md \
+  --output ~/Desktop/codex-hybrid-final-check.md
+```
 
 Finally, copy the prompt in [`FINAL_CHECK.md`](FINAL_CHECK.md) into Codex and
 ask for a final verdict.

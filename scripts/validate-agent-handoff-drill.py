@@ -19,6 +19,7 @@ REQUIRED_DOC_MARKERS = {
         "guarded-switch --dry-run",
         "setup-report",
         "canary-report",
+        "final-check",
         "FINAL_CHECK.md",
     ),
     "AGENTS.md": (
@@ -129,6 +130,7 @@ def write_drill_report(
     *,
     setup_report: Path,
     canary_report: Path,
+    final_check_report: Path,
     before_hashes: dict[str, str | None],
     after_hashes: dict[str, str | None],
 ) -> None:
@@ -152,6 +154,7 @@ def write_drill_report(
         "- [x] Protected Codex file hashes stayed unchanged.",
         "- [x] Redacted setup report was generated.",
         "- [x] Canary evidence report recorded visible UI confirmations.",
+        "- [x] Final check report recorded a Complete verdict.",
         "- [x] Final verdict path uses `FINAL_CHECK.md`.",
         "",
         "## Protected File Hash Prefixes",
@@ -168,6 +171,7 @@ def write_drill_report(
             "",
             f"- setup_report: `{setup_report.name}`",
             f"- canary_report: `{canary_report.name}`",
+            f"- final_check_report: `{final_check_report.name}`",
             "",
             "## Safety Boundary",
             "",
@@ -185,6 +189,8 @@ def validate_drill(python: Path, repo: Path, work: Path) -> None:
     private_config = work / "private" / "config.json"
     setup_report = work / "codex-hybrid-setup-report.md"
     canary_report = work / "codex-hybrid-canary-evidence.md"
+    real_canary_report = work / "codex-hybrid-real-clean-machine-canary.md"
+    final_check_report = work / "codex-hybrid-final-check.md"
     drill_report = work / "agent-handoff-drill-report.md"
     write_stock_codex_home(codex_home)
     before_hashes = protected_hashes(codex_home)
@@ -219,7 +225,7 @@ def validate_drill(python: Path, repo: Path, work: Path) -> None:
         cwd=repo,
         env=env,
     )
-    for marker in ("Guarded dry-run", "No files will be changed", "setup-report", "canary-report", "FINAL_CHECK.md"):
+    for marker in ("Guarded dry-run", "No files will be changed", "setup-report", "canary-report", "final-check", "FINAL_CHECK.md"):
         if marker not in bootstrap.stdout:
             raise SystemExit(f"bootstrap output missing drill marker: {marker}")
     if not private_config.exists():
@@ -331,17 +337,62 @@ def validate_drill(python: Path, repo: Path, work: Path) -> None:
         assert_not_leaked(report.read_text(encoding="utf-8"), work)
     if "verdict: `complete`" not in canary_report.read_text(encoding="utf-8"):
         raise SystemExit("canary report did not record complete verdict")
+    run(
+        [
+            str(python),
+            "-m",
+            "codex_hybrid_switcher",
+            "real-canary-template",
+            "--config",
+            str(private_config),
+            "--provider-id",
+            "cloud-gpt-main",
+            "--setup-report",
+            str(setup_report),
+            "--canary-report",
+            str(canary_report),
+            "--output",
+            str(real_canary_report),
+        ],
+        cwd=repo,
+        env=env,
+    )
+    run(
+        [
+            str(python),
+            "-m",
+            "codex_hybrid_switcher",
+            "final-check",
+            "--config",
+            str(private_config),
+            "--setup-report",
+            str(setup_report),
+            "--canary-report",
+            str(canary_report),
+            "--real-canary-template",
+            str(real_canary_report),
+            "--output",
+            str(final_check_report),
+        ],
+        cwd=repo,
+        env=env,
+    )
+    for report in (real_canary_report, final_check_report):
+        assert_not_leaked(report.read_text(encoding="utf-8"), work)
+    if "final_verdict: `Complete`" not in final_check_report.read_text(encoding="utf-8"):
+        raise SystemExit("final check did not record complete verdict")
 
     write_drill_report(
         drill_report,
         setup_report=setup_report,
         canary_report=canary_report,
+        final_check_report=final_check_report,
         before_hashes=before_hashes,
         after_hashes=after_hashes,
     )
     text = drill_report.read_text(encoding="utf-8")
     assert_not_leaked(text, work)
-    for marker in ("drill_result: `passed`", "final_verdict: `Complete`", "Protected Codex file hashes stayed unchanged"):
+    for marker in ("drill_result: `passed`", "final_verdict: `Complete`", "Final check report recorded a Complete verdict", "Protected Codex file hashes stayed unchanged"):
         if marker not in text:
             raise SystemExit(f"drill report missing marker: {marker}")
     print(f"agent handoff drill report: {drill_report}")

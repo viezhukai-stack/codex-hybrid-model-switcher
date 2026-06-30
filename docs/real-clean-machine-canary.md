@@ -34,8 +34,9 @@ actual user handoff, not only the simulated repository path.
 8. Apply the real guarded switch.
 9. Reopen Codex Desktop and check account, plugins, MCP, project list, and a new
    test conversation.
-10. Generate `setup-report`, `canary-report`, and this real-machine template.
-11. Use `FINAL_CHECK.md` for the final verdict.
+10. Generate `setup-report`, `canary-report`, this real-machine template, and
+    `final-check`.
+11. Use `FINAL_CHECK.md` to review the final verdict.
 
 ## Generate the template
 
@@ -72,6 +73,17 @@ py -3 -m codex_hybrid_switcher real-canary-template `
   --output "$env:USERPROFILE\Desktop\codex-hybrid-real-clean-machine-canary.md"
 ```
 
+Then generate the final read-only verdict report:
+
+```sh
+codex-hybrid-switcher final-check \
+  --config ~/.codex-hybrid-model-switcher/config.json \
+  --setup-report ~/Desktop/codex-hybrid-setup-report.md \
+  --canary-report ~/Desktop/codex-hybrid-canary-evidence.md \
+  --real-canary-template ~/Desktop/codex-hybrid-real-clean-machine-canary.md \
+  --output ~/Desktop/codex-hybrid-final-check.md
+```
+
 ## What complete means
 
 A real clean-machine canary is complete only when:
@@ -86,7 +98,9 @@ A real clean-machine canary is complete only when:
 - plugin and MCP entry points are visible, or MCP is not used on that machine
 - project list is visible
 - A new test conversation responds through the selected provider
-- redacted `setup-report`, `canary-report`, and real canary template exist
+- redacted `setup-report`, `canary-report`, real canary template, and
+  `final-check` report exist
+- `final-check` returns `Complete`
 - `FINAL_CHECK.md` returns `Complete`
 
 If any item is missing, record `partial`, `failed`, or `rollback-needed` instead

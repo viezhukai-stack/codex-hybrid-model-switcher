@@ -136,7 +136,27 @@ def print_apply_instructions(config_path: Path, provider_id: str) -> None:
             "--output ~/Desktop/codex-hybrid-real-clean-machine-canary.md"
         )
     print()
-    print("Then use FINAL_CHECK.md for the final Complete / Partially complete / Not complete / Needs rollback verdict.")
+    print("Then generate the read-only final check with:")
+    if os.name == "nt":
+        print(
+            f"     set PYTHONPATH={SRC} && py -3 -m codex_hybrid_switcher final-check "
+            f"--config {config_path} "
+            "--setup-report %USERPROFILE%\\Desktop\\codex-hybrid-setup-report.md "
+            "--canary-report %USERPROFILE%\\Desktop\\codex-hybrid-canary-evidence.md "
+            "--real-canary-template %USERPROFILE%\\Desktop\\codex-hybrid-real-clean-machine-canary.md "
+            "--output %USERPROFILE%\\Desktop\\codex-hybrid-final-check.md"
+        )
+    else:
+        print(
+            f"     PYTHONPATH={SRC} python3 -m codex_hybrid_switcher final-check "
+            f"--config {config_path} "
+            "--setup-report ~/Desktop/codex-hybrid-setup-report.md "
+            "--canary-report ~/Desktop/codex-hybrid-canary-evidence.md "
+            "--real-canary-template ~/Desktop/codex-hybrid-real-clean-machine-canary.md "
+            "--output ~/Desktop/codex-hybrid-final-check.md"
+        )
+    print()
+    print("Use FINAL_CHECK.md to review the final Complete / Partially complete / Not complete / Needs rollback verdict.")
 
 
 def run_bootstrap(args: argparse.Namespace) -> int:

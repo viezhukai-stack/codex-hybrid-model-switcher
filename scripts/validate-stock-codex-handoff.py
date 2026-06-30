@@ -19,6 +19,7 @@ REQUIRED_HANDOFF_FILES = (
     "bootstrap.py",
     "src/codex_hybrid_switcher/__main__.py",
     "docs/canary-report.md",
+    "docs/final-check.md",
     "scripts/validate-stock-codex-flow.py",
 )
 
@@ -90,6 +91,7 @@ def assert_handoff_docs(repo: Path) -> None:
         "guarded-switch --dry-run",
         "setup-report",
         "canary-report",
+        "final-check",
         "不要填 API key 原文",
         "config.toml.bak-codex-hybrid-*",
         "auth.json",
@@ -107,8 +109,8 @@ def assert_handoff_docs(repo: Path) -> None:
         raise SystemExit("AGENTS.md does not point agents to START_HERE.md")
     if "START_HERE.md" not in readme:
         raise SystemExit("README.md does not point users to START_HERE.md")
-    if "canary-report" not in readme:
-        raise SystemExit("README.md does not point users to canary-report")
+    if "canary-report" not in readme or "final-check" not in readme:
+        raise SystemExit("README.md does not point users to final reports")
 
 
 def assert_canary_report_is_redacted(report_path: Path, work: Path) -> None:
@@ -140,6 +142,54 @@ def assert_canary_report_is_redacted(report_path: Path, work: Path) -> None:
     for item in forbidden:
         if item in text:
             raise SystemExit(f"canary evidence leaked private content: {item}")
+
+
+def assert_final_check_is_redacted(report_path: Path, work: Path) -> None:
+    text = report_path.read_text(encoding="utf-8")
+    required = [
+        "Codex Hybrid Final Check",
+        "final_verdict: `Complete`",
+        "canary_verdict: `complete`",
+        "`Account information is visible`: `yes`",
+        "`A new test conversation responded`: `yes`",
+    ]
+    for item in required:
+        if item not in text:
+            raise SystemExit(f"final check missing expected content: {item}")
+    forbidden = [
+        "example.test",
+        str(work),
+        "stock-codex-placeholder",
+        "do not mutate",
+        "sqlite placeholder",
+    ]
+    for item in forbidden:
+        if item in text:
+            raise SystemExit(f"final check leaked private content: {item}")
+
+
+def assert_real_canary_is_redacted(report_path: Path, work: Path) -> None:
+    text = report_path.read_text(encoding="utf-8")
+    required = [
+        "Real Clean Machine Canary",
+        "stock Codex Desktop",
+        "guarded-switch --dry-run",
+        "A new test conversation responded",
+        "FINAL_CHECK.md",
+    ]
+    for item in required:
+        if item not in text:
+            raise SystemExit(f"real canary template missing expected content: {item}")
+    forbidden = [
+        "example.test",
+        str(work),
+        "stock-codex-placeholder",
+        "do not mutate",
+        "sqlite placeholder",
+    ]
+    for item in forbidden:
+        if item in text:
+            raise SystemExit(f"real canary template leaked private content: {item}")
 
 
 def validate_default_bridge_handoff(
@@ -184,6 +234,7 @@ def validate_default_bridge_handoff(
         "Bridge route selected",
         "bridge-health",
         "canary-report",
+        "final-check",
         "FINAL_CHECK.md",
         "No files will be changed",
     ]
@@ -238,6 +289,8 @@ def validate_handoff(python: Path, source_repo: Path, work: Path) -> None:
     temp_home = work / "home"
     report_path = work / "handoff-report.md"
     canary_path = work / "handoff-canary-evidence.md"
+    real_canary_path = work / "handoff-real-canary.md"
+    final_check_path = work / "handoff-final-check.md"
 
     copy_clean_repo(source_repo, clean_repo)
     assert_handoff_docs(clean_repo)
@@ -291,7 +344,7 @@ def validate_handoff(python: Path, source_repo: Path, work: Path) -> None:
             cwd=clean_repo,
             env=env,
         )
-        for expected in ("Guarded dry-run", "No files will be changed", "setup-report", "canary-report", "FINAL_CHECK.md"):
+        for expected in ("Guarded dry-run", "No files will be changed", "setup-report", "canary-report", "final-check", "FINAL_CHECK.md"):
             if expected not in proc.stdout:
                 raise SystemExit(f"bootstrap output missing expected handoff text: {expected}")
         if not direct_private_config.exists():
@@ -371,6 +424,50 @@ def validate_handoff(python: Path, source_repo: Path, work: Path) -> None:
             env=env,
         )
         assert_canary_report_is_redacted(canary_path, work)
+        run(
+            [
+                str(python),
+                "-B",
+                "-m",
+                "codex_hybrid_switcher",
+                "real-canary-template",
+                "--config",
+                str(direct_private_config),
+                "--provider-id",
+                "cloud-gpt-main",
+                "--setup-report",
+                str(report_path),
+                "--canary-report",
+                str(canary_path),
+                "--output",
+                str(real_canary_path),
+            ],
+            cwd=clean_repo,
+            env=env,
+        )
+        assert_real_canary_is_redacted(real_canary_path, work)
+        run(
+            [
+                str(python),
+                "-B",
+                "-m",
+                "codex_hybrid_switcher",
+                "final-check",
+                "--config",
+                str(direct_private_config),
+                "--setup-report",
+                str(report_path),
+                "--canary-report",
+                str(canary_path),
+                "--real-canary-template",
+                str(real_canary_path),
+                "--output",
+                str(final_check_path),
+            ],
+            cwd=clean_repo,
+            env=env,
+        )
+        assert_final_check_is_redacted(final_check_path, work)
         print("stock Codex handoff validation passed")
     finally:
         stock_flow.cleanup_bridge(temp_home)
