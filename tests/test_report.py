@@ -100,6 +100,9 @@ def test_render_report_redacts_private_values(tmp_path):
     assert "`projects`: present" in report
     assert "`auth.json`: present sha256=" in report
     assert "`state_5.sqlite`: present sha256=" in report
+    assert "## User Success Checklist" in report
+    assert "Account information is still visible" in report
+    assert "A new test conversation responds" in report
 
 
 def test_run_setup_report_writes_output(tmp_path):
@@ -111,4 +114,5 @@ def test_run_setup_report_writes_output(tmp_path):
 
     text = output.read_text(encoding="utf-8")
     assert "Codex Hybrid Setup Report" in text
+    assert "User Success Checklist" in text
     assert "private-provider.example" not in text

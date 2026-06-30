@@ -51,6 +51,7 @@ Codex should:
 - run guarded apply only after you confirm Codex Desktop is fully quit
 - verify protected Codex files did not change
 - generate a redacted setup report after the real switch
+- walk through `docs/user-success-criteria.md` before saying setup is complete
 
 Codex should not:
 
@@ -99,6 +100,9 @@ PYTHONPATH=src python3 -m codex_hybrid_switcher setup-report \
 ```
 
 The report is redacted by design. Still review it before sharing it publicly.
+
+Then use [`user-success-criteria.md`](user-success-criteria.md) to confirm
+whether the setup is complete or only partially complete.
 
 ## Bootstrap shortcut
 

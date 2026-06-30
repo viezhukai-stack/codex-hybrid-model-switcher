@@ -32,6 +32,7 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "docs/recovery.md" in text
     assert "docs/local-llama-smoke.md" in text
     assert "docs/stock-codex-handoff-validation.md" in text
+    assert "docs/user-success-criteria.md" in text
     assert "validate-stock-codex-handoff.py" in text
     assert "codex-hybrid-switcher local-smoke" in text
     assert "codex-hybrid-switcher guarded-switch local-gemma --allow-local" in text
@@ -71,8 +72,22 @@ def test_readme_links_agent_assisted_path():
     assert "docs/setup-intake.md" in text
     assert "docs/bootstrap.md" in text
     assert "docs/setup-report.md" in text
+    assert "docs/user-success-criteria.md" in text
     assert "docs/stock-codex-handoff-validation.md" in text
     assert "AGENTS.md" in text
+
+
+def test_user_success_criteria_covers_visible_codex_completion():
+    text = read("docs/user-success-criteria.md")
+
+    assert "Codex Desktop opens without an error page" in text
+    assert "Account information is still visible" in text
+    assert "Plugin and MCP entry points are still visible" in text
+    assert "project list is still visible" in text
+    assert "A new test conversation responds" in text
+    assert "not complete yet" in text
+    for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
+        assert protected in text
 
 
 def test_chinese_tutorial_points_to_stock_handoff():

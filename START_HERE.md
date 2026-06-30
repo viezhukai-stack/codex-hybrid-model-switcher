@@ -11,6 +11,7 @@ The intended workflow is:
 4. Quit Codex Desktop only when Codex asks for the real guarded switch.
 5. Reopen Codex Desktop and test a new conversation.
 6. Ask Codex to generate the redacted setup report.
+7. Use `docs/user-success-criteria.md` to confirm the setup is really done.
 
 ## Copy This Prompt Into Codex
 
@@ -107,6 +108,8 @@ Final user-visible milestone:
 - plugins/MCP/project list are still visible
 - a new test conversation responds
 - a redacted setup report exists
+- the user success checklist in `docs/user-success-criteria.md` has been
+  reviewed
 
 ## Stop Conditions
 
@@ -147,3 +150,5 @@ Review the report before sharing it publicly. It is designed to redact
 endpoints, paths, tokens, account data, and full hashes, but human review is
 still part of the safety process.
 
+Then use [`docs/user-success-criteria.md`](docs/user-success-criteria.md) to
+decide whether setup is complete or only partially complete.
