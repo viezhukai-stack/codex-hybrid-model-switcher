@@ -14,6 +14,7 @@ Use this checklist before marking a release candidate ready.
 - `python scripts/validate-stock-codex-handoff.py`
 - `python scripts/validate-agent-handoff-drill.py`
 - `python scripts/validate-real-clean-machine-canary.py`
+- `python scripts/validate-release-acceptance.py --quick`
 - `python -m codex_hybrid_switcher setup-report --config <temp-config>`
 - `python -m codex_hybrid_switcher canary-report --config <temp-config> --verdict partial`
 - `python -m codex_hybrid_switcher final-check --config <temp-config>`
@@ -52,6 +53,10 @@ Confirm the repository does not contain:
 - Real clean-machine canary template validation passes.
 - GitHub issue template for real clean-machine canaries is present and blocks
   private Codex state attachments.
+- `docs/windows-hyperv-clean-vm-canary.md` documentation is present and requires
+  checkpoint `stock-codex-baseline`, fixed release `v2.11.0`, one
+  `cloud_route=bridge` provider, `guarded-switch --dry-run`, and
+  `codex-hybrid-final-check.md` with `Complete`.
 - Release acceptance validation passes and confirms the stock Codex handoff
   evidence is present.
 - Bridge-routed cloud providers refuse real apply when `api_key_env` is unset.
@@ -94,6 +99,8 @@ Confirm the repository does not contain:
   changes.
 - Agent handoff drill docs explain how to rehearse the full stock Codex path.
 - Real clean-machine canary docs explain how to collect final field evidence.
+- Windows Hyper-V clean VM canary docs explain the final stock-Codex proof from
+  a clean Windows 11 VM without testing local llama.cpp.
 - Cloud route documentation explains `bridge` versus `direct` and recommends
   `bridge` for normal API-key providers.
 - Bridge health documentation explains what to do when Codex opens but a
@@ -110,6 +117,10 @@ Before a release candidate:
 - One Windows canary passes local llama.cpp text and image validation.
 - A second Windows canary passes cloud switch and guarded launcher validation.
 - Protected files are unchanged in each real apply.
+- Before public release, one Windows Hyper-V clean VM canary should pass from
+  stock Codex Desktop using release `v2.11.0`, checkpoint
+  `stock-codex-baseline`, one cloud provider, and `final-check` verdict
+  `Complete`.
 
 macOS real switching may remain deferred when the Mac is the active working
 Codex environment. Do not risk interrupting the active Mac session solely for a

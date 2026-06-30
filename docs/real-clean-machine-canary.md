@@ -6,6 +6,12 @@ repository to Codex, and asks Codex to complete the guarded hybrid setup.
 This is the strongest evidence before a public release because it tests the
 actual user handoff, not only the simulated repository path.
 
+For the preferred final Windows proof, use
+[`docs/windows-hyperv-clean-vm-canary.md`](windows-hyperv-clean-vm-canary.md).
+That workflow starts from a Windows 11 Hyper-V VM checkpoint named
+`stock-codex-baseline`, uses fixed release `v2.11.0`, configures one
+`cloud_route=bridge` provider, and keeps local llama.cpp out of the canary.
+
 ## Safety boundary
 
 - Do not copy another machine's `.codex` directory.
@@ -15,6 +21,8 @@ actual user handoff, not only the simulated repository path.
 - Do not test local llama.cpp in the same first canary unless cloud setup has
   already passed.
 - Do not mark the canary complete until a new test conversation responds.
+- For the Hyper-V final proof, do not use floating `main`; use release
+  `v2.11.0` and record the checkpoint `stock-codex-baseline`.
 
 ## Suggested test order
 

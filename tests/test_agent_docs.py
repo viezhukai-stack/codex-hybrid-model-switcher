@@ -35,7 +35,7 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "docs/bridge-health.md" in text
     assert "docs/canary-report.md" in text
     assert "docs/real-clean-machine-canary.md" in text
-    assert "docs/final-check.md" in text
+    assert "docs/windows-hyperv-clean-vm-canary.md" in text
     assert "docs/final-check.md" in text
     assert "docs/agent-handoff-drill.md" in text
     assert "docs/recovery.md" in text
@@ -99,6 +99,7 @@ def test_readme_links_agent_assisted_path():
     assert "docs/setup-report.md" in text
     assert "docs/canary-report.md" in text
     assert "docs/real-clean-machine-canary.md" in text
+    assert "docs/windows-hyperv-clean-vm-canary.md" in text
     assert "docs/agent-handoff-drill.md" in text
     assert "docs/user-success-criteria.md" in text
     assert "docs/stock-codex-handoff-validation.md" in text
@@ -208,9 +209,44 @@ def test_real_clean_machine_canary_doc_explains_field_evidence():
     assert "real-canary-template" in text
     assert "guarded-switch --dry-run" in text
     assert "FINAL_CHECK.md" in text
+    assert "docs/windows-hyperv-clean-vm-canary.md" in text
+    assert "stock-codex-baseline" in text
+    assert "v2.11.0" in text
     assert "A new test conversation responds" in text
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
         assert protected in text
+
+
+def test_windows_hyperv_clean_vm_canary_doc_defines_final_public_proof():
+    text = read("docs/windows-hyperv-clean-vm-canary.md")
+
+    for marker in (
+        "Hyper-V",
+        "Windows 11",
+        "stock Codex Desktop",
+        "stock-codex-baseline",
+        "v2.11.0",
+        "HANDOFF_TO_CODEX.md",
+        "cloud_route=bridge",
+        "validate-agent-handoff-drill.py",
+        "validate-config",
+        "bridge-health",
+        "guarded-switch --dry-run",
+        "config.toml.bak-codex-hybrid-*",
+        "codex-hybrid-setup-report.md",
+        "codex-hybrid-canary-evidence.md",
+        "codex-hybrid-real-clean-machine-canary.md",
+        "codex-hybrid-final-check.md",
+        "final-check",
+        "Complete",
+        "local llama.cpp",
+    ):
+        assert marker in text
+    for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
+        assert protected in text
+    assert "rollout logs" in text
+    assert "Do not paste the raw API key" in text
+    assert "Do not edit `state_5.sqlite`" in text
 
 
 def test_real_clean_machine_canary_issue_template_is_safe():
@@ -218,6 +254,11 @@ def test_real_clean_machine_canary_issue_template_is_safe():
 
     assert "Real clean-machine canary" in text
     assert "Stock Codex Desktop" in text
+    assert "docs/windows-hyperv-clean-vm-canary.md" in text
+    assert "Hyper-V" in text
+    assert "stock-codex-baseline" in text
+    assert "v2.11.0" in text
+    assert "cloud_route=bridge" in text
     assert "HANDOFF_TO_CODEX.md" in text
     assert "validate-agent-handoff-drill.py" in text
     assert "guarded-switch --dry-run" in text
