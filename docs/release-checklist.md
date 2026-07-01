@@ -62,10 +62,14 @@ Confirm the repository does not contain:
   beginner Windows case where Git or Python are missing.
 - `scripts/bootstrap-windows.ps1` is present for the beginner Windows route and
   stops at `guarded-switch --dry-run`.
-- `installer/windows` is present for the Windows one-click beginner setup and
-  does not include Codex Desktop, model files, API keys, or real endpoints.
+- `installer/windows` is present for the Windows netdisk one-click beginner setup
+  and does not include Codex Desktop, model files, API keys, or real endpoints.
+- The package builder creates a netdisk-ready zip with
+  `payload/codex-hybrid-model-switcher`, so recipients do not need Git or a
+  GitHub project download.
 - `docs/windows-one-click-installer.md` explains the official Codex install
-  handoff, Python installation, project release download, llama.cpp download,
+  handoff, Python installation, bundled project payload, optional GitHub
+  fallback, optional bundled llama.cpp, official llama.cpp download fallback,
   local model file selection, dry-run default, and explicit `-Apply` boundary.
 - Release acceptance validation passes and confirms the stock Codex handoff
   evidence is present.
@@ -99,8 +103,7 @@ Confirm the repository does not contain:
   safe reporting path.
 - `CHANGELOG.md`, `SECURITY.md`, and `CONTRIBUTING.md` are present and current.
 - Windows docs describe the guarded launcher.
-- Windows one-click installer docs describe the beginner setup zip and release
-  asset.
+- Windows one-click installer docs describe the beginner netdisk setup zip.
 - Local model docs say local validation is optional and machine-dependent.
 - Recovery docs explain how to restore `config.toml` from the newest backup.
 - User success criteria explain when setup is complete versus only partially
