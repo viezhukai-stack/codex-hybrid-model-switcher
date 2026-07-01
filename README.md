@@ -98,16 +98,17 @@ cache, rewrite old conversations, or install always-on recovery services.
 ### Windows one-click setup
 
 For a beginner Windows computer, download
-`Codex-Hybrid-Windows-Netdisk-Setup-v2.13.1.zip`, extract it, and double-click
+`Codex-Hybrid-Windows-Netdisk-Setup-v2.13.2.zip`, extract it, and double-click
 `Install Codex Hybrid.cmd`. This is the package to share through a netdisk or
 other file-transfer link.
 
 The installer can open the official Codex app page when Codex is missing,
-install Python with `winget`, use the bundled project payload without GitHub
-project download, download official llama.cpp release assets when local model
-files are selected, and stop at guarded dry-run by default. It does not
-redistribute Codex Desktop, include model files, or apply a real switch unless
-`-Apply` is explicitly provided.
+install Python with `winget` or use bundled portable Python, use the bundled
+project payload without GitHub project download, prefill provider settings from
+`provider-preset.json`, download official llama.cpp release assets when local
+model files are selected, and stop at guarded dry-run before asking for an
+explicit `APPLY` confirmation. It does not redistribute Codex Desktop, include
+model files, or apply a real switch without explicit confirmation.
 
 See [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md).
 

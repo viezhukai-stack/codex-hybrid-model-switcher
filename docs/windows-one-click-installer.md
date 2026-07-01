@@ -6,15 +6,17 @@ Python, Git, llama.cpp, or local model files yet.
 The installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.13.1.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.13.2.zip
 ```
 
 It contains:
 
 - `Install Codex Hybrid.cmd`
+- `Codex Hybrid Diagnostics.cmd`
 - `Install-CodexHybrid.ps1`
 - `README.txt`
 - `README.zh-CN.txt`
+- `provider-preset.example.json`
 - `payload/codex-hybrid-model-switcher/`
 
 ## What It Does
@@ -23,13 +25,17 @@ It contains:
 - Checks whether Codex Desktop appears installed and signed in.
 - Opens the official Codex app page when Codex is missing or not signed in:
   `https://developers.openai.com/codex/app`
-- Installs Python 3.12 with `winget` if Python is missing.
+- Uses bundled portable Python from `payload/python` when present.
+- Installs Python 3.12 with `winget` if Python is missing and no bundled
+  Python is present.
 - Uses the bundled project payload from
   `payload/codex-hybrid-model-switcher`; Git is not required.
 - Falls back to downloading the fixed project release zip from GitHub only when
   the bundled payload is missing.
 - Creates the private config at
   `%USERPROFILE%\.codex-hybrid-model-switcher\config.json`.
+- Prefills provider settings from `provider-preset.json` when that file exists
+  next to the installer.
 - Stores the provider API key only in a Windows User environment variable.
 - Lets the user choose local GGUF and mmproj files.
 - Uses bundled llama.cpp when `payload/llama.cpp` contains `llama-server.exe`;
@@ -38,11 +44,15 @@ It contains:
 - Runs `validate-config`, `bridge-health`, optional `local-smoke`, and a guarded
   cloud dry-run.
 - Installs the desktop `Codex Model Switcher.cmd` launcher.
+- Writes a redacted diagnostics report when `Codex Hybrid Diagnostics.cmd` is
+  double-clicked.
 
 ## What It Does Not Do
 
 - It does not redistribute Codex Desktop.
 - It does not include local model files.
+- It does not include Python by default, but the package builder can include a
+  portable Python directory under `payload/python`.
 - It does not require Git or a GitHub project download when the netdisk payload
   is intact.
 - It does not write API keys into the repository or private config.
@@ -54,18 +64,19 @@ It contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.13.1.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.13.2.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
 4. If Codex is missing, install Codex from the official page, sign in, fully
    close Codex, then run the installer again.
-5. Enter the OpenAI-compatible provider `base_url`, cloud model id, environment
+5. If `provider-preset.json` exists, provider fields are prefilled.
+6. Enter the OpenAI-compatible provider `base_url`, cloud model id, environment
    variable name, and API key when prompted.
-6. Choose local GGUF and mmproj files if you want local model support.
-7. Review the dry-run output.
-8. Only after dry-run looks correct, fully quit Codex Desktop and rerun with
-   `-Apply` if you want to perform the real guarded cloud switch.
+7. Choose local GGUF and mmproj files if you want local model support.
+8. Review the dry-run output.
+9. Only after dry-run looks correct and Codex Desktop is fully closed, type
+   `APPLY` when prompted if you want to perform the real guarded cloud switch.
 
 ## Command-Line Examples
 
@@ -122,7 +133,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.13.1.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.13.2.zip
 ```
 
 Upload that zip to your netdisk.
@@ -139,3 +150,14 @@ If you want to bundle a prepared llama.cpp runtime, run:
 ```powershell
 py scripts\build-windows-one-click-package.py --include-llama-dir D:\Tools\llama.cpp
 ```
+
+If you want to bundle portable Python, run:
+
+```powershell
+py scripts\build-windows-one-click-package.py --include-python-dir D:\Tools\python-portable
+```
+
+To prefill provider settings for a private netdisk package, copy
+`provider-preset.example.json` to `provider-preset.json` next to
+`Install-CodexHybrid.ps1` before zipping. Do not put the API key value in that
+file.

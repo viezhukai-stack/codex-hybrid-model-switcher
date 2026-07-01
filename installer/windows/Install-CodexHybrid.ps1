@@ -1,7 +1,8 @@
 param(
-    [string]$ReleaseTag = "v2.13.1",
+    [string]$ReleaseTag = "v2.13.2",
     [string]$ProjectRepo = "viezhukai-stack/codex-hybrid-model-switcher",
     [string]$BundledProjectPath,
+    [string]$ProviderPresetPath,
     [string]$ProviderId = "cloud-gpt-main",
     [string]$ProviderLabel = "Cloud GPT Main",
     [string]$BaseUrl,
@@ -19,7 +20,8 @@ param(
     [switch]$SkipCodexCheck,
     [switch]$SkipLocal,
     [switch]$SkipLocalSmoke,
-    [switch]$SkipLlamaDownload
+    [switch]$SkipLlamaDownload,
+    [switch]$DiagnosticsOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -32,6 +34,7 @@ $ProjectZip = Join-Path $ReleaseRoot "$ReleaseTag.zip"
 $ExtractRoot = Join-Path $ReleaseRoot "src"
 $ProjectPath = Join-Path $ExtractRoot "codex-hybrid-model-switcher-$($ReleaseTag.TrimStart('v'))"
 $BundledProjectDefault = Join-Path $PSScriptRoot "payload\codex-hybrid-model-switcher"
+$BundledPythonRoot = Join-Path $PSScriptRoot "payload\python"
 $LlamaRoot = Join-Path $InstallRoot "llama.cpp"
 
 function Write-Step {
@@ -71,6 +74,8 @@ function Read-Required {
 
 function Find-Python {
     $candidates = @(
+        "$BundledPythonRoot\python.exe",
+        "$BundledPythonRoot\python\python.exe",
         "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe",
         "$env:LOCALAPPDATA\Programs\Python\Python311\python.exe",
         "$env:ProgramFiles\Python312\python.exe",
@@ -113,6 +118,9 @@ function Ensure-Python {
     Write-Step "Checking Python"
     $python = Find-Python
     if ($python.Count -gt 0) {
+        if ($python[0] -like "$BundledPythonRoot*") {
+            Write-Host "Using bundled portable Python: $($python[0])"
+        }
         Invoke-Python -PythonCommand $python -Arguments @("--version")
         return $python
     }
@@ -180,6 +188,112 @@ function Ensure-CodexReady {
     Write-Host ""
     Write-Host "Install Codex Desktop, sign in, fully close Codex Desktop, then run this installer again."
     exit 20
+}
+
+function Apply-ProviderPreset {
+    $preset = $ProviderPresetPath
+    if (-not $preset) {
+        $preset = Join-Path $PSScriptRoot "provider-preset.json"
+    }
+    if (-not (Test-Path $preset)) {
+        return
+    }
+    Write-Step "Loading provider preset"
+    $json = Get-Content -LiteralPath $preset -Raw | ConvertFrom-Json
+    $providerIdPreset = Get-OptionalJsonString -Object $json -Name "provider_id"
+    $providerLabelPreset = Get-OptionalJsonString -Object $json -Name "provider_label"
+    $baseUrlPreset = Get-OptionalJsonString -Object $json -Name "base_url"
+    $modelPreset = Get-OptionalJsonString -Object $json -Name "model"
+    $apiKeyEnvPreset = Get-OptionalJsonString -Object $json -Name "api_key_env"
+    if ($providerIdPreset -and $ProviderId -eq "cloud-gpt-main") {
+        $script:ProviderId = $providerIdPreset
+    }
+    if ($providerLabelPreset -and $ProviderLabel -eq "Cloud GPT Main") {
+        $script:ProviderLabel = $providerLabelPreset
+    }
+    if ($baseUrlPreset -and -not $BaseUrl) {
+        $script:BaseUrl = $baseUrlPreset
+    }
+    if ($modelPreset -and -not $Model) {
+        $script:Model = $modelPreset
+    }
+    if ($apiKeyEnvPreset -and ($ApiKeyEnv -eq "OPENAI_COMPATIBLE_API_KEY")) {
+        $script:ApiKeyEnv = $apiKeyEnvPreset
+    }
+    Write-Host "Provider preset loaded. API key value is never read from the preset."
+}
+
+function Get-OptionalJsonString {
+    param($Object, [string]$Name)
+    $property = $Object.PSObject.Properties[$Name]
+    if (-not $property -or $null -eq $property.Value) {
+        return ""
+    }
+    return [string]$property.Value
+}
+
+function Test-CodexRunning {
+    $running = Get-Process -ErrorAction SilentlyContinue | Where-Object {
+        $_.ProcessName -like "Codex*" -or $_.ProcessName -eq "codex"
+    }
+    return [bool]$running
+}
+
+function Write-DiagnosticsReport {
+    $desktop = [Environment]::GetFolderPath("Desktop")
+    if (-not $desktop) {
+        $desktop = $env:USERPROFILE
+    }
+    $report = Join-Path $desktop "codex-hybrid-installer-diagnostics.txt"
+    $codexHome = Join-Path $env:USERPROFILE ".codex"
+    $authPath = Join-Path $codexHome "auth.json"
+    $configToml = Join-Path $codexHome "config.toml"
+    $modelsCache = Join-Path $codexHome "models_cache.json"
+    $stateDb = Join-Path $codexHome "state_5.sqlite"
+    $python = Find-Python
+    $winget = Get-Command winget -ErrorAction SilentlyContinue
+    $payloadProject = Test-Path (Join-Path $BundledProjectDefault "bootstrap.py")
+    $payloadPython = Test-Path (Join-Path $BundledPythonRoot "python.exe")
+    $payloadLlama = $false
+    $llamaPayloadRoot = Join-Path $PSScriptRoot "payload\llama.cpp"
+    if (Test-Path $llamaPayloadRoot) {
+        $payloadLlama = [bool](Get-ChildItem -LiteralPath $llamaPayloadRoot -Filter "llama-server.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1)
+    }
+    $pythonCommand = "none"
+    if ($python.Count -gt 0) {
+        if ($python[0] -like "$BundledPythonRoot*") {
+            $pythonCommand = "bundled-python"
+        } elseif ($python[0] -eq "py") {
+            $pythonCommand = "py-launcher"
+        } else {
+            $pythonCommand = "system-python"
+        }
+    }
+    $lines = @(
+        "Codex Hybrid Installer Diagnostics",
+        "generated_at=$(Get-Date -Format s)",
+        "version=$ReleaseTag",
+        "windows=$($env:OS)",
+        "script_root=<installer-folder>",
+        "codex_auth_present=$(Test-Path $authPath)",
+        "codex_config_present=$(Test-Path $configToml)",
+        "models_cache_present=$(Test-Path $modelsCache)",
+        "state_db_present=$(Test-Path $stateDb)",
+        "codex_process_running=$(Test-CodexRunning)",
+        "python_found=$($python.Count -gt 0)",
+        "python_command=$pythonCommand",
+        "winget_found=$([bool]$winget)",
+        "bundled_project_payload=$payloadProject",
+        "bundled_portable_python=$payloadPython",
+        "bundled_llama_cpp=$payloadLlama",
+        "private_config_present=$(Test-Path $ConfigPath)",
+        "api_key_env_name=$ApiKeyEnv",
+        "api_key_env_set=$([bool]([Environment]::GetEnvironmentVariable($ApiKeyEnv, 'User') -or [Environment]::GetEnvironmentVariable($ApiKeyEnv, 'Process')))",
+        "",
+        "This report does not include API keys, tokens, raw Codex databases, session content, provider hostnames, local file contents, or full local paths."
+    )
+    $lines | Set-Content -LiteralPath $report -Encoding UTF8
+    Write-Host "Wrote diagnostics report: $report"
 }
 
 function Copy-ProjectPayload {
@@ -486,6 +600,31 @@ function Write-Config {
     Invoke-Switcher -ArgsList $args
 }
 
+function Invoke-GuardedApply {
+    Write-Step "Applying guarded cloud switch"
+    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ProjectPath "scripts\windows-provider-switch.ps1") -ProviderId $ProviderId -Config $ConfigPath -Apply
+    if ($LASTEXITCODE -ne 0) {
+        Fail "Guarded apply failed."
+    }
+}
+
+function Prompt-ApplyAfterDryRun {
+    if ($DryRunOnly -or $NonInteractive) {
+        Write-Host "Next: review the dry-run, fully quit Codex Desktop, then rerun with -Apply only when you are ready."
+        return
+    }
+    Write-Host ""
+    Write-Host "If Codex Desktop is fully closed and you want to apply now, type APPLY exactly."
+    Write-Host "如果已经完全退出 Codex，并且确认现在应用，请输入 APPLY。"
+    Write-Host "Press Enter to exit without changing Codex."
+    $confirm = Read-Host "Apply now"
+    if ($confirm -cne "APPLY") {
+        Write-Host "Cancelled. No real Codex switch was applied."
+        return
+    }
+    Invoke-GuardedApply
+}
+
 if ($env:OS -ne "Windows_NT") {
     Fail "This installer is for Windows only." 2
 }
@@ -496,6 +635,12 @@ if ($Apply -and $DryRunOnly) {
 Write-Host "Codex Hybrid Model Switcher Windows one-click setup"
 Write-Host "Release: $ReleaseTag"
 Write-Host "Default mode: dry-run only. No real Codex switch is applied unless -Apply is provided."
+
+Apply-ProviderPreset
+if ($DiagnosticsOnly) {
+    Write-DiagnosticsReport
+    exit 0
+}
 
 Ensure-CodexReady
 $script:Python = Ensure-Python
@@ -566,19 +711,15 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if ($Apply) {
-    Write-Step "Applying guarded cloud switch"
-    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ProjectPath "scripts\windows-provider-switch.ps1") -ProviderId $ProviderId -Config $ConfigPath -Apply
-    if ($LASTEXITCODE -ne 0) {
-        Fail "Guarded apply failed."
-    }
+    Invoke-GuardedApply
 } else {
     Write-Host ""
     Write-Host "INSTALLER DRY-RUN COMPLETE"
     Write-Host "No real Codex switch was applied."
-    Write-Host "Next: review the dry-run, fully quit Codex Desktop, then rerun with -Apply only when you are ready."
     if (-not $includeLocal) {
         Write-Host "Local provider status: pending. Provide GGUF + mmproj files and a working llama.cpp runtime to enable it."
     } else {
         Write-Host "Local provider status: configured."
     }
+    Prompt-ApplyAfterDryRun
 }

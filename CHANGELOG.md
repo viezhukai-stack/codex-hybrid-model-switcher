@@ -5,6 +5,18 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.13.2
+
+- Added `Codex Hybrid Diagnostics.cmd`, a double-click diagnostic entry that
+  writes a redacted installer diagnostics text file to the Desktop.
+- Added optional `provider-preset.json` support so netdisk distributors can
+  prefill provider id, label, base URL, model id, and API-key environment
+  variable name without embedding the API key value.
+- Added optional portable Python bundling through `payload/python` and
+  `scripts/build-windows-one-click-package.py --include-python-dir`.
+- Added an interactive post-dry-run `APPLY` prompt, so beginner users do not
+  need to learn command-line flags for the first real guarded switch.
+
 ## v2.13.1
 
 - Changed the Windows beginner package into a netdisk-friendly bundle:

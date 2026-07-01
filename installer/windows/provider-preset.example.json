@@ -1,0 +1,7 @@
+{
+  "provider_id": "cloud-gpt-main",
+  "provider_label": "Cloud GPT Main",
+  "base_url": "https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1",
+  "model": "provider-gpt-main",
+  "api_key_env": "OPENAI_COMPATIBLE_API_KEY"
+}

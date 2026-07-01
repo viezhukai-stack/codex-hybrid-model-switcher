@@ -67,6 +67,10 @@ Confirm the repository does not contain:
 - The package builder creates a netdisk-ready zip with
   `payload/codex-hybrid-model-switcher`, so recipients do not need Git or a
   GitHub project download.
+- The package includes `Codex Hybrid Diagnostics.cmd`, `README.zh-CN.txt`, and
+  `provider-preset.example.json`.
+- Optional `--include-python-dir` and `--include-llama-dir` package builder
+  paths have clear docs and do not bundle runtimes unless explicitly requested.
 - `docs/windows-one-click-installer.md` explains the official Codex install
   handoff, Python installation, bundled project payload, optional GitHub
   fallback, optional bundled llama.cpp, official llama.cpp download fallback,
