@@ -291,12 +291,14 @@ run validation and bridge diagnostics, and stop at `guarded-switch --dry-run`.
 
 For a beginner Windows machine that may not have Codex Desktop at all, use
 `docs/windows-one-click-installer.md` and the netdisk package
-`Codex-Hybrid-Windows-Netdisk-Setup-v2.13.1.zip`. The installer opens the
+`Codex-Hybrid-Windows-Netdisk-Setup-v2.13.2.zip`. The installer opens the
 official Codex app page when Codex is missing, installs Python with `winget`,
-uses the bundled project payload without requiring Git or a GitHub project
-download, can use bundled or official-download llama.cpp assets, lets the user
-select their own GGUF and mmproj files, and defaults to guarded dry-run. It must
-not redistribute Codex Desktop, model files, or API keys.
+uses bundled portable Python when present, uses the bundled project payload
+without requiring Git or a GitHub project download, can prefill provider settings
+from `provider-preset.json`, can use bundled or official-download llama.cpp
+assets, lets the user select their own GGUF and mmproj files, and defaults to
+guarded dry-run before explicit `APPLY` confirmation. It must not redistribute
+Codex Desktop, model files, or API keys.
 
 For the final public-readiness field proof, follow
 `docs/windows-hyperv-clean-vm-canary.md`: start from a Windows 11 Hyper-V VM

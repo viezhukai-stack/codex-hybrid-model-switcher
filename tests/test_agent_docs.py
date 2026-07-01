@@ -133,15 +133,20 @@ def test_windows_one_click_installer_doc_covers_beginner_setup_boundary():
     text = read("docs/windows-one-click-installer.md")
 
     for marker in (
-        "Codex-Hybrid-Windows-Netdisk-Setup-v2.13.1.zip",
+        "Codex-Hybrid-Windows-Netdisk-Setup-v2.13.2.zip",
         "Install Codex Hybrid.cmd",
+        "Codex Hybrid Diagnostics.cmd",
         "Install-CodexHybrid.ps1",
+        "provider-preset.example.json",
         "payload/codex-hybrid-model-switcher",
+        "portable Python",
         "https://developers.openai.com/codex/app",
         "Python 3.12",
         "winget",
         "Git is not required",
         "bundled llama.cpp",
+        "APPLY",
+        "diagnostics report",
         "GGUF",
         "mmproj",
         "https://github.com/ggml-org/llama.cpp/releases",

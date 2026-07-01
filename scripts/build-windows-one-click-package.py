@@ -98,18 +98,31 @@ def add_project_payload(archive: zipfile.ZipFile) -> None:
         archive.write(ROOT / rel, PAYLOAD_PREFIX / rel)
 
 
+def add_directory_payload(archive: zipfile.ZipFile, source_dir: Path, archive_prefix: Path) -> None:
+    for path in source_dir.rglob("*"):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(source_dir)
+        if should_include(rel):
+            archive.write(path, archive_prefix / rel)
+
+
 def add_llama_payload(archive: zipfile.ZipFile, llama_dir: Path) -> None:
     if not llama_dir.exists():
         raise SystemExit(f"llama directory does not exist: {llama_dir}")
     server = next(llama_dir.rglob("llama-server.exe"), None)
     if server is None:
         raise SystemExit(f"llama-server.exe not found under: {llama_dir}")
-    for path in llama_dir.rglob("*"):
-        if not path.is_file():
-            continue
-        rel = path.relative_to(llama_dir)
-        if should_include(rel):
-            archive.write(path, Path("payload") / "llama.cpp" / rel)
+    add_directory_payload(archive, llama_dir, Path("payload") / "llama.cpp")
+
+
+def add_python_payload(archive: zipfile.ZipFile, python_dir: Path) -> None:
+    if not python_dir.exists():
+        raise SystemExit(f"python directory does not exist: {python_dir}")
+    python_exe = next(python_dir.rglob("python.exe"), None)
+    if python_exe is None:
+        raise SystemExit(f"python.exe not found under: {python_dir}")
+    add_directory_payload(archive, python_dir, Path("payload") / "python")
 
 
 def build(
@@ -117,15 +130,18 @@ def build(
     *,
     thin: bool = False,
     llama_dir: Path | None = None,
+    python_dir: Path | None = None,
 ) -> Path:
     version = project_version()
     output = output or (ROOT / "dist" / f"Codex-Hybrid-Windows-Netdisk-Setup-v{version}.zip")
     output.parent.mkdir(parents=True, exist_ok=True)
     files = (
         INSTALLER_ROOT / "Install Codex Hybrid.cmd",
+        INSTALLER_ROOT / "Codex Hybrid Diagnostics.cmd",
         INSTALLER_ROOT / "Install-CodexHybrid.ps1",
         INSTALLER_ROOT / "README.txt",
         INSTALLER_ROOT / "README.zh-CN.txt",
+        INSTALLER_ROOT / "provider-preset.example.json",
     )
     for file in files:
         if not file.exists():
@@ -137,6 +153,8 @@ def build(
             add_project_payload(archive)
         if llama_dir is not None:
             add_llama_payload(archive, llama_dir)
+        if python_dir is not None:
+            add_python_payload(archive, python_dir)
     print(f"built {output}")
     return output
 
@@ -154,8 +172,13 @@ def main() -> int:
         type=Path,
         help="optional llama.cpp runtime directory to bundle under payload/llama.cpp",
     )
+    parser.add_argument(
+        "--include-python-dir",
+        type=Path,
+        help="optional portable Python directory to bundle under payload/python",
+    )
     args = parser.parse_args()
-    build(args.output, thin=args.thin, llama_dir=args.include_llama_dir)
+    build(args.output, thin=args.thin, llama_dir=args.include_llama_dir, python_dir=args.include_python_dir)
     return 0
 
 
