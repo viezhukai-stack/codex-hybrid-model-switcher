@@ -5,6 +5,21 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.13.0
+
+- Added a Windows one-click beginner setup package source under
+  `installer/windows`, with `Install Codex Hybrid.cmd` and
+  `Install-CodexHybrid.ps1`.
+- The installer checks for Codex Desktop, opens the official Codex app page when
+  Codex is missing or not signed in, installs Python 3.12 with `winget` when
+  needed, downloads a fixed project release zip, and stops at guarded dry-run by
+  default.
+- Added optional local setup support: users select their own GGUF and mmproj
+  files, while the installer downloads official llama.cpp release assets and
+  only keeps the local provider when local smoke succeeds.
+- Added `scripts/build-windows-one-click-package.py` to build
+  `Codex-Hybrid-Windows-Setup-v2.13.0.zip` for GitHub Releases.
+
 ## v2.12.2
 
 - Added `scripts/bootstrap-windows.ps1`, a beginner Windows bootstrap that can
