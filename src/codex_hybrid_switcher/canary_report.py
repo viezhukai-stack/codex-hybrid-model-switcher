@@ -30,6 +30,14 @@ CHECKS = (
     ("bridge_health_passed", "Bridge health passed or is not required"),
     ("setup_report_reviewed", "Setup report was reviewed for secrets"),
 )
+REQUIRED_CANARY_CHECKS = {
+    "account_visible": {"yes"},
+    "plugins_visible": {"yes"},
+    "mcp_visible": {"yes", "na"},
+    "project_list_visible": {"yes"},
+    "test_chat_responded": {"yes"},
+    "setup_report_reviewed": {"yes"},
+}
 
 
 def _status_label(value: str) -> str:
@@ -63,15 +71,7 @@ def _provider_summary(config: AppConfig, provider_id: str | None) -> str:
 
 def _warnings(verdict: str, evidence: dict[str, str]) -> list[str]:
     warnings: list[str] = []
-    required = (
-        "account_visible",
-        "plugins_visible",
-        "mcp_visible",
-        "project_list_visible",
-        "test_chat_responded",
-        "setup_report_reviewed",
-    )
-    missing = [name for name in required if evidence.get(name) != "yes"]
+    missing = [name for name, allowed in REQUIRED_CANARY_CHECKS.items() if evidence.get(name) not in allowed]
     if verdict == "complete" and missing:
         warnings.append("verdict is complete but one or more required UI evidence checks are not yes")
     failed = [name for name, value in evidence.items() if value == "no"]
