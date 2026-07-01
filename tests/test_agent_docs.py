@@ -36,6 +36,8 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "docs/canary-report.md" in text
     assert "docs/real-clean-machine-canary.md" in text
     assert "docs/windows-hyperv-clean-vm-canary.md" in text
+    assert "docs/windows-one-click-installer.md" in text
+    assert "docs/windows-one-click-installer.md" in read("README.md")
     assert "docs/supervised-handoff-drill.md" in text
     assert "docs/final-check.md" in text
     assert "docs/agent-handoff-drill.md" in text
@@ -120,10 +122,36 @@ def test_readme_links_agent_assisted_path():
     assert "docs/canary-report.md" in text
     assert "docs/real-clean-machine-canary.md" in text
     assert "docs/windows-hyperv-clean-vm-canary.md" in text
+    assert "docs/windows-one-click-installer.md" in text
     assert "docs/agent-handoff-drill.md" in text
     assert "docs/user-success-criteria.md" in text
     assert "docs/stock-codex-handoff-validation.md" in text
     assert "AGENTS.md" in text
+
+
+def test_windows_one_click_installer_doc_covers_beginner_setup_boundary():
+    text = read("docs/windows-one-click-installer.md")
+
+    for marker in (
+        "Codex-Hybrid-Windows-Setup-v2.13.0.zip",
+        "Install Codex Hybrid.cmd",
+        "Install-CodexHybrid.ps1",
+        "https://developers.openai.com/codex/app",
+        "Python 3.12",
+        "winget",
+        "GGUF",
+        "mmproj",
+        "https://github.com/ggml-org/llama.cpp/releases",
+        "validate-config",
+        "bridge-health",
+        "local-smoke",
+        "-Apply",
+    ):
+        assert marker in text
+    for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
+        assert protected in text
+    assert "It does not redistribute Codex Desktop" in text
+    assert "It does not include local model files" in text
 
 
 def test_user_success_criteria_covers_visible_codex_completion():

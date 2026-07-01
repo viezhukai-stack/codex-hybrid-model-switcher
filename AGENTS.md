@@ -59,11 +59,13 @@ Read these files before making changes:
     public-readiness proof
 15. `docs/supervised-handoff-drill.md` for checking beginner handoff command
     executability before doing a real switch
-16. `docs/final-check.md`
-17. `docs/agent-handoff-drill.md`
-18. `docs/stock-codex-handoff-validation.md`
-19. `docs/user-success-criteria.md`
-20. `docs/local-llama-smoke.md` only if the user asks for local models
+16. `docs/windows-one-click-installer.md` for Windows computers that may not
+    have Codex Desktop, Python, Git, llama.cpp, or local model files yet
+17. `docs/final-check.md`
+18. `docs/agent-handoff-drill.md`
+19. `docs/stock-codex-handoff-validation.md`
+20. `docs/user-success-criteria.md`
+21. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 
@@ -286,6 +288,14 @@ For a stock Windows machine that may not have Python or Git, prefer
 `scripts/bootstrap-windows.ps1` for the beginner path. It can download the fixed
 release zip, check or install Python 3.12 with `winget`, create a private config,
 run validation and bridge diagnostics, and stop at `guarded-switch --dry-run`.
+
+For a beginner Windows machine that may not have Codex Desktop at all, use
+`docs/windows-one-click-installer.md` and the release asset
+`Codex-Hybrid-Windows-Setup-v2.13.0.zip`. The installer opens the official Codex
+app page when Codex is missing, installs Python with `winget`, downloads this
+project release, can download official llama.cpp assets, lets the user select
+their own GGUF and mmproj files, and defaults to guarded dry-run. It must not
+redistribute Codex Desktop, model files, or API keys.
 
 For the final public-readiness field proof, follow
 `docs/windows-hyperv-clean-vm-canary.md`: start from a Windows 11 Hyper-V VM

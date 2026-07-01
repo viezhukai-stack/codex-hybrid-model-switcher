@@ -44,6 +44,7 @@ Start here:
 - If you want to hand the GitHub project to Codex directly:
   [`HANDOFF_TO_CODEX.md`](HANDOFF_TO_CODEX.md)
 - If you only have stock Codex Desktop: [`START_HERE.md`](START_HERE.md)
+- Windows one-click beginner setup: [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md)
 - Final self-check after setup: [`FINAL_CHECK.md`](FINAL_CHECK.md)
 - Hand this repo to Codex: [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md)
 - Zero-install bootstrap: [`docs/bootstrap.md`](docs/bootstrap.md)
@@ -93,6 +94,20 @@ cache, rewrite old conversations, or install always-on recovery services.
   llama.cpp server stays behind it on `127.0.0.1:19031`.
 
 ## Quick Start
+
+### Windows one-click setup
+
+For a beginner Windows computer, download
+`Codex-Hybrid-Windows-Setup-v2.13.0.zip` from the latest GitHub Release, extract
+it, and double-click `Install Codex Hybrid.cmd`.
+
+The installer can open the official Codex app page when Codex is missing,
+install Python with `winget`, download this project release, download official
+llama.cpp release assets when local model files are selected, and stop at
+guarded dry-run by default. It does not redistribute Codex Desktop, include
+model files, or apply a real switch unless `-Apply` is explicitly provided.
+
+See [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md).
 
 If you want Codex itself to configure this project for you, open this repository
 in Codex and start with [`START_HERE.md`](START_HERE.md). The root `AGENTS.md`

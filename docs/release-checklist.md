@@ -14,6 +14,7 @@ Use this checklist before marking a release candidate ready.
 - `python scripts/validate-stock-codex-handoff.py`
 - `python scripts/validate-agent-handoff-drill.py`
 - `python scripts/validate-real-clean-machine-canary.py`
+- `python scripts/build-windows-one-click-package.py`
 - `python scripts/validate-release-acceptance.py --quick`
 - `python -m codex_hybrid_switcher setup-report --config <temp-config>`
 - `python -m codex_hybrid_switcher canary-report --config <temp-config> --verdict partial`
@@ -61,6 +62,11 @@ Confirm the repository does not contain:
   beginner Windows case where Git or Python are missing.
 - `scripts/bootstrap-windows.ps1` is present for the beginner Windows route and
   stops at `guarded-switch --dry-run`.
+- `installer/windows` is present for the Windows one-click beginner setup and
+  does not include Codex Desktop, model files, API keys, or real endpoints.
+- `docs/windows-one-click-installer.md` explains the official Codex install
+  handoff, Python installation, project release download, llama.cpp download,
+  local model file selection, dry-run default, and explicit `-Apply` boundary.
 - Release acceptance validation passes and confirms the stock Codex handoff
   evidence is present.
 - Bridge-routed cloud providers refuse real apply when `api_key_env` is unset.
@@ -93,6 +99,8 @@ Confirm the repository does not contain:
   safe reporting path.
 - `CHANGELOG.md`, `SECURITY.md`, and `CONTRIBUTING.md` are present and current.
 - Windows docs describe the guarded launcher.
+- Windows one-click installer docs describe the beginner setup zip and release
+  asset.
 - Local model docs say local validation is optional and machine-dependent.
 - Recovery docs explain how to restore `config.toml` from the newest backup.
 - User success criteria explain when setup is complete versus only partially
