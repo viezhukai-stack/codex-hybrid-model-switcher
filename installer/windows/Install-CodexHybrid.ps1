@@ -1,5 +1,5 @@
 param(
-    [string]$ReleaseTag = "v2.13.2",
+    [string]$ReleaseTag = "v2.14.0",
     [string]$ProjectRepo = "viezhukai-stack/codex-hybrid-model-switcher",
     [string]$BundledProjectPath,
     [string]$ProviderPresetPath,
@@ -35,6 +35,7 @@ $ExtractRoot = Join-Path $ReleaseRoot "src"
 $ProjectPath = Join-Path $ExtractRoot "codex-hybrid-model-switcher-$($ReleaseTag.TrimStart('v'))"
 $BundledProjectDefault = Join-Path $PSScriptRoot "payload\codex-hybrid-model-switcher"
 $BundledPythonRoot = Join-Path $PSScriptRoot "payload\python"
+$InstalledPythonRoot = Join-Path $InstallRoot "python"
 $LlamaRoot = Join-Path $InstallRoot "llama.cpp"
 
 function Write-Step {
@@ -74,6 +75,8 @@ function Read-Required {
 
 function Find-Python {
     $candidates = @(
+        "$InstalledPythonRoot\python.exe",
+        "$InstalledPythonRoot\python\python.exe",
         "$BundledPythonRoot\python.exe",
         "$BundledPythonRoot\python\python.exe",
         "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe",
@@ -101,6 +104,34 @@ function Find-Python {
     return @()
 }
 
+function Copy-PortablePythonIfBundled {
+    $bundledCandidates = @(
+        "$BundledPythonRoot\python.exe",
+        "$BundledPythonRoot\python\python.exe"
+    )
+    $bundledPython = $null
+    foreach ($candidate in $bundledCandidates) {
+        if (Test-Path $candidate) {
+            $bundledPython = $candidate
+            break
+        }
+    }
+    if (-not $bundledPython) {
+        return @()
+    }
+    if (Test-Path $InstalledPythonRoot) {
+        Remove-Item -LiteralPath $InstalledPythonRoot -Recurse -Force
+    }
+    New-Item -ItemType Directory -Force -Path $InstalledPythonRoot | Out-Null
+    Copy-Item -Path (Join-Path $BundledPythonRoot "*") -Destination $InstalledPythonRoot -Recurse -Force
+    $installed = Find-Python
+    if ($installed.Count -gt 0 -and $installed[0] -like "$InstalledPythonRoot*") {
+        Write-Host "Installed bundled portable Python to: $InstalledPythonRoot"
+        return $installed
+    }
+    return @()
+}
+
 function Invoke-Python {
     param([string[]]$PythonCommand, [string[]]$Arguments)
     if ($PythonCommand.Count -eq 0) {
@@ -118,9 +149,22 @@ function Ensure-Python {
     Write-Step "Checking Python"
     $python = Find-Python
     if ($python.Count -gt 0) {
-        if ($python[0] -like "$BundledPythonRoot*") {
-            Write-Host "Using bundled portable Python: $($python[0])"
+        if ($python[0] -like "$InstalledPythonRoot*") {
+            Write-Host "Using installed portable Python: $($python[0])"
+        } elseif ($python[0] -like "$BundledPythonRoot*") {
+            $installedPython = Copy-PortablePythonIfBundled
+            if ($installedPython.Count -gt 0) {
+                $python = $installedPython
+            } else {
+                Write-Host "Using bundled portable Python: $($python[0])"
+            }
         }
+        Invoke-Python -PythonCommand $python -Arguments @("--version")
+        return $python
+    }
+
+    $python = Copy-PortablePythonIfBundled
+    if ($python.Count -gt 0) {
         Invoke-Python -PythonCommand $python -Arguments @("--version")
         return $python
     }
@@ -137,6 +181,43 @@ function Ensure-Python {
     }
     Invoke-Python -PythonCommand $python -Arguments @("--version")
     return $python
+}
+
+function Configure-PortablePythonPath {
+    param([string[]]$PythonCommand, [string]$ProjectRoot)
+    if ($PythonCommand.Count -eq 0) {
+        return
+    }
+    $pythonExe = $PythonCommand[0]
+    if (-not ($pythonExe -like "$InstalledPythonRoot*")) {
+        return
+    }
+    $pythonDir = Split-Path -Parent $pythonExe
+    $pth = Get-ChildItem -LiteralPath $pythonDir -Filter "python*._pth" -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $pth) {
+        return
+    }
+    $src = Join-Path $ProjectRoot "src"
+    if (-not (Test-Path $src)) {
+        return
+    }
+    $lines = @(Get-Content -LiteralPath $pth.FullName)
+    $filtered = @()
+    foreach ($line in $lines) {
+        if ($line -like "*codex-hybrid-model-switcher*src*") {
+            continue
+        }
+        if ($line.Trim() -eq "#import site") {
+            $filtered += "import site"
+            continue
+        }
+        $filtered += $line
+    }
+    if (-not ($filtered -contains $src)) {
+        $filtered += $src
+    }
+    Set-Content -LiteralPath $pth.FullName -Value $filtered -Encoding ASCII
+    Write-Host "Configured portable Python module path for the installed switcher."
 }
 
 function Test-CodexReady {
@@ -645,6 +726,7 @@ if ($DiagnosticsOnly) {
 Ensure-CodexReady
 $script:Python = Ensure-Python
 $ProjectPath = Ensure-ProjectRelease
+Configure-PortablePythonPath -PythonCommand $script:Python -ProjectRoot $ProjectPath
 
 $BaseUrl = Read-Required -Prompt "OpenAI-compatible base_url" -Default $BaseUrl
 $modelDefault = "provider-gpt-main"

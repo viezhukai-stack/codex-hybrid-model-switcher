@@ -3,21 +3,23 @@
 Use this path for a beginner Windows computer that may not have Codex Desktop,
 Python, Git, llama.cpp, or local model files yet.
 
-The installer package is:
+The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.13.2.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.14.0.zip
 ```
 
 It contains:
 
 - `Install Codex Hybrid.cmd`
 - `Codex Hybrid Diagnostics.cmd`
+- `Restore Official Codex.cmd`
 - `Install-CodexHybrid.ps1`
 - `README.txt`
 - `README.zh-CN.txt`
 - `provider-preset.example.json`
 - `payload/codex-hybrid-model-switcher/`
+- `payload/python/`
 
 ## What It Does
 
@@ -25,9 +27,11 @@ It contains:
 - Checks whether Codex Desktop appears installed and signed in.
 - Opens the official Codex app page when Codex is missing or not signed in:
   `https://developers.openai.com/codex/app`
-- Uses bundled portable Python from `payload/python` when present.
-- Installs Python 3.12 with `winget` if Python is missing and no bundled
-  Python is present.
+- Uses bundled portable Python from `payload/python` and installs it under
+  `%LOCALAPPDATA%\CodexHybridModelSwitcher\python` for later desktop switcher
+  runs.
+- Installs Python 3.12 with `winget` only if bundled portable Python and system
+  Python are both missing.
 - Uses the bundled project payload from
   `payload/codex-hybrid-model-switcher`; Git is not required.
 - Falls back to downloading the fixed project release zip from GitHub only when
@@ -44,6 +48,7 @@ It contains:
 - Runs `validate-config`, `bridge-health`, optional `local-smoke`, and a guarded
   cloud dry-run.
 - Installs the desktop `Codex Model Switcher.cmd` launcher.
+- Installs the desktop `Restore Official Codex.cmd` launcher.
 - Writes a redacted diagnostics report when `Codex Hybrid Diagnostics.cmd` is
   double-clicked.
 
@@ -51,8 +56,8 @@ It contains:
 
 - It does not redistribute Codex Desktop.
 - It does not include local model files.
-- It does not include Python by default, but the package builder can include a
-  portable Python directory under `payload/python`.
+- It does not require CC Switch. The package includes this project's own
+  guarded external switcher.
 - It does not require Git or a GitHub project download when the netdisk payload
   is intact.
 - It does not write API keys into the repository or private config.
@@ -64,7 +69,7 @@ It contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.13.2.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.14.0.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -77,6 +82,9 @@ It contains:
 8. Review the dry-run output.
 9. Only after dry-run looks correct and Codex Desktop is fully closed, type
    `APPLY` when prompted if you want to perform the real guarded cloud switch.
+10. Use the desktop `Codex Model Switcher.cmd` for later model switches.
+11. Use the desktop `Restore Official Codex.cmd` if you need to return to the
+    official provider.
 
 ## Command-Line Examples
 
@@ -133,7 +141,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.13.2.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.14.0.zip
 ```
 
 Upload that zip to your netdisk.
@@ -151,7 +159,14 @@ If you want to bundle a prepared llama.cpp runtime, run:
 py scripts\build-windows-one-click-package.py --include-llama-dir D:\Tools\llama.cpp
 ```
 
-If you want to bundle portable Python, run:
+The default build bundles official Windows embeddable Python 3.12.10. To build
+the smaller package without portable Python, run:
+
+```powershell
+py scripts\build-windows-one-click-package.py --no-python
+```
+
+If you want to bundle a prepared portable Python directory instead, run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py --include-python-dir D:\Tools\python-portable

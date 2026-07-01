@@ -5,6 +5,7 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+.package-cache/
 
 # Local/private runtime data
 .env
@@ -23,4 +24,3 @@ sessions/
 rollouts/
 backups/
 quarantine/
-

@@ -5,6 +5,19 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.14.0
+
+- Changed the Windows netdisk package builder to include official portable
+  Python by default, with checksum verification, so beginner users do not need
+  Git, GitHub downloads, or a separate Python install for the normal path.
+- The installer now copies bundled portable Python into a stable local app data
+  directory and configures it so the later desktop switcher can run without
+  system Python.
+- Added `Restore Official Codex.cmd` and a desktop restore launcher for guarded
+  return to the official OpenAI provider.
+- Updated beginner documentation to clarify that the package does not install
+  CC Switch; it includes this project's own guarded external switcher.
+
 ## v2.13.2
 
 - Added `Codex Hybrid Diagnostics.cmd`, a double-click diagnostic entry that

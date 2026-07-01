@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import re
+import shutil
 import subprocess
+import urllib.request
 import zipfile
 from pathlib import Path
 
@@ -11,6 +14,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 INSTALLER_ROOT = ROOT / "installer" / "windows"
 PAYLOAD_PREFIX = Path("payload") / "codex-hybrid-model-switcher"
+PYTHON_EMBED_VERSION = "3.12.10"
+PYTHON_EMBED_NAME = f"python-{PYTHON_EMBED_VERSION}-embed-amd64.zip"
+PYTHON_EMBED_URL = f"https://www.python.org/ftp/python/{PYTHON_EMBED_VERSION}/{PYTHON_EMBED_NAME}"
+PYTHON_EMBED_SHA256 = "4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3"
 
 EXCLUDED_DIRS = {
     ".git",
@@ -84,6 +91,7 @@ def project_payload_files() -> list[Path]:
         Path("pyproject.toml"),
         Path("src/codex_hybrid_switcher/__init__.py"),
         Path("scripts/windows-provider-switch.ps1"),
+        Path("scripts/windows-restore-official.ps1"),
         Path("scripts/install-windows-launcher.ps1"),
     }
     present = set(files)
@@ -125,19 +133,60 @@ def add_python_payload(archive: zipfile.ZipFile, python_dir: Path) -> None:
     add_directory_payload(archive, python_dir, Path("payload") / "python")
 
 
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def ensure_portable_python() -> Path:
+    cache = ROOT / ".package-cache"
+    zip_path = cache / PYTHON_EMBED_NAME
+    extract_dir = cache / f"python-{PYTHON_EMBED_VERSION}-embed-amd64"
+    cache.mkdir(parents=True, exist_ok=True)
+    if not zip_path.exists():
+        print(f"downloading portable Python {PYTHON_EMBED_VERSION} from python.org")
+        try:
+            urllib.request.urlretrieve(PYTHON_EMBED_URL, zip_path)
+        except Exception:
+            subprocess.run(["curl", "-L", PYTHON_EMBED_URL, "-o", str(zip_path)], check=True)
+    actual = sha256(zip_path)
+    if actual != PYTHON_EMBED_SHA256:
+        raise SystemExit(f"portable Python sha256 mismatch: expected {PYTHON_EMBED_SHA256}, got {actual}")
+    if not (extract_dir / "python.exe").exists():
+        if extract_dir.exists():
+            for path in sorted(extract_dir.rglob("*"), reverse=True):
+                if path.is_file():
+                    path.unlink()
+                elif path.is_dir():
+                    path.rmdir()
+            extract_dir.rmdir()
+        extract_dir.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(zip_path) as archive:
+            archive.extractall(extract_dir)
+    return extract_dir
+
+
 def build(
     output: Path | None = None,
     *,
     thin: bool = False,
     llama_dir: Path | None = None,
     python_dir: Path | None = None,
+    bundle_python: bool = True,
 ) -> Path:
     version = project_version()
     output = output or (ROOT / "dist" / f"Codex-Hybrid-Windows-Netdisk-Setup-v{version}.zip")
     output.parent.mkdir(parents=True, exist_ok=True)
+    temp_output = output.with_name(f"{output.name}.tmp")
+    if temp_output.exists():
+        temp_output.unlink()
     files = (
         INSTALLER_ROOT / "Install Codex Hybrid.cmd",
         INSTALLER_ROOT / "Codex Hybrid Diagnostics.cmd",
+        INSTALLER_ROOT / "Restore Official Codex.cmd",
         INSTALLER_ROOT / "Install-CodexHybrid.ps1",
         INSTALLER_ROOT / "README.txt",
         INSTALLER_ROOT / "README.zh-CN.txt",
@@ -146,15 +195,18 @@ def build(
     for file in files:
         if not file.exists():
             raise SystemExit(f"missing installer file: {file}")
-    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+    with zipfile.ZipFile(temp_output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for file in files:
             archive.write(file, file.name)
         if not thin:
             add_project_payload(archive)
         if llama_dir is not None:
             add_llama_payload(archive, llama_dir)
+        if python_dir is None and bundle_python and not thin:
+            python_dir = ensure_portable_python()
         if python_dir is not None:
             add_python_payload(archive, python_dir)
+    shutil.move(str(temp_output), output)
     print(f"built {output}")
     return output
 
@@ -177,8 +229,19 @@ def main() -> int:
         type=Path,
         help="optional portable Python directory to bundle under payload/python",
     )
+    parser.add_argument(
+        "--no-python",
+        action="store_true",
+        help="do not bundle portable Python; the installer will use system Python or winget instead",
+    )
     args = parser.parse_args()
-    build(args.output, thin=args.thin, llama_dir=args.include_llama_dir, python_dir=args.include_python_dir)
+    build(
+        args.output,
+        thin=args.thin,
+        llama_dir=args.include_llama_dir,
+        python_dir=args.include_python_dir,
+        bundle_python=not args.no_python,
+    )
     return 0
 
 

@@ -133,13 +133,16 @@ def test_windows_one_click_installer_doc_covers_beginner_setup_boundary():
     text = read("docs/windows-one-click-installer.md")
 
     for marker in (
-        "Codex-Hybrid-Windows-Netdisk-Setup-v2.13.2.zip",
+        "Codex-Hybrid-Windows-Netdisk-Setup-v2.14.0.zip",
         "Install Codex Hybrid.cmd",
         "Codex Hybrid Diagnostics.cmd",
+        "Restore Official Codex.cmd",
         "Install-CodexHybrid.ps1",
         "provider-preset.example.json",
         "payload/codex-hybrid-model-switcher",
+        "payload/python",
         "portable Python",
+        "does not require CC Switch",
         "https://developers.openai.com/codex/app",
         "Python 3.12",
         "winget",

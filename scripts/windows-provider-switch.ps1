@@ -19,7 +19,15 @@ function Invoke-Switcher($ArgsList) {
     $oldPythonPath = $env:PYTHONPATH
     $env:PYTHONPATH = "$repoRoot\src"
     try {
-        if (Get-Command py -ErrorAction SilentlyContinue) {
+        $portablePython = Join-Path $env:LOCALAPPDATA "CodexHybridModelSwitcher\python\python.exe"
+        $portablePythonNested = Join-Path $env:LOCALAPPDATA "CodexHybridModelSwitcher\python\python\python.exe"
+        if (Test-Path $portablePython) {
+            & $portablePython -m codex_hybrid_switcher @ArgsList
+        }
+        elseif (Test-Path $portablePythonNested) {
+            & $portablePythonNested -m codex_hybrid_switcher @ArgsList
+        }
+        elseif (Get-Command py -ErrorAction SilentlyContinue) {
             & py -m codex_hybrid_switcher @ArgsList
         }
         elseif (Get-Command python -ErrorAction SilentlyContinue) {

@@ -9,6 +9,15 @@ def test_security_scan_accepts_clean_tree(tmp_path):
     assert run_security_scan(str(tmp_path)) == 0
 
 
+def test_security_scan_skips_package_cache(tmp_path):
+    cache = tmp_path / ".package-cache"
+    cache.mkdir()
+    private_path = "C:" + "/Users/" + "Barney"
+    (cache / "python312.dll").write_text(private_path, encoding="utf-8")
+
+    assert run_security_scan(str(tmp_path)) == 0
+
+
 def test_security_scan_rejects_private_lan_ip(tmp_path):
     private_ip = "10." + "0." + "0." + "177"
     (tmp_path / "notes.txt").write_text(f"private host {private_ip}\n", encoding="utf-8")

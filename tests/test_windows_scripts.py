@@ -53,13 +53,15 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     text = (ROOT / "installer" / "windows" / "Install-CodexHybrid.ps1").read_text(encoding="utf-8")
     launcher = (ROOT / "installer" / "windows" / "Install Codex Hybrid.cmd").read_text(encoding="utf-8")
     diagnostics = (ROOT / "installer" / "windows" / "Codex Hybrid Diagnostics.cmd").read_text(encoding="utf-8")
+    restore = (ROOT / "installer" / "windows" / "Restore Official Codex.cmd").read_text(encoding="utf-8")
     readme = (ROOT / "installer" / "windows" / "README.txt").read_text(encoding="utf-8")
     readme_zh = (ROOT / "installer" / "windows" / "README.zh-CN.txt").read_text(encoding="utf-8")
     preset = (ROOT / "installer" / "windows" / "provider-preset.example.json").read_text(encoding="utf-8")
 
     assert "https://developers.openai.com/codex/app" in text
     assert "payload\\python" in text
-    assert "Using bundled portable Python" in text
+    assert "Installed bundled portable Python" in text
+    assert "Configured portable Python module path" in text
     assert "Python.Python.3.12" in text
     assert "winget install" in text
     assert "payload\\codex-hybrid-model-switcher" in text
@@ -87,17 +89,44 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "Copy-Item -LiteralPath $stateDb" not in text
     assert "powershell -NoProfile -ExecutionPolicy Bypass" in launcher
     assert "-DiagnosticsOnly" in diagnostics
+    assert "windows-restore-official.ps1" in restore
+    assert "v2.14.0" in restore
     assert "This package does not include model files" in readme
+    assert "does not install CC Switch" in readme
     assert "网盘一键安装包" in readme_zh
     assert "不需要安装 Git" in readme_zh
+    assert "恢复官方 Codex" in readme_zh
     assert "YOUR-OPENAI-COMPATIBLE-ENDPOINT.example" in preset
     assert "api_key_env" in preset
+
+
+def test_windows_restore_official_script_uses_guarded_openai_provider():
+    text = (ROOT / "scripts" / "windows-restore-official.ps1").read_text(encoding="utf-8")
+    launcher = (ROOT / "scripts" / "install-windows-launcher.ps1").read_text(encoding="utf-8")
+
+    assert "openai-official" in text
+    assert "windows-provider-switch.ps1" in text
+    assert "auth.json" in text
+    assert "models_cache.json" in text
+    assert "state_5.sqlite" in text
+    assert "APPLY" in text
+    assert "Restore Official Codex.cmd" in launcher
+
+
+def test_windows_package_builder_defaults_to_portable_python_with_no_python_escape_hatch():
+    text = (ROOT / "scripts" / "build-windows-one-click-package.py").read_text(encoding="utf-8")
+
+    assert "PYTHON_EMBED_URL" in text
+    assert "PYTHON_EMBED_SHA256" in text
+    assert "ensure_portable_python" in text
+    assert "bundle_python: bool = True" in text
+    assert "--no-python" in text
 
 
 def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     output = tmp_path / "setup.zip"
     proc = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "build-windows-one-click-package.py"), "--output", str(output)],
+        [sys.executable, str(ROOT / "scripts" / "build-windows-one-click-package.py"), "--output", str(output), "--no-python"],
         cwd=ROOT,
         text=True,
         stdout=subprocess.PIPE,
@@ -111,6 +140,7 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
         names = set(archive.namelist())
     assert "Install Codex Hybrid.cmd" in names
     assert "Codex Hybrid Diagnostics.cmd" in names
+    assert "Restore Official Codex.cmd" in names
     assert "Install-CodexHybrid.ps1" in names
     assert "README.txt" in names
     assert "README.zh-CN.txt" in names
@@ -118,6 +148,7 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     assert "payload/codex-hybrid-model-switcher/bootstrap.py" in names
     assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/__init__.py" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-provider-switch.ps1" in names
+    assert "payload/codex-hybrid-model-switcher/scripts/windows-restore-official.ps1" in names
     assert not any(name.startswith(".git/") for name in names)
     assert not any(name.startswith(".venv/") for name in names)
     assert not any(name.startswith("dist/") for name in names)
