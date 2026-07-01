@@ -56,6 +56,7 @@ Start here:
 - Redacted setup report: [`docs/setup-report.md`](docs/setup-report.md)
 - Final canary evidence report: [`docs/canary-report.md`](docs/canary-report.md)
 - Real clean-machine canary: [`docs/real-clean-machine-canary.md`](docs/real-clean-machine-canary.md)
+- Windows Hyper-V clean VM canary: [`docs/windows-hyperv-clean-vm-canary.md`](docs/windows-hyperv-clean-vm-canary.md)
 - Read-only final check: [`docs/final-check.md`](docs/final-check.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
 - Agent handoff drill: [`docs/agent-handoff-drill.md`](docs/agent-handoff-drill.md)
@@ -257,6 +258,7 @@ For common setup and recovery questions, see `docs/faq.md`.
 - Setup report: [`docs/setup-report.md`](docs/setup-report.md)
 - Canary evidence report: [`docs/canary-report.md`](docs/canary-report.md)
 - Real clean-machine canary: [`docs/real-clean-machine-canary.md`](docs/real-clean-machine-canary.md)
+- Windows Hyper-V clean VM canary: [`docs/windows-hyperv-clean-vm-canary.md`](docs/windows-hyperv-clean-vm-canary.md)
 - Read-only final check: [`docs/final-check.md`](docs/final-check.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
 - Agent handoff drill: [`docs/agent-handoff-drill.md`](docs/agent-handoff-drill.md)
@@ -337,6 +339,11 @@ For the Windows end-user switching flow after both canaries pass, use
 
 To repeat the validation on another Windows machine, follow
 `docs/windows-second-canary.md` before installing the end-user launcher.
+
+For the final stock-Codex proof on a clean Windows VM, follow
+`docs/windows-hyperv-clean-vm-canary.md`. That workflow uses Hyper-V checkpoint
+`stock-codex-baseline`, fixed release `v2.12.0`, `cloud_route=bridge`, and one
+cloud provider only. It does not test local llama.cpp.
 
 For the current validation coverage and release gate, see
 `docs/validation-matrix.md`, `docs/release-checklist.md`, and

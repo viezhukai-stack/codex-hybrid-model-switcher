@@ -66,11 +66,27 @@ class AppConfig:
 
     def provider_for_model(self, model: str) -> dict[str, Any] | None:
         local_id = str(self.local_model.get("id") or "local/gemma")
-        if model == local_id:
+        local_providers = [provider for provider in self.providers if provider.get("kind") == "local"]
+        if model == local_id and local_providers:
             return {"kind": "local", "model": local_id}
+        bridge_clouds = [
+            provider
+            for provider in self.providers
+            if provider.get("kind") == "cloud" and str(provider.get("route") or "direct") == "bridge"
+        ]
         for provider in self.providers:
-            if provider.get("model") == model:
+            if provider.get("model") != model:
+                continue
+            if provider.get("kind") == "official" and len(bridge_clouds) == 1:
+                proxied = dict(bridge_clouds[0])
+                proxied["model"] = model
+                return proxied
+            if provider.get("kind") != "official":
                 return provider
+        if len(bridge_clouds) == 1 and (model.startswith("gpt-") or model.startswith("codex-")):
+            proxied = dict(bridge_clouds[0])
+            proxied["model"] = model
+            return proxied
         return None
 
 
@@ -80,4 +96,3 @@ def load_config(path: str | None = None) -> AppConfig:
     if not isinstance(data, dict):
         raise ValueError(f"config must be a JSON object: {config_path}")
     return AppConfig(config_path, data)
-

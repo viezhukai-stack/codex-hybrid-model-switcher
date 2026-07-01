@@ -8,6 +8,8 @@ body:
       value: |
         Use this only after testing from stock Codex Desktop with this GitHub repository.
 
+        For the final Windows proof, use the Hyper-V flow in `docs/windows-hyperv-clean-vm-canary.md`: clean Windows 11 VM, checkpoint `stock-codex-baseline`, fixed release `v2.12.0`, one cloud provider with `cloud_route=bridge`, and no local llama.cpp test.
+
         Do not attach `auth.json`, `models_cache.json`, `state_5.sqlite`, `sessions/`, rollout logs, API keys, account tokens, passwords, private config files, local model files, or unredacted screenshots.
   - type: dropdown
     id: platform
@@ -23,7 +25,18 @@ body:
     id: release
     attributes:
       label: Repository release or commit tested
-      placeholder: "v2.9.0 or commit SHA"
+      placeholder: "v2.12.0 or commit SHA"
+    validations:
+      required: true
+  - type: dropdown
+    id: clean-vm-mode
+    attributes:
+      label: Clean VM mode
+      options:
+        - Windows Hyper-V clean VM with checkpoint stock-codex-baseline
+        - Physical clean machine
+        - Existing machine reset to stock Codex Desktop
+        - Other
     validations:
       required: true
   - type: dropdown
@@ -43,8 +56,12 @@ body:
       options:
         - label: Codex read `HANDOFF_TO_CODEX.md`, `START_HERE.md`, `AGENTS.md`, and `FINAL_CHECK.md`.
           required: true
+        - label: For Hyper-V canary, Codex followed `docs/windows-hyperv-clean-vm-canary.md` and used checkpoint `stock-codex-baseline`.
+          required: false
         - label: `scripts/validate-agent-handoff-drill.py` passed before touching the real profile.
           required: true
+        - label: One cloud provider was configured with `cloud_route=bridge`; local llama.cpp was not tested in this canary.
+          required: false
         - label: `guarded-switch --dry-run` was reviewed before a real switch.
           required: true
         - label: Codex Desktop was fully quit before the real guarded switch.
