@@ -342,8 +342,13 @@ To repeat the validation on another Windows machine, follow
 
 For the final stock-Codex proof on a clean Windows VM, follow
 `docs/windows-hyperv-clean-vm-canary.md`. That workflow uses Hyper-V checkpoint
-`stock-codex-baseline`, fixed release `v2.12.1`, `cloud_route=bridge`, and one
+`stock-codex-baseline`, fixed release `v2.12.2`, `cloud_route=bridge`, and one
 cloud provider only. It does not test local llama.cpp.
+
+For a beginner Windows machine that may not have Python or Git yet, use
+`scripts/bootstrap-windows.ps1`. It checks or installs Python, can work from a
+release zip, creates the private config, runs validation and bridge diagnostics,
+and stops at `guarded-switch --dry-run`.
 
 For the current validation coverage and release gate, see
 `docs/validation-matrix.md`, `docs/release-checklist.md`, and

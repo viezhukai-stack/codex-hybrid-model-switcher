@@ -36,6 +36,7 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "docs/canary-report.md" in text
     assert "docs/real-clean-machine-canary.md" in text
     assert "docs/windows-hyperv-clean-vm-canary.md" in text
+    assert "docs/supervised-handoff-drill.md" in text
     assert "docs/final-check.md" in text
     assert "docs/agent-handoff-drill.md" in text
     assert "docs/recovery.md" in text
@@ -51,6 +52,25 @@ def test_agents_runbook_points_to_beginner_docs_and_local_smoke():
     assert "setup-report" in text
     assert "canary-report" in text
     assert "final-check" in text
+
+
+def test_supervised_handoff_drill_doc_covers_windows_beginner_gaps():
+    text = read("docs/supervised-handoff-drill.md")
+
+    assert "Supervised Handoff Drill" in text
+    assert "fixed release zip" in text
+    assert "scripts/bootstrap-windows.ps1" in text
+    assert "Python is missing" in text
+    assert "PowerShell Direct" in text
+    assert "operator access limitation" in text
+    assert "validate-agent-handoff-drill.py" in text
+    assert "bootstrap.py" in text
+    assert "validate-config" in text
+    assert "env-help" in text
+    assert "bridge-health" in text
+    assert "guarded-switch --dry-run" in text
+    for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
+        assert protected in text
 
 
 def test_agent_assisted_setup_has_copy_paste_prompt_and_history_caveat():
@@ -211,7 +231,7 @@ def test_real_clean_machine_canary_doc_explains_field_evidence():
     assert "FINAL_CHECK.md" in text
     assert "docs/windows-hyperv-clean-vm-canary.md" in text
     assert "stock-codex-baseline" in text
-    assert "v2.12.1" in text
+    assert "v2.12.2" in text
     assert "A new test conversation responds" in text
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
         assert protected in text
@@ -225,7 +245,7 @@ def test_windows_hyperv_clean_vm_canary_doc_defines_final_public_proof():
         "Windows 11",
         "stock Codex Desktop",
         "stock-codex-baseline",
-        "v2.12.1",
+        "v2.12.2",
         "HANDOFF_TO_CODEX.md",
         "cloud_route=bridge",
         "validate-agent-handoff-drill.py",
@@ -257,7 +277,7 @@ def test_real_clean_machine_canary_issue_template_is_safe():
     assert "docs/windows-hyperv-clean-vm-canary.md" in text
     assert "Hyper-V" in text
     assert "stock-codex-baseline" in text
-    assert "v2.12.1" in text
+    assert "v2.12.2" in text
     assert "cloud_route=bridge" in text
     assert "HANDOFF_TO_CODEX.md" in text
     assert "validate-agent-handoff-drill.py" in text

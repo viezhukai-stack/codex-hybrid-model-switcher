@@ -58,7 +58,25 @@ prompt.
 
 ## What Codex Should Do First
 
-Codex should start with bootstrap because it does not require installation:
+Codex should start with bootstrap because it does not require package
+installation. On Windows, first check whether Python exists. If `py -3` is
+missing, use `scripts/bootstrap-windows.ps1`; it can install Python 3.12 with
+`winget` and then continue to the same dry-run flow.
+
+Beginner Windows route:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap-windows.ps1 `
+  -BaseUrl https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 `
+  -Model provider-gpt-main `
+  -ApiKeyEnv OPENAI_COMPATIBLE_API_KEY `
+  -CloudRoute bridge
+```
+
+The Windows bootstrap stops at `guarded-switch --dry-run`. It does not apply a
+real switch.
+
+Manual bootstrap commands:
 
 macOS:
 
