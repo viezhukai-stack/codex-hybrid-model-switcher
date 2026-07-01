@@ -30,7 +30,9 @@ My provider details:
 - cloud_route: bridge
 
 Please do this in order:
-1. Open or clone the GitHub project above.
+1. Open or clone the GitHub project above. On Windows, if Git or Python is not
+   installed, use the fixed release zip route and `scripts/bootstrap-windows.ps1`
+   instead of assuming `git` or `py -3` already exists.
 2. Read HANDOFF_TO_CODEX.md, START_HERE.md, AGENTS.md, and FINAL_CHECK.md.
 3. Run the simulated safety checks before touching my real Codex profile:
    python3 scripts/validate-agent-handoff-drill.py
@@ -56,6 +58,27 @@ Please do this in order:
 Stop and ask before continuing if anything wants to edit auth.json,
 models_cache.json, state_5.sqlite, sessions/, rollout logs, or anything beyond
 provider/model fields in config.toml.
+```
+
+## Beginner Windows Bootstrap
+
+On a stock Windows machine, Python and Git may both be missing. In that case,
+Codex should use PowerShell to download the fixed release zip and run the
+Windows bootstrap script. The script checks or installs Python 3.12 with
+`winget`, creates the private config, validates it, prints safe API-key
+environment help when needed, checks bridge health, and stops at
+`guarded-switch --dry-run`.
+
+It does not apply a real Codex switch.
+
+Example after the release zip is downloaded and extracted:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap-windows.ps1 `
+  -BaseUrl https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 `
+  -Model provider-gpt-main `
+  -ApiKeyEnv OPENAI_COMPATIBLE_API_KEY `
+  -CloudRoute bridge
 ```
 
 ## What The User Must Provide

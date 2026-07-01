@@ -57,11 +57,13 @@ Read these files before making changes:
 13. `docs/real-clean-machine-canary.md`
 14. `docs/windows-hyperv-clean-vm-canary.md` for the final clean Windows VM
     public-readiness proof
-15. `docs/final-check.md`
-16. `docs/agent-handoff-drill.md`
-17. `docs/stock-codex-handoff-validation.md`
-18. `docs/user-success-criteria.md`
-19. `docs/local-llama-smoke.md` only if the user asks for local models
+15. `docs/supervised-handoff-drill.md` for checking beginner handoff command
+    executability before doing a real switch
+16. `docs/final-check.md`
+17. `docs/agent-handoff-drill.md`
+18. `docs/stock-codex-handoff-validation.md`
+19. `docs/user-success-criteria.md`
+20. `docs/local-llama-smoke.md` only if the user asks for local models
 
 ## Required User Inputs
 
@@ -280,10 +282,15 @@ For repository release work, also run `scripts/validate-stock-codex-handoff.py`,
 `scripts/validate-real-clean-machine-canary.py` to prove the `START_HERE.md`
 flow still works from a clean repository copy and reaches final evidence.
 
+For a stock Windows machine that may not have Python or Git, prefer
+`scripts/bootstrap-windows.ps1` for the beginner path. It can download the fixed
+release zip, check or install Python 3.12 with `winget`, create a private config,
+run validation and bridge diagnostics, and stop at `guarded-switch --dry-run`.
+
 For the final public-readiness field proof, follow
 `docs/windows-hyperv-clean-vm-canary.md`: start from a Windows 11 Hyper-V VM
 with stock Codex Desktop only, create checkpoint `stock-codex-baseline`, use the
-fixed release `v2.12.1`, configure one cloud provider with
+fixed release `v2.12.2`, configure one cloud provider with
 `cloud_route=bridge`, run `guarded-switch --dry-run`, require the user to quit
 Codex Desktop before real apply, and require `codex-hybrid-final-check.md` to
 report `Complete`. Do not include local llama.cpp in that canary.

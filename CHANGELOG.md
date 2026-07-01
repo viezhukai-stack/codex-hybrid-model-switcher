@@ -5,6 +5,16 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.12.2
+
+- Added `scripts/bootstrap-windows.ps1`, a beginner Windows bootstrap that can
+  download the fixed release zip, check or install Python 3.12 with winget,
+  create a private config, run validation, show API-key environment help, run
+  bridge-health, and stop at guarded dry-run without applying a real switch.
+- Updated the stock-Codex handoff docs to treat the release zip and Windows
+  bootstrap path as the default beginner route when Git or Python are missing.
+- Recorded the supervised handoff drill findings from a clean Hyper-V VM.
+
 ## v2.12.1
 
 - Allowed clean-machine canary evidence to mark MCP entry points as `not applicable`

@@ -54,9 +54,13 @@ Confirm the repository does not contain:
 - GitHub issue template for real clean-machine canaries is present and blocks
   private Codex state attachments.
 - `docs/windows-hyperv-clean-vm-canary.md` documentation is present and requires
-  checkpoint `stock-codex-baseline`, fixed release `v2.12.1`, one
+  checkpoint `stock-codex-baseline`, fixed release `v2.12.2`, one
   `cloud_route=bridge` provider, `guarded-switch --dry-run`, and
   `codex-hybrid-final-check.md` with `Complete`.
+- `docs/supervised-handoff-drill.md` documentation is present and covers the
+  beginner Windows case where Git or Python are missing.
+- `scripts/bootstrap-windows.ps1` is present for the beginner Windows route and
+  stops at `guarded-switch --dry-run`.
 - Release acceptance validation passes and confirms the stock Codex handoff
   evidence is present.
 - Bridge-routed cloud providers refuse real apply when `api_key_env` is unset.
@@ -118,7 +122,7 @@ Before a release candidate:
 - A second Windows canary passes cloud switch and guarded launcher validation.
 - Protected files are unchanged in each real apply.
 - Before public release, one Windows Hyper-V clean VM canary should pass from
-  stock Codex Desktop using release `v2.12.1`, checkpoint
+  stock Codex Desktop using release `v2.12.2`, checkpoint
   `stock-codex-baseline`, one cloud provider, and `final-check` verdict
   `Complete`.
 

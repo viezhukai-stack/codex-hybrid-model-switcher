@@ -16,7 +16,7 @@ and have Codex safely configure one OpenAI-compatible cloud provider without
 breaking account state, plugins/MCP, project visibility, or protected Codex
 state files.
 
-Use the fixed repository release `v2.12.1` for this canary. Do not use a
+Use the fixed repository release `v2.12.2` for this canary. Do not use a
 floating `main` branch for the final proof.
 
 ## Prepare the Hyper-V VM
@@ -51,7 +51,17 @@ rollout logs.
 ## Handoff to Codex
 
 Inside the VM, give Codex the repository URL and ask it to follow
-`HANDOFF_TO_CODEX.md` from release `v2.12.1`.
+`HANDOFF_TO_CODEX.md` from release `v2.12.2`.
+
+If the supervising machine cannot enter the VM through PowerShell Direct, SSH,
+WinRM, RDP, or Hyper-V Guest Services, continue from the VM console. This is not
+a canary failure by itself. The important evidence is that the commands run
+inside the stock VM and the generated reports remain redacted.
+
+If the clean VM does not have Python or Git, this is not a failure. Codex should
+use the release zip route and `scripts/bootstrap-windows.ps1`. The script checks
+or installs Python 3.12 with `winget`, creates the private config, runs
+validation, runs bridge-health, and stops at `guarded-switch --dry-run`.
 
 Use one cloud OpenAI-compatible provider only:
 
@@ -71,6 +81,16 @@ Codex must complete these checks before any real switch. The dry-run step is
 
    ```powershell
    py -3 scripts/validate-agent-handoff-drill.py
+   ```
+
+   If `py` is missing, run the Windows bootstrap first:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap-windows.ps1 `
+     -BaseUrl https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 `
+     -Model provider-gpt-main `
+     -ApiKeyEnv OPENAI_COMPATIBLE_API_KEY `
+     -CloudRoute bridge
    ```
 
 3. Create or validate the private config with the provider fields:
@@ -179,7 +199,7 @@ Complete
 
 Then submit a sanitized GitHub issue using the Real clean-machine canary issue
 template. The issue should mention this was a Windows Hyper-V clean VM canary,
-the checkpoint was `stock-codex-baseline`, and release `v2.12.1` was tested.
+the checkpoint was `stock-codex-baseline`, and release `v2.12.2` was tested.
 
 Do not upload:
 

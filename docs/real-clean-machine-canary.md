@@ -9,7 +9,7 @@ actual user handoff, not only the simulated repository path.
 For the preferred final Windows proof, use
 [`docs/windows-hyperv-clean-vm-canary.md`](windows-hyperv-clean-vm-canary.md).
 That workflow starts from a Windows 11 Hyper-V VM checkpoint named
-`stock-codex-baseline`, uses fixed release `v2.12.1`, configures one
+`stock-codex-baseline`, uses fixed release `v2.12.2`, configures one
 `cloud_route=bridge` provider, and keeps local llama.cpp out of the canary.
 
 ## Safety boundary
@@ -22,7 +22,7 @@ That workflow starts from a Windows 11 Hyper-V VM checkpoint named
   already passed.
 - Do not mark the canary complete until a new test conversation responds.
 - For the Hyper-V final proof, do not use floating `main`; use release
-  `v2.12.1` and record the checkpoint `stock-codex-baseline`.
+  `v2.12.2` and record the checkpoint `stock-codex-baseline`.
 
 ## Suggested test order
 
