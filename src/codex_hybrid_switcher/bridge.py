@@ -145,6 +145,34 @@ def response_json(model: str, text: str) -> dict[str, Any]:
     }
 
 
+def bridge_model_ids(config: AppConfig) -> list[str]:
+    bridge_clouds = [
+        provider
+        for provider in config.providers
+        if provider.get("kind") == "cloud" and str(provider.get("route") or "direct") == "bridge"
+    ]
+    has_single_bridge_cloud = len(bridge_clouds) == 1
+    has_local = any(provider.get("kind") == "local" for provider in config.providers)
+    models: list[str] = []
+    for provider in config.providers:
+        model = str(provider.get("model") or "")
+        if not model:
+            continue
+        kind = provider.get("kind")
+        route = str(provider.get("route") or "direct")
+        if kind == "cloud" and route == "bridge":
+            models.append(model)
+        elif kind == "local":
+            models.append(model)
+        elif kind == "official" and has_single_bridge_cloud:
+            models.append(model)
+    if has_local:
+        local_id = str(config.local_model.get("id") or "local/gemma")
+        if local_id not in models:
+            models.append(local_id)
+    return list(dict.fromkeys(models))
+
+
 def clean_local_text(text: str) -> str:
     text = re.sub(r"<\|channel\|>\s*[A-Za-z0-9_-]+\s*", "", text)
     text = re.sub(r"<\|message\|>", "", text)
@@ -271,14 +299,11 @@ def build_handler(runtime: BridgeRuntime) -> type[BaseHTTPRequestHandler]:
         def do_GET(self) -> None:
             path = urllib.parse.urlparse(self.path).path
             if path in {"/health", "/v1/health"}:
-                models = [str(p.get("model")) for p in runtime.config.providers if p.get("model")]
-                if runtime.local_model_id not in models:
-                    models.append(runtime.local_model_id)
+                models = bridge_model_ids(runtime.config)
                 self.send_payload(200, *http_json(200, {"ok": True, "models": models, "port": runtime.config.bridge.port})[1:])
                 return
             if path in {"/models", "/v1/models"}:
-                data = [{"id": str(p.get("model")), "object": "model"} for p in runtime.config.providers if p.get("model")]
-                data.append({"id": runtime.local_model_id, "object": "model"})
+                data = [{"id": model, "object": "model"} for model in bridge_model_ids(runtime.config)]
                 self.send_payload(200, *http_json(200, {"object": "list", "data": data})[1:])
                 return
             self.send_payload(404, *http_json(404, {"error": "not found"})[1:])

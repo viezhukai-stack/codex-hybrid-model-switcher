@@ -16,7 +16,7 @@ and have Codex safely configure one OpenAI-compatible cloud provider without
 breaking account state, plugins/MCP, project visibility, or protected Codex
 state files.
 
-Use the fixed repository release `v2.11.0` for this canary. Do not use a
+Use the fixed repository release `v2.12.0` for this canary. Do not use a
 floating `main` branch for the final proof.
 
 ## Prepare the Hyper-V VM
@@ -51,7 +51,7 @@ rollout logs.
 ## Handoff to Codex
 
 Inside the VM, give Codex the repository URL and ask it to follow
-`HANDOFF_TO_CODEX.md` from release `v2.11.0`.
+`HANDOFF_TO_CODEX.md` from release `v2.12.0`.
 
 Use one cloud OpenAI-compatible provider only:
 
@@ -179,7 +179,7 @@ Complete
 
 Then submit a sanitized GitHub issue using the Real clean-machine canary issue
 template. The issue should mention this was a Windows Hyper-V clean VM canary,
-the checkpoint was `stock-codex-baseline`, and release `v2.11.0` was tested.
+the checkpoint was `stock-codex-baseline`, and release `v2.12.0` was tested.
 
 Do not upload:
 

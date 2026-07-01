@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from codex_hybrid_switcher.bridge import (
+    bridge_model_ids,
     chat_parts_from_content,
     clean_local_text,
     image_url_from_part,
     responses_input_to_messages,
 )
+from codex_hybrid_switcher.config import AppConfig
 
 
 def test_clean_local_text_removes_channel_artifacts():
@@ -64,3 +66,48 @@ def test_responses_input_to_messages_maps_multimodal_user_content():
     assert messages[1]["role"] == "user"
     assert messages[1]["content"][0] == {"type": "text", "text": "Describe this"}
     assert messages[1]["content"][1] == {"type": "image_url", "image_url": {"url": "data:image/png;base64,abcd"}}
+
+
+def test_bridge_models_only_include_routeable_cloud_and_official_fallback(tmp_path):
+    config = AppConfig(
+        tmp_path / "config.json",
+        {
+            "providers": [
+                {"id": "openai-official", "kind": "official", "model": "gpt-5.5"},
+                {"id": "cloud-gpt-main", "kind": "cloud", "model": "gpt-5.4", "route": "bridge"},
+            ],
+            "local_model": {"id": "local/gemma"},
+        },
+    )
+
+    assert bridge_model_ids(config) == ["gpt-5.5", "gpt-5.4"]
+
+
+def test_bridge_models_include_local_only_when_local_provider_exists(tmp_path):
+    config = AppConfig(
+        tmp_path / "config.json",
+        {
+            "providers": [
+                {"id": "cloud-gpt-main", "kind": "cloud", "model": "gpt-5.4", "route": "bridge"},
+                {"id": "local-gemma", "kind": "local", "model": "local/gemma"},
+            ],
+            "local_model": {"id": "local/gemma"},
+        },
+    )
+
+    assert bridge_model_ids(config) == ["gpt-5.4", "local/gemma"]
+
+
+def test_bridge_models_do_not_advertise_official_fallback_for_multiple_bridge_clouds(tmp_path):
+    config = AppConfig(
+        tmp_path / "config.json",
+        {
+            "providers": [
+                {"id": "openai-official", "kind": "official", "model": "gpt-5.5"},
+                {"id": "cloud-a", "kind": "cloud", "model": "provider-a", "route": "bridge"},
+                {"id": "cloud-b", "kind": "cloud", "model": "provider-b", "route": "bridge"},
+            ],
+        },
+    )
+
+    assert bridge_model_ids(config) == ["provider-a", "provider-b"]

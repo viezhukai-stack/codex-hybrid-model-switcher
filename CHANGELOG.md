@@ -11,8 +11,11 @@ conservative release process because it edits Codex provider configuration.
   public-readiness workflow for testing from a clean Windows 11 Hyper-V VM with
   stock Codex Desktop only.
 - The Hyper-V canary requires checkpoint `stock-codex-baseline`, fixed release
-  `v2.11.0`, one cloud provider with `cloud_route=bridge`, guarded dry-run
+  `v2.12.0`, one cloud provider with `cloud_route=bridge`, guarded dry-run
   before apply, and `codex-hybrid-final-check.md` verdict `Complete`.
+- Fixed bridge routing for stock Codex model selections such as `gpt-5.5` when
+  exactly one bridge cloud provider is configured, and stopped cloud-only bridge
+  catalogs from advertising unconfigured local models.
 - Updated README, AGENTS, real clean-machine canary docs, validation matrix,
   release checklist, release acceptance, tests, and the GitHub canary issue
   template so this final field proof is explicit and repeatable.

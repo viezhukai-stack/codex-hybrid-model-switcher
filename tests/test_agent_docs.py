@@ -211,7 +211,7 @@ def test_real_clean_machine_canary_doc_explains_field_evidence():
     assert "FINAL_CHECK.md" in text
     assert "docs/windows-hyperv-clean-vm-canary.md" in text
     assert "stock-codex-baseline" in text
-    assert "v2.11.0" in text
+    assert "v2.12.0" in text
     assert "A new test conversation responds" in text
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
         assert protected in text
@@ -225,7 +225,7 @@ def test_windows_hyperv_clean_vm_canary_doc_defines_final_public_proof():
         "Windows 11",
         "stock Codex Desktop",
         "stock-codex-baseline",
-        "v2.11.0",
+        "v2.12.0",
         "HANDOFF_TO_CODEX.md",
         "cloud_route=bridge",
         "validate-agent-handoff-drill.py",
@@ -257,7 +257,7 @@ def test_real_clean_machine_canary_issue_template_is_safe():
     assert "docs/windows-hyperv-clean-vm-canary.md" in text
     assert "Hyper-V" in text
     assert "stock-codex-baseline" in text
-    assert "v2.11.0" in text
+    assert "v2.12.0" in text
     assert "cloud_route=bridge" in text
     assert "HANDOFF_TO_CODEX.md" in text
     assert "validate-agent-handoff-drill.py" in text

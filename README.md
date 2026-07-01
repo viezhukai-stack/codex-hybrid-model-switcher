@@ -342,7 +342,7 @@ To repeat the validation on another Windows machine, follow
 
 For the final stock-Codex proof on a clean Windows VM, follow
 `docs/windows-hyperv-clean-vm-canary.md`. That workflow uses Hyper-V checkpoint
-`stock-codex-baseline`, fixed release `v2.11.0`, `cloud_route=bridge`, and one
+`stock-codex-baseline`, fixed release `v2.12.0`, `cloud_route=bridge`, and one
 cloud provider only. It does not test local llama.cpp.
 
 For the current validation coverage and release gate, see
