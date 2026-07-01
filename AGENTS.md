@@ -283,7 +283,7 @@ flow still works from a clean repository copy and reaches final evidence.
 For the final public-readiness field proof, follow
 `docs/windows-hyperv-clean-vm-canary.md`: start from a Windows 11 Hyper-V VM
 with stock Codex Desktop only, create checkpoint `stock-codex-baseline`, use the
-fixed release `v2.12.0`, configure one cloud provider with
+fixed release `v2.12.1`, configure one cloud provider with
 `cloud_route=bridge`, run `guarded-switch --dry-run`, require the user to quit
 Codex Desktop before real apply, and require `codex-hybrid-final-check.md` to
 report `Complete`. Do not include local llama.cpp in that canary.

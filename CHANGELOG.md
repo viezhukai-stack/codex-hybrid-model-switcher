@@ -5,6 +5,12 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.12.1
+
+- Allowed clean-machine canary evidence to mark MCP entry points as `not applicable`
+  without downgrading `final-check` from `Complete`, matching the documented
+  Hyper-V VM path where MCP may be unused.
+
 ## v2.12.0
 
 - Added `docs/windows-hyperv-clean-vm-canary.md`, a dedicated final

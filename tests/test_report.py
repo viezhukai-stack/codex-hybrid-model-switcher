@@ -177,6 +177,29 @@ def test_render_canary_report_warns_when_complete_lacks_evidence(tmp_path):
     assert "one or more evidence checks are marked no" in report
 
 
+def test_render_canary_report_allows_mcp_not_applicable_for_complete(tmp_path):
+    codex_home = write_codex_home(tmp_path)
+    config_path = write_private_config(tmp_path, codex_home)
+
+    report = render_canary_report(
+        str(config_path),
+        provider_id="cloud-main",
+        verdict="complete",
+        evidence={
+            "account_visible": "yes",
+            "plugins_visible": "yes",
+            "mcp_visible": "na",
+            "project_list_visible": "yes",
+            "test_chat_responded": "yes",
+            "bridge_health_passed": "yes",
+            "setup_report_reviewed": "yes",
+        },
+    )
+
+    assert "[-] not applicable MCP entry points are visible" in report
+    assert "## Warnings" not in report
+
+
 def test_run_canary_report_writes_output(tmp_path):
     codex_home = write_codex_home(tmp_path)
     config_path = write_private_config(tmp_path, codex_home)
@@ -293,6 +316,52 @@ def test_render_final_check_reports_complete_only_with_full_evidence(tmp_path):
     assert "final_verdict: `Complete`" in report
     assert "`Account information is visible`: `yes`" in report
     assert "`A new test conversation responded`: `yes`" in report
+
+
+def test_render_final_check_reports_complete_when_mcp_is_not_applicable(tmp_path):
+    codex_home = write_codex_home(tmp_path)
+    config_path = write_private_config(tmp_path, codex_home)
+    setup_path = tmp_path / "codex-hybrid-setup-report.md"
+    canary_path = tmp_path / "codex-hybrid-canary-evidence.md"
+    real_canary_path = tmp_path / "codex-hybrid-real-clean-machine-canary.md"
+    setup_path.write_text(render_report(str(config_path)), encoding="utf-8")
+    canary_path.write_text(
+        render_canary_report(
+            str(config_path),
+            provider_id="cloud-main",
+            setup_report=str(setup_path),
+            verdict="complete",
+            evidence={
+                "account_visible": "yes",
+                "plugins_visible": "yes",
+                "mcp_visible": "na",
+                "project_list_visible": "yes",
+                "test_chat_responded": "yes",
+                "bridge_health_passed": "yes",
+                "setup_report_reviewed": "yes",
+            },
+        ),
+        encoding="utf-8",
+    )
+    real_canary_path.write_text(
+        render_real_canary_template(
+            str(config_path),
+            provider_id="cloud-main",
+            setup_report=str(setup_path),
+            canary_report=str(canary_path),
+        ),
+        encoding="utf-8",
+    )
+
+    report = render_final_check(
+        str(config_path),
+        setup_report=str(setup_path),
+        canary_report=str(canary_path),
+        real_canary_template=str(real_canary_path),
+    )
+
+    assert "final_verdict: `Complete`" in report
+    assert "`MCP entry points are visible`: `na`" in report
     assert "private-provider.example" not in report
     assert str(tmp_path) not in report
     assert "do-not-print" not in report

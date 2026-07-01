@@ -8,7 +8,7 @@ body:
       value: |
         Use this only after testing from stock Codex Desktop with this GitHub repository.
 
-        For the final Windows proof, use the Hyper-V flow in `docs/windows-hyperv-clean-vm-canary.md`: clean Windows 11 VM, checkpoint `stock-codex-baseline`, fixed release `v2.12.0`, one cloud provider with `cloud_route=bridge`, and no local llama.cpp test.
+        For the final Windows proof, use the Hyper-V flow in `docs/windows-hyperv-clean-vm-canary.md`: clean Windows 11 VM, checkpoint `stock-codex-baseline`, fixed release `v2.12.1`, one cloud provider with `cloud_route=bridge`, and no local llama.cpp test.
 
         Do not attach `auth.json`, `models_cache.json`, `state_5.sqlite`, `sessions/`, rollout logs, API keys, account tokens, passwords, private config files, local model files, or unredacted screenshots.
   - type: dropdown
@@ -25,7 +25,7 @@ body:
     id: release
     attributes:
       label: Repository release or commit tested
-      placeholder: "v2.12.0 or commit SHA"
+      placeholder: "v2.12.1 or commit SHA"
     validations:
       required: true
   - type: dropdown
