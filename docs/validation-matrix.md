@@ -19,7 +19,7 @@ driver, CUDA runtime, llama.cpp build, and model size.
 | Real clean-machine canary template | Passed | Not applicable | Simulated | `scripts/validate-real-clean-machine-canary.py` verifies the field-test template for a stock Codex user can be generated without leaking provider hostnames, local paths, tokens, or Codex state. |
 | Windows Hyper-V clean VM canary | Passed | Not included | Real UI | `docs/windows-hyperv-clean-vm-canary.md` defines the final field proof: Windows 11 Hyper-V VM, stock Codex Desktop only, checkpoint `stock-codex-baseline`, fixed release `v2.12.2`, one `cloud_route=bridge` provider, `guarded-switch --dry-run`, protected files unchanged, visible `gpt-5.4` and `gpt-5.5` OK replies, and `codex-hybrid-final-check.md` verdict `Complete`. |
 | Supervised handoff drill | Passed with improvements filed | Not applicable | Command drill | `docs/supervised-handoff-drill.md` records the assisted dry-run path from a clean Windows VM. The drill found that stock Windows may lack Python and Git, so `scripts/bootstrap-windows.ps1` is now the beginner route for checking or installing Python, downloading a fixed release zip, creating a private config, and stopping at `guarded-switch --dry-run`. |
-| Windows one-click installer | Pending v2.13 canary | Optional | Package | `installer/windows` and `docs/windows-one-click-installer.md` define the beginner setup zip. It opens the official Codex app page when Codex is missing, installs Python with `winget`, downloads this project release, can download official llama.cpp assets, and defaults to guarded dry-run. |
+| Windows netdisk one-click installer | Pending v2.13.1 canary | Optional | Package | `installer/windows` and `docs/windows-one-click-installer.md` define the beginner netdisk setup zip. It opens the official Codex app page when Codex is missing, installs Python with `winget`, uses bundled project payload without requiring GitHub project download, can use bundled or official-download llama.cpp assets, and defaults to guarded dry-run. |
 | Bridge-routed cloud unit path | Passed | Not applicable | Simulated | Unit tests verify `route=bridge` renders Codex to `127.0.0.1:19030`, refuses real switches when `api_key_env` is unset, starts the bridge when the env var is set, and preserves protected Codex files. |
 | API key env handoff | Passed | Not applicable | Simulated | `env-help` is covered by unit tests and install validation, including macOS and Windows command templates without exposing key values. |
 | Bridge health diagnostic | Passed | Not applicable | Simulated | `bridge-health` checks the bridge port, `/v1/health`, `/v1/models`, bridge-routed API key env status, and expected model ids without starting services or editing Codex state. |
@@ -50,9 +50,9 @@ driver, CUDA runtime, llama.cpp build, and model size.
   `sessions/`, plus visible `gpt-5.4` and `gpt-5.5` OK replies.
 - Supervised handoff drill has passed far enough to prove command executability
   and has a beginner Windows bootstrap path for missing Python/Git.
-- Windows one-click installer package builds and remains a dry-run-first setup
-  route for users who do not have Codex, Python, Git, llama.cpp, or model files
-  yet.
+- Windows netdisk one-click installer package builds and remains a dry-run-first
+  setup route for users who do not have Codex, Python, Git, llama.cpp, or model
+  files yet.
 - Release acceptance validation passes before tagging.
 - Redacted setup report generation passes in the stock-Codex simulation.
 - The setup report includes user-visible success criteria for account,

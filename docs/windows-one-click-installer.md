@@ -1,4 +1,4 @@
-# Windows One-Click Installer
+# Windows Netdisk One-Click Installer
 
 Use this path for a beginner Windows computer that may not have Codex Desktop,
 Python, Git, llama.cpp, or local model files yet.
@@ -6,7 +6,7 @@ Python, Git, llama.cpp, or local model files yet.
 The installer package is:
 
 ```text
-Codex-Hybrid-Windows-Setup-v2.13.0.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.13.1.zip
 ```
 
 It contains:
@@ -14,6 +14,8 @@ It contains:
 - `Install Codex Hybrid.cmd`
 - `Install-CodexHybrid.ps1`
 - `README.txt`
+- `README.zh-CN.txt`
+- `payload/codex-hybrid-model-switcher/`
 
 ## What It Does
 
@@ -22,12 +24,16 @@ It contains:
 - Opens the official Codex app page when Codex is missing or not signed in:
   `https://developers.openai.com/codex/app`
 - Installs Python 3.12 with `winget` if Python is missing.
-- Downloads the fixed project release zip from GitHub; Git is not required.
+- Uses the bundled project payload from
+  `payload/codex-hybrid-model-switcher`; Git is not required.
+- Falls back to downloading the fixed project release zip from GitHub only when
+  the bundled payload is missing.
 - Creates the private config at
   `%USERPROFILE%\.codex-hybrid-model-switcher\config.json`.
 - Stores the provider API key only in a Windows User environment variable.
 - Lets the user choose local GGUF and mmproj files.
-- Downloads official llama.cpp Windows release assets from
+- Uses bundled llama.cpp when `payload/llama.cpp` contains `llama-server.exe`;
+  otherwise downloads official llama.cpp Windows release assets from
   `https://github.com/ggml-org/llama.cpp/releases`.
 - Runs `validate-config`, `bridge-health`, optional `local-smoke`, and a guarded
   cloud dry-run.
@@ -37,6 +43,8 @@ It contains:
 
 - It does not redistribute Codex Desktop.
 - It does not include local model files.
+- It does not require Git or a GitHub project download when the netdisk payload
+  is intact.
 - It does not write API keys into the repository or private config.
 - It does not edit `auth.json`, `models_cache.json`, `state_5.sqlite`,
   `sessions/`, or rollout logs.
@@ -46,7 +54,8 @@ It contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Setup-v2.13.0.zip` from the GitHub Release.
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.13.1.zip` from the netdisk
+   link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
 4. If Codex is missing, install Codex from the official page, sign in, fully
@@ -110,10 +119,23 @@ From the repository root:
 py scripts\build-windows-one-click-package.py
 ```
 
-The output is:
+The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Setup-v2.13.0.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.13.1.zip
 ```
 
-Upload that zip as a GitHub Release asset.
+Upload that zip to your netdisk.
+
+If you intentionally want the old script-only package that downloads the project
+source from GitHub, run:
+
+```powershell
+py scripts\build-windows-one-click-package.py --thin
+```
+
+If you want to bundle a prepared llama.cpp runtime, run:
+
+```powershell
+py scripts\build-windows-one-click-package.py --include-llama-dir D:\Tools\llama.cpp
+```

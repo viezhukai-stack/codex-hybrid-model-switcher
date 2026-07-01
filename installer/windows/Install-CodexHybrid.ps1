@@ -1,6 +1,7 @@
 param(
-    [string]$ReleaseTag = "v2.13.0",
+    [string]$ReleaseTag = "v2.13.1",
     [string]$ProjectRepo = "viezhukai-stack/codex-hybrid-model-switcher",
+    [string]$BundledProjectPath,
     [string]$ProviderId = "cloud-gpt-main",
     [string]$ProviderLabel = "Cloud GPT Main",
     [string]$BaseUrl,
@@ -8,6 +9,7 @@ param(
     [string]$ApiKeyEnv = "OPENAI_COMPATIBLE_API_KEY",
     [ValidateSet("auto", "cuda13", "cuda12", "cpu")]
     [string]$LlamaBackend = "auto",
+    [string]$LlamaServerPath,
     [string]$ModelPath,
     [string]$MmprojPath,
     [string]$ConfigPath = "$env:USERPROFILE\.codex-hybrid-model-switcher\config.json",
@@ -29,6 +31,7 @@ $ReleaseRoot = Join-Path $InstallRoot "releases\$ReleaseTag"
 $ProjectZip = Join-Path $ReleaseRoot "$ReleaseTag.zip"
 $ExtractRoot = Join-Path $ReleaseRoot "src"
 $ProjectPath = Join-Path $ExtractRoot "codex-hybrid-model-switcher-$($ReleaseTag.TrimStart('v'))"
+$BundledProjectDefault = Join-Path $PSScriptRoot "payload\codex-hybrid-model-switcher"
 $LlamaRoot = Join-Path $InstallRoot "llama.cpp"
 
 function Write-Step {
@@ -179,9 +182,30 @@ function Ensure-CodexReady {
     exit 20
 }
 
+function Copy-ProjectPayload {
+    param([string]$Source, [string]$Destination)
+    if (Test-Path $Destination) {
+        Remove-Item -LiteralPath $Destination -Recurse -Force
+    }
+    New-Item -ItemType Directory -Force -Path $Destination | Out-Null
+    Copy-Item -Path (Join-Path $Source "*") -Destination $Destination -Recurse -Force
+}
+
 function Ensure-ProjectRelease {
-    Write-Step "Downloading fixed project release $ReleaseTag"
+    Write-Step "Preparing fixed project release $ReleaseTag"
     New-Item -ItemType Directory -Force -Path $ReleaseRoot, $ExtractRoot | Out-Null
+    $bundled = $BundledProjectPath
+    if (-not $bundled) {
+        $bundled = $BundledProjectDefault
+    }
+    if ($bundled -and (Test-Path (Join-Path $bundled "bootstrap.py"))) {
+        $target = Join-Path $ReleaseRoot "project"
+        Write-Host "Using bundled project payload: $bundled"
+        Copy-ProjectPayload -Source $bundled -Destination $target
+        return $target
+    }
+
+    Write-Host "Bundled project payload was not found; downloading from GitHub."
     if (-not (Test-Path $ProjectZip)) {
         Invoke-WebRequest -Uri "https://github.com/$ProjectRepo/archive/refs/tags/$ReleaseTag.zip" -OutFile $ProjectZip -UseBasicParsing -TimeoutSec 120
     }
@@ -354,6 +378,30 @@ function Install-LlamaBackend {
 }
 
 function Ensure-LlamaRuntime {
+    if ($LlamaServerPath) {
+        if (Test-Path $LlamaServerPath) {
+            $resolved = (Resolve-Path $LlamaServerPath).Path
+            Write-Host "Using provided llama-server: $resolved"
+            return $resolved
+        }
+        Write-Host "Provided llama-server path was not found: $LlamaServerPath"
+    }
+    $bundledLlamaRoot = Join-Path $PSScriptRoot "payload\llama.cpp"
+    $bundledServer = $null
+    if (Test-Path $bundledLlamaRoot) {
+        $bundledServer = Get-ChildItem -LiteralPath $bundledLlamaRoot -Filter "llama-server.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+    }
+    if ($bundledServer) {
+        $target = Join-Path $LlamaRoot "bundled"
+        if (Test-Path $target) {
+            Remove-Item -LiteralPath $target -Recurse -Force
+        }
+        New-Item -ItemType Directory -Force -Path $target | Out-Null
+        Copy-Item -Path (Join-Path $bundledServer.Directory.FullName "*") -Destination $target -Recurse -Force
+        $server = Join-Path $target "llama-server.exe"
+        Write-Host "Using bundled llama.cpp runtime: $server"
+        return $server
+    }
     if ($SkipLlamaDownload) {
         Write-Host "Skipping llama.cpp download because -SkipLlamaDownload was provided."
         return $null

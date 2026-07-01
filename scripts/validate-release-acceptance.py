@@ -37,6 +37,7 @@ REQUIRED_FILES = (
     "installer/windows/Install Codex Hybrid.cmd",
     "installer/windows/Install-CodexHybrid.ps1",
     "installer/windows/README.txt",
+    "installer/windows/README.zh-CN.txt",
     ".github/ISSUE_TEMPLATE/real_clean_machine_canary.yml",
 )
 
@@ -166,12 +167,15 @@ DOC_REQUIREMENTS = {
         "sessions/",
     ),
     "docs/windows-one-click-installer.md": (
-        "Codex-Hybrid-Windows-Setup-v2.13.0.zip",
+        "Codex-Hybrid-Windows-Netdisk-Setup-v2.13.1.zip",
         "Install Codex Hybrid.cmd",
         "Install-CodexHybrid.ps1",
+        "payload/codex-hybrid-model-switcher",
         "https://developers.openai.com/codex/app",
         "Python 3.12",
         "winget",
+        "Git is not required",
+        "bundled llama.cpp",
         "GGUF",
         "mmproj",
         "https://github.com/ggml-org/llama.cpp/releases",

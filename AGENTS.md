@@ -290,12 +290,13 @@ release zip, check or install Python 3.12 with `winget`, create a private config
 run validation and bridge diagnostics, and stop at `guarded-switch --dry-run`.
 
 For a beginner Windows machine that may not have Codex Desktop at all, use
-`docs/windows-one-click-installer.md` and the release asset
-`Codex-Hybrid-Windows-Setup-v2.13.0.zip`. The installer opens the official Codex
-app page when Codex is missing, installs Python with `winget`, downloads this
-project release, can download official llama.cpp assets, lets the user select
-their own GGUF and mmproj files, and defaults to guarded dry-run. It must not
-redistribute Codex Desktop, model files, or API keys.
+`docs/windows-one-click-installer.md` and the netdisk package
+`Codex-Hybrid-Windows-Netdisk-Setup-v2.13.1.zip`. The installer opens the
+official Codex app page when Codex is missing, installs Python with `winget`,
+uses the bundled project payload without requiring Git or a GitHub project
+download, can use bundled or official-download llama.cpp assets, lets the user
+select their own GGUF and mmproj files, and defaults to guarded dry-run. It must
+not redistribute Codex Desktop, model files, or API keys.
 
 For the final public-readiness field proof, follow
 `docs/windows-hyperv-clean-vm-canary.md`: start from a Windows 11 Hyper-V VM

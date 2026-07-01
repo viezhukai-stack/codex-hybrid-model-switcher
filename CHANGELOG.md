@@ -5,6 +5,18 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.13.1
+
+- Changed the Windows beginner package into a netdisk-friendly bundle:
+  `Codex-Hybrid-Windows-Netdisk-Setup-v2.13.1.zip`.
+- The package now includes a bundled project payload under
+  `payload/codex-hybrid-model-switcher`, so recipients do not need Git and do
+  not need to download the project source from GitHub during setup.
+- The installer still falls back to GitHub release download when the bundled
+  payload is missing.
+- Added optional bundled llama.cpp runtime support under `payload/llama.cpp`;
+  when absent, the installer keeps the existing official-download behavior.
+
 ## v2.13.0
 
 - Added a Windows one-click beginner setup package source under
