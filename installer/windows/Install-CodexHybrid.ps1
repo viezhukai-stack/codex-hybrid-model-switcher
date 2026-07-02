@@ -1,5 +1,5 @@
 param(
-    [string]$ReleaseTag = "v2.15.2",
+    [string]$ReleaseTag = "v2.15.3",
     [string]$ProjectRepo = "viezhukai-stack/codex-hybrid-model-switcher",
     [string]$BundledProjectPath,
     [string]$ProviderPresetPath,
@@ -39,6 +39,7 @@ $ExtractRoot = Join-Path $ReleaseRoot "src"
 $ProjectPath = Join-Path $ExtractRoot "codex-hybrid-model-switcher-$($ReleaseTag.TrimStart('v'))"
 $BundledProjectDefault = Join-Path $PSScriptRoot "payload\codex-hybrid-model-switcher"
 $BundledPythonRoot = Join-Path $PSScriptRoot "payload\python"
+$BundledVCRedist = Join-Path $PSScriptRoot "payload\vcredist\vc_redist.x64.exe"
 $InstalledPythonRoot = Join-Path $InstallRoot "python"
 $LlamaRoot = Join-Path $InstallRoot "llama.cpp"
 $ModelRoot = Join-Path $InstallRoot "models"
@@ -796,6 +797,84 @@ function Ensure-LlamaRuntime {
     return $null
 }
 
+function Get-MissingVCRuntimeDlls {
+    $dlls = @("vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll", "concrt140.dll")
+    $dirs = @(
+        (Join-Path $env:WINDIR "System32"),
+        (Join-Path $env:WINDIR "SysWOW64")
+    )
+    $missing = @()
+    foreach ($dll in $dlls) {
+        $found = $false
+        foreach ($dir in $dirs) {
+            if (Test-Path (Join-Path $dir $dll)) {
+                $found = $true
+                break
+            }
+        }
+        if (-not $found) {
+            $missing += $dll
+        }
+    }
+    return $missing
+}
+
+function Test-LlamaServerRunnable {
+    param([string]$ServerPath)
+    if (-not $ServerPath -or -not (Test-Path $ServerPath)) {
+        return 1
+    }
+    $oldLocation = Get-Location
+    try {
+        Set-Location (Split-Path -Parent $ServerPath)
+        & $ServerPath --version *> $null
+        return $LASTEXITCODE
+    } finally {
+        Set-Location $oldLocation
+    }
+}
+
+function Install-BundledVCRedist {
+    if (-not (Test-Path $BundledVCRedist)) {
+        return $false
+    }
+    Write-Host "Installing bundled Microsoft Visual C++ Runtime."
+    $proc = Start-Process -FilePath $BundledVCRedist -ArgumentList @("/install", "/quiet", "/norestart") -Wait -PassThru
+    if ($proc.ExitCode -in @(0, 3010, 1638)) {
+        Write-Host "Microsoft Visual C++ Runtime is installed or already present."
+        return $true
+    }
+    Write-Host "Bundled Microsoft Visual C++ Runtime installer exited with code $($proc.ExitCode)."
+    return $false
+}
+
+function Ensure-LlamaRuntimeRunnable {
+    param([string]$ServerPath)
+    $code = Test-LlamaServerRunnable -ServerPath $ServerPath
+    if ($code -eq 0) {
+        Write-Host "llama-server runtime check passed."
+        return $true
+    }
+    $missing = @(Get-MissingVCRuntimeDlls)
+    if ($missing.Count -gt 0) {
+        Write-Host "Missing Microsoft Visual C++ Runtime DLLs: $($missing -join ', ')"
+    } else {
+        Write-Host "llama-server runtime check failed with exit code $code."
+    }
+    if (Install-BundledVCRedist) {
+        $code = Test-LlamaServerRunnable -ServerPath $ServerPath
+        if ($code -eq 0) {
+            Write-Host "llama-server runtime check passed after installing Visual C++ Runtime."
+            return $true
+        }
+        Write-Host "llama-server still failed after Visual C++ Runtime install. Exit code: $code"
+    } else {
+        Write-Host "No bundled Visual C++ Runtime installer is available."
+    }
+    Write-Host "Local provider will remain pending until llama-server can run."
+    return $false
+}
+
 function Backup-PrivateConfig {
     if (-not (Test-Path $ConfigPath)) {
         return
@@ -996,10 +1075,10 @@ $llamaServer = $null
 if ($localSelection) {
     $localSelection = Install-LocalModelSelection -Selection $localSelection
     $llamaServer = Ensure-LlamaRuntime
-    if ($llamaServer) {
+    if ($llamaServer -and (Ensure-LlamaRuntimeRunnable -ServerPath $llamaServer)) {
         $includeLocal = $true
     } else {
-        Write-Host "llama.cpp runtime was not installed. Local provider will remain pending."
+        Write-Host "llama.cpp runtime is not usable. Local provider will remain pending."
     }
 }
 
@@ -1076,11 +1155,11 @@ if ($includeLocal -and -not $SkipLocalSmoke) {
     $smokeCode = Invoke-Switcher -ArgsList @("local-smoke", "--config", $ConfigPath, "--request-timeout", "$LocalSmokeTimeoutSeconds") -AllowFailure
     if ($smokeCode -ne 0) {
         Write-Host "Local smoke failed. Rewriting config without the local provider."
-        Write-Config -IncludeCloud $includeCloud -IncludeLocal $false -LlamaServerPath "" -LocalModelPath "" -LocalMmprojPath ""
-        $includeLocal = $false
         if (-not $includeCloud) {
             Fail "Local-only setup cannot continue because local smoke failed."
         }
+        Write-Config -IncludeCloud $includeCloud -IncludeLocal $false -LlamaServerPath "" -LocalModelPath "" -LocalMmprojPath ""
+        $includeLocal = $false
     } else {
         $script:LocalSmokePassed = $true
     }

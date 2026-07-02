@@ -1,10 +1,10 @@
 Codex Hybrid Windows 完整本地模型包 SHA256 校验
 
 文件名：
-Codex-Hybrid-Windows-Full-Local-Setup-v2.15.2.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.15.3.zip
 
 SHA256：
-73328125e55acdf113f6beb4360e7d28e39ddfb41e0e039ab0f767cccc213afc
+625c4c70b5ccf266d2b04c3a1386e6cf96db759ead886f8cb93df6674465ac3a
 
 说明：
 - 如果你只是普通使用，不会校验也没关系。

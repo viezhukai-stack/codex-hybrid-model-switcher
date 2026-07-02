@@ -6,13 +6,13 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.15.2.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.15.3.zip
 ```
 
 For private netdisk sharing with a bundled local model, build and share:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.15.2.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.15.3.zip
 ```
 
 It contains:
@@ -30,6 +30,7 @@ It contains:
 The full local package also contains:
 
 - `payload/llama.cpp/`
+- `payload/vcredist/vc_redist.x64.exe`
 - `payload/models/local-gemma/`
 - `payload/models/local-gemma/MODEL_MANIFEST.json`
 
@@ -66,6 +67,10 @@ The full local package also contains:
 - Uses bundled llama.cpp when `payload/llama.cpp` contains `llama-server.exe`;
   otherwise downloads official llama.cpp Windows release assets from
   `https://github.com/ggml-org/llama.cpp/releases`.
+- Checks whether `llama-server.exe --version` can run before local smoke. If
+  Microsoft Visual C++ Runtime DLLs are missing and
+  `payload/vcredist/vc_redist.x64.exe` exists, the installer runs the bundled
+  redistributable and checks `llama-server.exe` again.
 - Runs `validate-config`, `bridge-health`, optional `local-smoke`, and a guarded
   provider dry-run.
 - Gives local model smoke requests up to 900 seconds in the Windows installer,
@@ -101,7 +106,7 @@ The full local package also contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.15.2.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.15.3.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -204,7 +209,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.15.2.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.15.3.zip
 ```
 
 Upload that zip to your netdisk.
@@ -228,8 +233,9 @@ one GGUF model and one mmproj GGUF file, then run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py `
-  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.15.2.zip `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.15.3.zip `
   --include-llama-dir D:\Tools\llama.cpp `
+  --include-vcredist-file D:\Installers\vc_redist.x64.exe `
   --include-model-dir D:\Models\gemma-4-e4b
 ```
 
