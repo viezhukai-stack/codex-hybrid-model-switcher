@@ -169,7 +169,7 @@ DOC_REQUIREMENTS = {
         "sessions/",
     ),
     "docs/windows-one-click-installer.md": (
-        "Codex-Hybrid-Windows-Netdisk-Setup-v2.14.0.zip",
+        "Codex-Hybrid-Windows-Netdisk-Setup-v2.14.8.zip",
         "Install Codex Hybrid.cmd",
         "Codex Hybrid Diagnostics.cmd",
         "Restore Official Codex.cmd",
@@ -192,6 +192,8 @@ DOC_REQUIREMENTS = {
         "validate-config",
         "bridge-health",
         "local-smoke",
+        "UnifyHistory",
+        "history unification",
         "guarded",
         "auth.json",
         "models_cache.json",

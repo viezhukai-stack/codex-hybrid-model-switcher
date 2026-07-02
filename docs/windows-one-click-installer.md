@@ -6,7 +6,7 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.14.0.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.14.8.zip
 ```
 
 It contains:
@@ -47,6 +47,10 @@ It contains:
   `https://github.com/ggml-org/llama.cpp/releases`.
 - Runs `validate-config`, `bridge-health`, optional `local-smoke`, and a guarded
   cloud dry-run.
+- Can optionally unify Codex history from the `openai` bucket into `custom`
+  after creating `state_5.sqlite.bak-codex-hybrid-*` and matching
+  `sessions/*.jsonl.bak-codex-hybrid-*` backups, so existing project chats
+  remain visible after switching.
 - Installs the desktop `Codex Model Switcher.cmd` launcher.
 - Installs the desktop `Restore Official Codex.cmd` launcher.
 - Writes a redacted diagnostics report when `Codex Hybrid Diagnostics.cmd` is
@@ -61,15 +65,18 @@ It contains:
 - It does not require Git or a GitHub project download when the netdisk payload
   is intact.
 - It does not write API keys into the repository or private config.
-- It does not edit `auth.json`, `models_cache.json`, `state_5.sqlite`,
-  `sessions/`, or rollout logs.
+- It does not edit `auth.json`, `models_cache.json`, or rollout logs.
+- It does not edit `state_5.sqlite` unless the user explicitly enables backed-up
+  history unification.
+- It does not edit `sessions/*.jsonl` unless the user explicitly enables
+  backed-up history unification.
 - It does not apply a real Codex switch by default.
 - It does not install LaunchAgents, KeepAlive jobs, scheduled tasks, or recovery
   loops.
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.14.0.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.14.8.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -79,11 +86,14 @@ It contains:
 6. Enter the OpenAI-compatible provider `base_url`, cloud model id, environment
    variable name, and API key when prompted.
 7. Choose local GGUF and mmproj files if you want local model support.
-8. Review the dry-run output.
-9. Only after dry-run looks correct and Codex Desktop is fully closed, type
+8. Choose whether to enable history unification. Enable it if you want existing
+   official project chats to remain visible after switching to the custom
+   provider bucket.
+9. Review the dry-run output.
+10. Only after dry-run looks correct and Codex Desktop is fully closed, type
    `APPLY` when prompted if you want to perform the real guarded cloud switch.
-10. Use the desktop `Codex Model Switcher.cmd` for later model switches.
-11. Use the desktop `Restore Official Codex.cmd` if you need to return to the
+11. Use the desktop `Codex Model Switcher.cmd` for later model switches.
+12. Use the desktop `Restore Official Codex.cmd` if you need to return to the
     official provider.
 
 ## Command-Line Examples
@@ -130,6 +140,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-CodexHybrid.ps1 `
 
 Codex Desktop must be fully closed before real apply.
 
+Real apply while keeping existing project chats visible:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-CodexHybrid.ps1 `
+  -BaseUrl https://YOUR-OPENAI-COMPATIBLE-ENDPOINT.example/v1 `
+  -Model provider-gpt-main `
+  -ApiKeyEnv OPENAI_COMPATIBLE_API_KEY `
+  -SkipLocal `
+  -UnifyHistory `
+  -Apply
+```
+
+This backs up `state_5.sqlite` and matching `sessions/*.jsonl` files before
+migrating `openai` thread rows and session metadata to `custom` and the active
+model.
+
 ## Build The Release Zip
 
 From the repository root:
@@ -141,7 +167,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.14.0.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.14.8.zip
 ```
 
 Upload that zip to your netdisk.

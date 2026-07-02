@@ -9,6 +9,7 @@ from .canary_report import add_canary_report_args, evidence_from_args, run_canar
 from .doctor import run_doctor
 from .env_help import run_env_help
 from .final_check import add_final_check_args, run_final_check
+from .history import run_history_status, run_restore_history_backup, run_unify_history
 from .local_smoke import run_local_smoke
 from .private_config import init_config, run_validate_config
 from .real_canary import add_real_canary_template_args, run_real_canary_template
@@ -99,6 +100,19 @@ def main(argv: list[str] | None = None) -> int:
     guarded_switch.add_argument("--dry-run", action="store_true")
     guarded_switch.add_argument("--allow-local", action="store_true")
     guarded_switch.add_argument("--skip-local-smoke", action="store_true")
+    history_status = sub.add_parser("history-status")
+    history_status.add_argument("--config", dest="sub_config")
+    unify_history = sub.add_parser("unify-history")
+    unify_history.add_argument("--config", dest="sub_config")
+    unify_history.add_argument("--from-provider", default="openai")
+    unify_history.add_argument("--to-provider", default="custom")
+    unify_history.add_argument("--from-model")
+    unify_history.add_argument("--to-model")
+    unify_history.add_argument("--dry-run", action="store_true")
+    unify_history.add_argument("--apply", action="store_true")
+    restore_history = sub.add_parser("restore-history-backup")
+    restore_history.add_argument("--config", dest="sub_config")
+    restore_history.add_argument("--backup", required=True)
     add_config(sub.add_parser("status"))
 
     args = parser.parse_args(argv)
@@ -187,6 +201,20 @@ def main(argv: list[str] | None = None) -> int:
             allow_local=args.allow_local,
             skip_local_smoke=args.skip_local_smoke,
         )
+    if args.command == "history-status":
+        return run_history_status(config_path)
+    if args.command == "unify-history":
+        return run_unify_history(
+            config_path,
+            from_provider=args.from_provider,
+            to_provider=args.to_provider,
+            from_model=args.from_model,
+            to_model=args.to_model,
+            dry_run=args.dry_run or not args.apply,
+            apply=args.apply,
+        )
+    if args.command == "restore-history-backup":
+        return run_restore_history_backup(config_path, backup=args.backup)
     if args.command == "status":
         return run_doctor(config_path)
     return 2

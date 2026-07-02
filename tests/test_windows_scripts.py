@@ -79,6 +79,11 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "OpenFileDialog" in text
     assert "local-smoke" in text
     assert "windows-provider-switch.ps1" in text
+    assert "UnifyHistory" in text
+    assert "history-status" in text
+    assert "unify-history" in text
+    assert "MIGRATE" in text
+    assert "codexhybridmodelswitcher*/project/src" in text
     assert "-Apply" in text
     assert "install-windows-launcher.ps1" in text
     assert "INSTALLER DRY-RUN COMPLETE" in text
@@ -90,7 +95,7 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "powershell -NoProfile -ExecutionPolicy Bypass" in launcher
     assert "-DiagnosticsOnly" in diagnostics
     assert "windows-restore-official.ps1" in restore
-    assert "v2.14.0" in restore
+    assert "v2.14.8" in restore
     assert "This package does not include model files" in readme
     assert "does not install CC Switch" in readme
     assert "网盘一键安装包" in readme_zh
@@ -147,6 +152,7 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     assert "provider-preset.example.json" in names
     assert "payload/codex-hybrid-model-switcher/bootstrap.py" in names
     assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/__init__.py" in names
+    assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/history.py" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-provider-switch.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-restore-official.ps1" in names
     assert not any(name.startswith(".git/") for name in names)

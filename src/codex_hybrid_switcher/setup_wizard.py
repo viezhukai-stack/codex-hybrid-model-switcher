@@ -189,8 +189,9 @@ def print_next_steps(path: Path, provider_id: str, *, platform_name: str | None 
     print("  10. Use FINAL_CHECK.md to review the final verdict.")
     print()
     print("History note:")
-    print("  This setup does not rewrite Codex history. Existing official conversations may")
-    print("  belong to the openai bucket and can appear separate after switching to custom.")
+    print("  This config creation step does not rewrite Codex history. Existing official")
+    print("  conversations may belong to the openai bucket and can appear separate after")
+    print("  switching to custom unless you run a separate backed-up history unification step.")
 
 
 def run_setup_wizard(

@@ -5,6 +5,59 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.14.8
+
+- Fixed Windows beginner history unification to migrate matching
+  `sessions/*.jsonl` metadata alongside `state_5.sqlite`, preventing Codex
+  Desktop from rebuilding migrated project chats back into the old provider or
+  model bucket on next launch.
+- Confirmed on the HL Hyper-V clean VM canary that account visibility, plugin
+  visibility, temporary chats, project chats, and a cloud test reply all remain
+  working after the backed-up history unification.
+
+## v2.14.7
+
+- Extended backed-up history unification so Windows beginner installs can move
+  existing official Codex project chats to both the custom provider bucket and
+  the active custom model, avoiding empty project folders after switching.
+
+## v2.14.6
+
+- Fixed Windows installer command-output handling so switcher command text is displayed without polluting function return codes.
+
+
+## v2.14.5
+
+- Fixed portable Python path cleanup so reinstalling a newer netdisk package removes older `CodexHybridModelSwitcher\\releases\\...\\project\\src` entries before adding the current payload.
+
+
+## v2.14.4
+
+- Added an explicit, backed-up history unification step for Windows installer
+  users who want existing official Codex project chats to remain visible after
+  switching to the custom provider bucket.
+- Added CLI commands to inspect history provider buckets, dry-run/apply
+  `openai` to `custom` thread migration, and restore a backed-up history
+  database.
+
+## v2.14.3
+
+- Fixed Windows PowerShell function output pollution during Python version
+  checks so `Python 3.12.x` text is not treated as an executable path.
+
+## v2.14.2
+
+- Fixed Windows PowerShell 5 strict-mode handling when installer helper
+  functions return a single Python command item.
+- Kept the beginner netdisk installer ASCII-only so stock Windows consoles can
+  parse it without requiring UTF-8 profile changes.
+
+## v2.14.1
+
+- Removed non-ASCII text from the Windows installer PowerShell script so stock
+  Windows PowerShell 5 can parse the script when the netdisk zip is extracted
+  without UTF-8 BOM preservation.
+
 ## v2.14.0
 
 - Changed the Windows netdisk package builder to include official portable

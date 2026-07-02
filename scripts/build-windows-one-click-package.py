@@ -52,10 +52,10 @@ def should_include(path: Path) -> bool:
     return True
 
 
-def git_tracked_files() -> list[Path]:
+def git_worktree_files() -> list[Path]:
     try:
         proc = subprocess.run(
-            ["git", "ls-files", "-z"],
+            ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
             cwd=ROOT,
             check=True,
             stdout=subprocess.PIPE,
@@ -85,11 +85,12 @@ def fallback_files() -> list[Path]:
 
 
 def project_payload_files() -> list[Path]:
-    files = git_tracked_files() or fallback_files()
+    files = git_worktree_files() or fallback_files()
     required = {
         Path("bootstrap.py"),
         Path("pyproject.toml"),
         Path("src/codex_hybrid_switcher/__init__.py"),
+        Path("src/codex_hybrid_switcher/history.py"),
         Path("scripts/windows-provider-switch.ps1"),
         Path("scripts/windows-restore-official.ps1"),
         Path("scripts/install-windows-launcher.ps1"),

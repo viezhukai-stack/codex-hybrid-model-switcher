@@ -1,5 +1,5 @@
 param(
-    [string]$ReleaseTag = "v2.14.0",
+    [string]$ReleaseTag = "v2.14.8",
     [string]$ProjectRepo = "viezhukai-stack/codex-hybrid-model-switcher",
     [string]$BundledProjectPath,
     [string]$ProviderPresetPath,
@@ -21,6 +21,8 @@ param(
     [switch]$SkipLocal,
     [switch]$SkipLocalSmoke,
     [switch]$SkipLlamaDownload,
+    [switch]$UnifyHistory,
+    [switch]$SkipHistoryUnify,
     [switch]$DiagnosticsOnly
 )
 
@@ -124,7 +126,7 @@ function Copy-PortablePythonIfBundled {
     }
     New-Item -ItemType Directory -Force -Path $InstalledPythonRoot | Out-Null
     Copy-Item -Path (Join-Path $BundledPythonRoot "*") -Destination $InstalledPythonRoot -Recurse -Force
-    $installed = Find-Python
+    $installed = @(Find-Python)
     if ($installed.Count -gt 0 -and $installed[0] -like "$InstalledPythonRoot*") {
         Write-Host "Installed bundled portable Python to: $InstalledPythonRoot"
         return $installed
@@ -147,25 +149,25 @@ function Invoke-Python {
 
 function Ensure-Python {
     Write-Step "Checking Python"
-    $python = Find-Python
+    $python = @(Find-Python)
     if ($python.Count -gt 0) {
         if ($python[0] -like "$InstalledPythonRoot*") {
             Write-Host "Using installed portable Python: $($python[0])"
         } elseif ($python[0] -like "$BundledPythonRoot*") {
-            $installedPython = Copy-PortablePythonIfBundled
+            $installedPython = @(Copy-PortablePythonIfBundled)
             if ($installedPython.Count -gt 0) {
                 $python = $installedPython
             } else {
                 Write-Host "Using bundled portable Python: $($python[0])"
             }
         }
-        Invoke-Python -PythonCommand $python -Arguments @("--version")
+        Invoke-Python -PythonCommand $python -Arguments @("--version") | Out-Host
         return $python
     }
 
-    $python = Copy-PortablePythonIfBundled
+    $python = @(Copy-PortablePythonIfBundled)
     if ($python.Count -gt 0) {
-        Invoke-Python -PythonCommand $python -Arguments @("--version")
+        Invoke-Python -PythonCommand $python -Arguments @("--version") | Out-Host
         return $python
     }
 
@@ -175,11 +177,11 @@ function Ensure-Python {
         Fail "Python is missing and winget is not available. Install Python 3.12 from python.org, then rerun this installer." 2
     }
     winget install --id Python.Python.3.12 --exact --silent --accept-package-agreements --accept-source-agreements
-    $python = Find-Python
+    $python = @(Find-Python)
     if ($python.Count -eq 0) {
         Fail "Python install finished, but Python still was not found. Close this window, open a new one, and rerun the installer." 2
     }
-    Invoke-Python -PythonCommand $python -Arguments @("--version")
+    Invoke-Python -PythonCommand $python -Arguments @("--version") | Out-Host
     return $python
 }
 
@@ -204,7 +206,8 @@ function Configure-PortablePythonPath {
     $lines = @(Get-Content -LiteralPath $pth.FullName)
     $filtered = @()
     foreach ($line in $lines) {
-        if ($line -like "*codex-hybrid-model-switcher*src*") {
+        $normalizedLine = $line.Replace("\", "/").ToLowerInvariant()
+        if ($normalizedLine -like "*codex-hybrid-model-switcher*src*" -or $normalizedLine -like "*codexhybridmodelswitcher*/project/src*") {
             continue
         }
         if ($line.Trim() -eq "#import site") {
@@ -331,7 +334,7 @@ function Write-DiagnosticsReport {
     $configToml = Join-Path $codexHome "config.toml"
     $modelsCache = Join-Path $codexHome "models_cache.json"
     $stateDb = Join-Path $codexHome "state_5.sqlite"
-    $python = Find-Python
+    $python = @(Find-Python)
     $winget = Get-Command winget -ErrorAction SilentlyContinue
     $payloadProject = Test-Path (Join-Path $BundledProjectDefault "bootstrap.py")
     $payloadPython = Test-Path (Join-Path $BundledPythonRoot "python.exe")
@@ -642,7 +645,7 @@ function Invoke-Switcher {
     $env:PYTHONPATH = Join-Path $ProjectPath "src"
     try {
         $pythonArgs = @("-m", "codex_hybrid_switcher") + $ArgsList
-        Invoke-Python -PythonCommand $script:Python -Arguments $pythonArgs
+        Invoke-Python -PythonCommand $script:Python -Arguments $pythonArgs | Out-Host
         $code = $LASTEXITCODE
         if ($code -ne 0 -and -not $AllowFailure) {
             Fail "codex_hybrid_switcher $($ArgsList -join ' ') failed with exit code $LASTEXITCODE"
@@ -687,6 +690,46 @@ function Invoke-GuardedApply {
     if ($LASTEXITCODE -ne 0) {
         Fail "Guarded apply failed."
     }
+    if ($script:UnifyHistoryRequested) {
+        Invoke-HistoryUnifyApply
+    }
+}
+
+function Resolve-HistoryUnify {
+    if ($SkipHistoryUnify) {
+        Write-Host "History unification skipped by option."
+        return $false
+    }
+    Write-Step "Checking optional history unification"
+    $statusCode = Invoke-Switcher -ArgsList @("history-status", "--config", $ConfigPath) -AllowFailure
+    if ($statusCode -ne 0) {
+        Write-Host "History status could not be read. History unification will be skipped."
+        return $false
+    }
+    if ($UnifyHistory) {
+        Write-Host "History unification enabled by option."
+        return $true
+    }
+    if ($NonInteractive) {
+        Write-Host "History unification is disabled in non-interactive mode unless -UnifyHistory is provided."
+        return $false
+    }
+    Write-Host ""
+    Write-Host "Codex Desktop shows project chats by provider bucket."
+    Write-Host "To keep existing official project chats visible after switching to custom, this installer can migrate openai history rows to custom/$Model."
+    Write-Host "A state_5.sqlite backup is created first. Press Enter to skip."
+    $confirm = Read-Host "Type MIGRATE to enable history unification"
+    return ($confirm -ceq "MIGRATE")
+}
+
+function Invoke-HistoryUnifyDryRun {
+    Write-Step "Running history unification dry-run"
+    Invoke-Switcher -ArgsList @("unify-history", "--config", $ConfigPath, "--from-provider", "openai", "--to-provider", "custom", "--to-model", $Model, "--dry-run")
+}
+
+function Invoke-HistoryUnifyApply {
+    Write-Step "Applying history unification"
+    Invoke-Switcher -ArgsList @("unify-history", "--config", $ConfigPath, "--from-provider", "openai", "--to-provider", "custom", "--to-model", $Model, "--apply")
 }
 
 function Prompt-ApplyAfterDryRun {
@@ -696,7 +739,6 @@ function Prompt-ApplyAfterDryRun {
     }
     Write-Host ""
     Write-Host "If Codex Desktop is fully closed and you want to apply now, type APPLY exactly."
-    Write-Host "如果已经完全退出 Codex，并且确认现在应用，请输入 APPLY。"
     Write-Host "Press Enter to exit without changing Codex."
     $confirm = Read-Host "Apply now"
     if ($confirm -cne "APPLY") {
@@ -764,6 +806,11 @@ if ($includeLocal) {
 }
 Invoke-Switcher -ArgsList $validateArgs
 
+$script:UnifyHistoryRequested = Resolve-HistoryUnify
+if ($script:UnifyHistoryRequested) {
+    Invoke-HistoryUnifyDryRun
+}
+
 Write-Step "Installing desktop switcher launcher"
 & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ProjectPath "scripts\install-windows-launcher.ps1")
 if ($LASTEXITCODE -ne 0) {
@@ -802,6 +849,11 @@ if ($Apply) {
         Write-Host "Local provider status: pending. Provide GGUF + mmproj files and a working llama.cpp runtime to enable it."
     } else {
         Write-Host "Local provider status: configured."
+    }
+    if ($script:UnifyHistoryRequested) {
+        Write-Host "History unification status: enabled for real apply. A state_5.sqlite backup will be created before migration."
+    } else {
+        Write-Host "History unification status: skipped. Existing openai project chats may be hidden while using custom."
     }
     Prompt-ApplyAfterDryRun
 }

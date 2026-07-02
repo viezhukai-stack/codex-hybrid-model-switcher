@@ -133,7 +133,7 @@ def test_windows_one_click_installer_doc_covers_beginner_setup_boundary():
     text = read("docs/windows-one-click-installer.md")
 
     for marker in (
-        "Codex-Hybrid-Windows-Netdisk-Setup-v2.14.0.zip",
+        "Codex-Hybrid-Windows-Netdisk-Setup-v2.14.8.zip",
         "Install Codex Hybrid.cmd",
         "Codex Hybrid Diagnostics.cmd",
         "Restore Official Codex.cmd",

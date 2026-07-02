@@ -12,8 +12,9 @@ Cross-platform tooling for using Codex Desktop with:
 - local llama.cpp models, including multimodal GGUF + mmproj models
 - guarded external provider switching outside Codex's bottom-right model menu
 
-The project is intentionally conservative. It does not edit `models_cache.json`,
-does not mutate Codex session history, and does not install KeepAlive services.
+The project is intentionally conservative. It does not edit `models_cache.json`
+or install KeepAlive services. It only rewrites Codex history when the user
+explicitly enables the backed-up history unification step.
 
 ## 3-Minute Tour
 
@@ -36,7 +37,7 @@ flowchart LR
 
     G["auth.json"] -. "not edited" .- D
     H["models_cache.json"] -. "not edited" .- D
-    I["state_5.sqlite"] -. "not edited" .- D
+    I["state_5.sqlite"] -. "optional backed-up history unify" .- D
 ```
 
 Start here:
@@ -98,7 +99,7 @@ cache, rewrite old conversations, or install always-on recovery services.
 ### Windows one-click setup
 
 For a beginner Windows computer, download
-`Codex-Hybrid-Windows-Netdisk-Setup-v2.14.0.zip`, extract it, and double-click
+`Codex-Hybrid-Windows-Netdisk-Setup-v2.14.8.zip`, extract it, and double-click
 `Install Codex Hybrid.cmd`. This is the package to share through a netdisk or
 other file-transfer link.
 
@@ -110,6 +111,10 @@ install a desktop restore-to-official launcher, and stop at guarded dry-run
 before asking for an explicit `APPLY` confirmation. It does not redistribute
 Codex Desktop, install CC Switch, include model files, or apply a real switch
 without explicit confirmation.
+If the user enables history unification, the installer backs up
+`state_5.sqlite` and matching `sessions/*.jsonl` files before moving existing
+`openai` project chats into the `custom` bucket and active model so they remain
+visible after switching.
 
 See [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md).
 
@@ -257,8 +262,9 @@ file tells Codex how to proceed safely.
   local provider after text and, for multimodal models, image smoke tests pass
   on that machine.
 - Recovery path: quit Codex Desktop and restore the newest
-  `config.toml.bak-codex-hybrid-*` backup. This project is designed not to edit
-  `auth.json`, `models_cache.json`, `state_5.sqlite`, or session history.
+  `config.toml.bak-codex-hybrid-*` backup. If history unification was enabled,
+  restore the newest `state_5.sqlite.bak-codex-hybrid-*` backup as well.
+  This project is designed not to edit `auth.json` or `models_cache.json`.
 
 For release history and project rules, see `CHANGELOG.md`, `SECURITY.md`,
 `CONTRIBUTING.md`, and `ROADMAP.md`.
