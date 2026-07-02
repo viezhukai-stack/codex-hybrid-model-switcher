@@ -1,5 +1,5 @@
 param(
-    [string]$ReleaseTag = "v2.15.1",
+    [string]$ReleaseTag = "v2.15.2",
     [string]$ProjectRepo = "viezhukai-stack/codex-hybrid-model-switcher",
     [string]$BundledProjectPath,
     [string]$ProviderPresetPath,
@@ -14,6 +14,7 @@ param(
     [string]$ModelPath,
     [string]$MmprojPath,
     [string]$ConfigPath = "$env:USERPROFILE\.codex-hybrid-model-switcher\config.json",
+    [int]$LocalSmokeTimeoutSeconds = 900,
     [switch]$DryRunOnly,
     [switch]$Apply,
     [switch]$NonInteractive,
@@ -822,6 +823,37 @@ function Invoke-Switcher {
     }
 }
 
+function Stop-ManagedBridgeOnPort {
+    param([int]$Port)
+    $lines = netstat -ano | Select-String ":$Port" | Where-Object { $_.ToString() -match "LISTENING" }
+    foreach ($line in $lines) {
+        $parts = ($line.ToString() -split "\s+") | Where-Object { $_ }
+        if ($parts.Count -lt 5) {
+            continue
+        }
+        $procId = [int]$parts[-1]
+        if ($procId -le 0) {
+            continue
+        }
+        $processInfo = Get-CimInstance Win32_Process -Filter "ProcessId=$procId" -ErrorAction SilentlyContinue
+        $exe = ""
+        $cmd = ""
+        if ($processInfo) {
+            $exe = [string]$processInfo.ExecutablePath
+            $cmd = [string]$processInfo.CommandLine
+        }
+        $isManaged = $exe.StartsWith($InstallRoot, [System.StringComparison]::OrdinalIgnoreCase) -or
+            ($cmd -match [regex]::Escape($InstallRoot)) -or
+            ($cmd -match "codex_hybrid_switcher")
+        if ($isManaged) {
+            Write-Host "Stopping previous Codex Hybrid bridge on port $Port (PID $procId)."
+            Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
+        } else {
+            Write-Host "Port $Port is already in use by a non-managed process. Local smoke may fail until that process exits."
+        }
+    }
+}
+
 function Write-Config {
     param([bool]$IncludeCloud, [bool]$IncludeLocal, [string]$LlamaServerPath, [string]$LocalModelPath, [string]$LocalMmprojPath)
     $args = @(
@@ -1040,7 +1072,8 @@ if ($bridgeCode -ne 0) {
 
 if ($includeLocal -and -not $SkipLocalSmoke) {
     Write-Step "Running local llama.cpp smoke test"
-    $smokeCode = Invoke-Switcher -ArgsList @("local-smoke", "--config", $ConfigPath) -AllowFailure
+    Stop-ManagedBridgeOnPort -Port 19030
+    $smokeCode = Invoke-Switcher -ArgsList @("local-smoke", "--config", $ConfigPath, "--request-timeout", "$LocalSmokeTimeoutSeconds") -AllowFailure
     if ($smokeCode -ne 0) {
         Write-Host "Local smoke failed. Rewriting config without the local provider."
         Write-Config -IncludeCloud $includeCloud -IncludeLocal $false -LlamaServerPath "" -LocalModelPath "" -LocalMmprojPath ""

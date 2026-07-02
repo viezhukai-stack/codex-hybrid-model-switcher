@@ -41,6 +41,7 @@ def main(argv: list[str] | None = None) -> int:
     local_smoke.add_argument("--skip-vision", action="store_true")
     local_smoke.add_argument("--expect-text", default="OK")
     local_smoke.add_argument("--expect-vision", default="red")
+    local_smoke.add_argument("--request-timeout", type=float, default=180)
     doctor = sub.add_parser("doctor")
     doctor.add_argument("--config", dest="sub_config")
     doctor.add_argument("--strict", action="store_true")
@@ -130,6 +131,7 @@ def main(argv: list[str] | None = None) -> int:
             skip_vision=args.skip_vision,
             expect_text=args.expect_text,
             expect_vision=args.expect_vision,
+            request_timeout=args.request_timeout,
         )
     if args.command == "doctor":
         return run_doctor(config_path, strict=args.strict)

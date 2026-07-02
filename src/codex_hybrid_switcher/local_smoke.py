@@ -79,6 +79,7 @@ def run_local_smoke(
     skip_vision: bool = False,
     expect_text: str = "OK",
     expect_vision: str = "red",
+    request_timeout: float = 180,
 ) -> int:
     config = load_config(config_path)
     if validate_local_paths(config) != 0:
@@ -103,7 +104,13 @@ def run_local_smoke(
                 return 1
             print(f"Started bridge on {bridge.host}:{bridge.port}.")
 
-        code = run_smoke(config_path, skip_vision=skip_vision, expect_text=expect_text, expect_vision=expect_vision)
+        code = run_smoke(
+            config_path,
+            skip_vision=skip_vision,
+            expect_text=expect_text,
+            expect_vision=expect_vision,
+            request_timeout=request_timeout,
+        )
         if code == 0:
             print("Local smoke passed.")
         else:
@@ -125,6 +132,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-vision", action="store_true")
     parser.add_argument("--expect-text", default="OK")
     parser.add_argument("--expect-vision", default="red")
+    parser.add_argument("--request-timeout", type=float, default=180)
     args = parser.parse_args(argv)
     return run_local_smoke(
         args.config,
@@ -133,6 +141,7 @@ def main(argv: list[str] | None = None) -> int:
         skip_vision=args.skip_vision,
         expect_text=args.expect_text,
         expect_vision=args.expect_vision,
+        request_timeout=args.request_timeout,
     )
 
 

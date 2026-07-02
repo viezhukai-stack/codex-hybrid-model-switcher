@@ -3,7 +3,7 @@
 This canary validates the private netdisk full local model package:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.15.1.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.15.2.zip
 ```
 
 The full local package is intentionally not uploaded to GitHub. It is distributed
@@ -13,7 +13,16 @@ red-square test image.
 
 ## Current Status
 
-Status: Pending HL Hyper-V VM canary.
+Status: Pending HL Hyper-V VM canary for v2.15.2.
+
+The v2.15.1 HL VM attempt found two real setup gaps before final UI apply:
+
+- A stale managed bridge from an earlier cloud canary could occupy `127.0.0.1:19030`.
+- The CPU-only local text smoke could exceed the old 180-second request timeout
+  on a low-performance Hyper-V VM.
+
+v2.15.2 addresses these by stopping previous managed Codex Hybrid bridge
+processes before local smoke and using a 900-second installer smoke timeout.
 
 ## Preconditions
 

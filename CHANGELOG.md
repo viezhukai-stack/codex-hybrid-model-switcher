@@ -5,6 +5,15 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.15.2
+
+- Increased the Windows full-local installer smoke-test request timeout to 900
+  seconds so low-performance Hyper-V VMs and CPU-only machines are not rejected
+  while the local model is still loading or generating.
+- Added a conservative Windows installer cleanup for previous managed Codex
+  Hybrid bridge processes on port `19030`, preventing stale cloud bridges from
+  blocking full-local setup retries.
+
 ## v2.15.1
 
 - Added Windows installer disk-space reporting for full local packages, with a

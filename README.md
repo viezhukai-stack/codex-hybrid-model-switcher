@@ -101,7 +101,7 @@ cache, rewrite old conversations, or install always-on recovery services.
 ### Windows one-click setup
 
 For a beginner Windows computer, download
-`Codex-Hybrid-Windows-Netdisk-Setup-v2.15.1.zip`, extract it, and double-click
+`Codex-Hybrid-Windows-Netdisk-Setup-v2.15.2.zip`, extract it, and double-click
 `Install Codex Hybrid.cmd`. This is the package to share through a netdisk or
 other file-transfer link.
 
@@ -115,7 +115,7 @@ Codex Desktop, install CC Switch, or apply a real switch
 without explicit confirmation.
 
 For private netdisk sharing, the repository can also build a full local model
-package named `Codex-Hybrid-Windows-Full-Local-Setup-v2.15.1.zip`. That package
+package named `Codex-Hybrid-Windows-Full-Local-Setup-v2.15.2.zip`. That package
 can include `payload/models/local-gemma` so a beginner can use the bundled
 local Gemma model without a cloud API key. The large model files are never
 committed to GitHub.

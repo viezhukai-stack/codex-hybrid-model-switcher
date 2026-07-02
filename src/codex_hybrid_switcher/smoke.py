@@ -27,10 +27,10 @@ def red_png_base64(size: int = 32) -> str:
     return base64.b64encode(png).decode("ascii")
 
 
-def post_json(url: str, payload: dict) -> dict:
+def post_json(url: str, payload: dict, *, timeout: float = 180) -> dict:
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(req, timeout=180) as resp:
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
@@ -46,12 +46,17 @@ def run_smoke(
     skip_vision: bool = False,
     expect_text: str = "OK",
     expect_vision: str = "red",
+    request_timeout: float = 180,
 ) -> int:
     config = load_config(config_path)
     bridge = config.bridge
     local_id = str(config.local_model.get("id") or "local/gemma")
     base = f"http://{bridge.host}:{bridge.port}/v1/responses"
-    text = post_json(base, {"model": local_id, "input": "Reply exactly OK and nothing else.", "max_output_tokens": 32, "temperature": 0.2})
+    text = post_json(
+        base,
+        {"model": local_id, "input": "Reply exactly OK and nothing else.", "max_output_tokens": 32, "temperature": 0.2},
+        timeout=request_timeout,
+    )
     text_out = text.get("output_text")
     print("text:", text_out)
     ok = output_matches(text_out, expect_text)
@@ -75,6 +80,7 @@ def run_smoke(
             "max_output_tokens": 32,
             "temperature": 0.2,
         },
+        timeout=request_timeout,
     )
     vision_out = vision.get("output_text")
     print("vision:", vision_out)
@@ -89,5 +95,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-vision", action="store_true")
     parser.add_argument("--expect-text", default="OK")
     parser.add_argument("--expect-vision", default="red")
+    parser.add_argument("--request-timeout", type=float, default=180)
     args = parser.parse_args(argv)
-    return run_smoke(args.config, skip_vision=args.skip_vision, expect_text=args.expect_text, expect_vision=args.expect_vision)
+    return run_smoke(
+        args.config,
+        skip_vision=args.skip_vision,
+        expect_text=args.expect_text,
+        expect_vision=args.expect_vision,
+        request_timeout=args.request_timeout,
+    )
