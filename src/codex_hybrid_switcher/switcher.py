@@ -154,14 +154,40 @@ def start_bridge(config: AppConfig) -> None:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     log_handle = log_path.open("ab")
     try:
-        proc = subprocess.Popen(
-            cmd,
-            stdout=log_handle,
-            stderr=subprocess.STDOUT,
-            stdin=subprocess.DEVNULL,
-            creationflags=creationflags,
-            close_fds=True,
-        )
+        try:
+            proc = subprocess.Popen(
+                cmd,
+                stdout=log_handle,
+                stderr=subprocess.STDOUT,
+                stdin=subprocess.DEVNULL,
+                creationflags=creationflags,
+                close_fds=True,
+            )
+        except PermissionError:
+            if sys.platform != "win32" or not creationflags:
+                raise
+            fallback_flags = (
+                getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+                | getattr(subprocess, "DETACHED_PROCESS", 0)
+            )
+            try:
+                proc = subprocess.Popen(
+                    cmd,
+                    stdout=log_handle,
+                    stderr=subprocess.STDOUT,
+                    stdin=subprocess.DEVNULL,
+                    creationflags=fallback_flags,
+                    close_fds=True,
+                )
+            except PermissionError:
+                proc = subprocess.Popen(
+                    cmd,
+                    stdout=log_handle,
+                    stderr=subprocess.STDOUT,
+                    stdin=subprocess.DEVNULL,
+                    creationflags=0,
+                    close_fds=True,
+                )
     finally:
         log_handle.close()
     bridge_pid_file(config).write_text(str(proc.pid), encoding="utf-8")

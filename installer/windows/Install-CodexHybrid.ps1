@@ -1,5 +1,5 @@
 param(
-    [string]$ReleaseTag = "v2.15.4",
+    [string]$ReleaseTag = "v2.15.5",
     [string]$ProjectRepo = "viezhukai-stack/codex-hybrid-model-switcher",
     [string]$BundledProjectPath,
     [string]$ProviderPresetPath,
