@@ -1,5 +1,5 @@
 param(
-    [string]$ReleaseTag = "v2.15.3",
+    [string]$ReleaseTag = "v2.15.4",
     [string]$ProjectRepo = "viezhukai-stack/codex-hybrid-model-switcher",
     [string]$BundledProjectPath,
     [string]$ProviderPresetPath,
@@ -824,13 +824,23 @@ function Test-LlamaServerRunnable {
     if (-not $ServerPath -or -not (Test-Path $ServerPath)) {
         return 1
     }
-    $oldLocation = Get-Location
+    $workDir = Split-Path -Parent $ServerPath
+    $stdout = Join-Path $env:TEMP ("codex-hybrid-llama-version-{0}.out" -f ([guid]::NewGuid().ToString("N")))
+    $stderr = Join-Path $env:TEMP ("codex-hybrid-llama-version-{0}.err" -f ([guid]::NewGuid().ToString("N")))
     try {
-        Set-Location (Split-Path -Parent $ServerPath)
-        & $ServerPath --version *> $null
-        return $LASTEXITCODE
+        $proc = Start-Process -FilePath $ServerPath `
+            -ArgumentList @("--version") `
+            -WorkingDirectory $workDir `
+            -RedirectStandardOutput $stdout `
+            -RedirectStandardError $stderr `
+            -Wait `
+            -PassThru
+        return [int]$proc.ExitCode
+    } catch {
+        return 1
     } finally {
-        Set-Location $oldLocation
+        if (Test-Path $stdout) { Remove-Item $stdout -Force -ErrorAction SilentlyContinue }
+        if (Test-Path $stderr) { Remove-Item $stderr -Force -ErrorAction SilentlyContinue }
     }
 }
 

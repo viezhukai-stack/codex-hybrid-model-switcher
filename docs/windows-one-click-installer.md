@@ -6,13 +6,13 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.15.3.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.15.4.zip
 ```
 
 For private netdisk sharing with a bundled local model, build and share:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.15.3.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.15.4.zip
 ```
 
 It contains:
@@ -106,7 +106,7 @@ The full local package also contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.15.3.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.15.4.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -209,7 +209,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.15.3.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.15.4.zip
 ```
 
 Upload that zip to your netdisk.
@@ -233,7 +233,7 @@ one GGUF model and one mmproj GGUF file, then run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py `
-  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.15.3.zip `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.15.4.zip `
   --include-llama-dir D:\Tools\llama.cpp `
   --include-vcredist-file D:\Installers\vc_redist.x64.exe `
   --include-model-dir D:\Models\gemma-4-e4b
