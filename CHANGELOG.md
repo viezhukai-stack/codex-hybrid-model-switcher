@@ -5,6 +5,14 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.15.4
+
+- Fixed Windows PowerShell 5 handling for the bundled `llama-server.exe
+  --version` runtime check by running it through `Start-Process` with temporary
+  stdout/stderr files and using only the process exit code.
+- This prevents normal llama.cpp version text written to stderr from aborting
+  the full-local installer before local smoke.
+
 ## v2.15.3
 
 - Added optional bundled Microsoft Visual C++ Redistributable support for the

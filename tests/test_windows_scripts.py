@@ -84,6 +84,8 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "Stop-ManagedBridgeOnPort" in text
     assert "Ensure-LlamaRuntimeRunnable" in text
     assert "Install-BundledVCRedist" in text
+    assert "Start-Process -FilePath $ServerPath" in text
+    assert "-RedirectStandardError $stderr" in text
     assert "Microsoft Visual C++ Runtime" in text
     assert "llama-server runtime check passed" in text
     assert '"--request-timeout", "$LocalSmokeTimeoutSeconds"' in text
@@ -120,7 +122,7 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "powershell -NoProfile -ExecutionPolicy Bypass" in launcher
     assert "-DiagnosticsOnly" in diagnostics
     assert "windows-restore-official.ps1" in restore
-    assert "v2.15.3" in restore
+    assert "v2.15.4" in restore
     assert "Full local model packages may include payload\\models\\local-gemma" in readme
     assert "does not install CC Switch" in readme
     assert "网盘一键安装包" in readme_zh
