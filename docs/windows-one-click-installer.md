@@ -6,13 +6,13 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.15.0.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.15.1.zip
 ```
 
 For private netdisk sharing with a bundled local model, build and share:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.15.0.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.15.1.zip
 ```
 
 It contains:
@@ -57,6 +57,10 @@ The full local package also contains:
 - Automatically uses bundled local GGUF and mmproj files from
   `payload/models/local-gemma` when present, after copying them into
   `%LOCALAPPDATA%\CodexHybridModelSwitcher\models\local-gemma`.
+- Shows free disk space at startup and recommends at least 15-20 GB free space
+  for full local setup.
+- Writes local-only diagnostics showing whether llama.cpp, the installed local
+  model, and the local provider are present.
 - Lets the user choose local GGUF and mmproj files when the package does not
   include a local model payload.
 - Uses bundled llama.cpp when `payload/llama.cpp` contains `llama-server.exe`;
@@ -95,7 +99,7 @@ The full local package also contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.15.0.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.15.1.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -198,7 +202,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.15.0.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.15.1.zip
 ```
 
 Upload that zip to your netdisk.
@@ -222,7 +226,7 @@ one GGUF model and one mmproj GGUF file, then run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py `
-  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.15.0.zip `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.15.1.zip `
   --include-llama-dir D:\Tools\llama.cpp `
   --include-model-dir D:\Models\gemma-4-e4b
 ```

@@ -5,6 +5,16 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.15.1
+
+- Added Windows installer disk-space reporting for full local packages, with a
+  15-20 GB free-space recommendation before copying bundled model files.
+- Added clearer local model copy progress messaging and expanded diagnostics
+  for installed llama.cpp, installed local model files, local provider status,
+  local-only config status, and install-drive free space.
+- Added Chinese netdisk distribution materials for the full local model package,
+  including beginner installation notes and a SHA256 checksum companion file.
+
 ## v2.15.0
 
 - Added a private netdisk full local package path that can bundle

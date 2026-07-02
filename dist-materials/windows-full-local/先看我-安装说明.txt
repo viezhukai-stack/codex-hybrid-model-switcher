@@ -1,0 +1,41 @@
+Codex Hybrid Windows 完整本地模型包 - 小白安装说明
+
+你拿到的是完整本地模型包，不需要再下载轻量包。
+
+这个包包含：
+- Codex Hybrid 安装器
+- portable Python
+- llama.cpp Windows CPU 运行时
+- Gemma 4 E4B 本地模型
+- 视觉 mmproj 模型
+- 测试图片
+
+这个包不包含：
+- Codex 官方应用本体
+- 云端模型 API key
+
+安装步骤：
+1. 如果电脑还没有 Codex，请先安装官方 Codex Desktop，并登录账号。
+2. 完全退出 Codex Desktop。
+3. 解压整个 zip，不要只拖出其中一个文件。
+4. 双击 Install Codex Hybrid.cmd。
+5. 如果安装器提示磁盘空间不足，请先清理空间。建议至少预留 15-20GB。
+6. 安装器会复制约 6GB 本地模型，请耐心等待，不要关闭窗口。
+7. 安装器会先做 dry-run 安全检查，不会直接改坏 Codex。
+8. dry-run 通过后，确认 Codex 已完全退出，再输入 APPLY 执行真实切换。
+9. 打开 Codex，新建一个测试对话。
+
+重要说明：
+- 不配置云端 API key 也可以使用本地模型。
+- Codex 右下角显示的模型名不一定是真实模型，真实切换以本项目安装器和桌面切换器为准。
+- 本地模型使用 CPU 运行，低配电脑可能比较慢。
+- 如果想恢复官方 Codex，双击 Restore Official Codex.cmd。
+
+不要发给别人或上传截图的内容：
+- auth.json
+- models_cache.json
+- state_5.sqlite
+- sessions
+- rollout logs
+- API key
+- 含账号、密钥或个人路径的截图

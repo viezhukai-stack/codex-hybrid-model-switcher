@@ -46,6 +46,7 @@ Start here:
   [`HANDOFF_TO_CODEX.md`](HANDOFF_TO_CODEX.md)
 - If you only have stock Codex Desktop: [`START_HERE.md`](START_HERE.md)
 - Windows one-click beginner setup: [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md)
+- Windows full local package canary: [`docs/windows-full-local-pack-canary.md`](docs/windows-full-local-pack-canary.md)
 - Final self-check after setup: [`FINAL_CHECK.md`](FINAL_CHECK.md)
 - Hand this repo to Codex: [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md)
 - Zero-install bootstrap: [`docs/bootstrap.md`](docs/bootstrap.md)
@@ -59,6 +60,7 @@ Start here:
 - Final canary evidence report: [`docs/canary-report.md`](docs/canary-report.md)
 - Real clean-machine canary: [`docs/real-clean-machine-canary.md`](docs/real-clean-machine-canary.md)
 - Windows Hyper-V clean VM canary: [`docs/windows-hyperv-clean-vm-canary.md`](docs/windows-hyperv-clean-vm-canary.md)
+- Windows full local package canary: [`docs/windows-full-local-pack-canary.md`](docs/windows-full-local-pack-canary.md)
 - Read-only final check: [`docs/final-check.md`](docs/final-check.md)
 - User success criteria: [`docs/user-success-criteria.md`](docs/user-success-criteria.md)
 - Agent handoff drill: [`docs/agent-handoff-drill.md`](docs/agent-handoff-drill.md)
@@ -99,7 +101,7 @@ cache, rewrite old conversations, or install always-on recovery services.
 ### Windows one-click setup
 
 For a beginner Windows computer, download
-`Codex-Hybrid-Windows-Netdisk-Setup-v2.15.0.zip`, extract it, and double-click
+`Codex-Hybrid-Windows-Netdisk-Setup-v2.15.1.zip`, extract it, and double-click
 `Install Codex Hybrid.cmd`. This is the package to share through a netdisk or
 other file-transfer link.
 
@@ -113,7 +115,7 @@ Codex Desktop, install CC Switch, or apply a real switch
 without explicit confirmation.
 
 For private netdisk sharing, the repository can also build a full local model
-package named `Codex-Hybrid-Windows-Full-Local-Setup-v2.15.0.zip`. That package
+package named `Codex-Hybrid-Windows-Full-Local-Setup-v2.15.1.zip`. That package
 can include `payload/models/local-gemma` so a beginner can use the bundled
 local Gemma model without a cloud API key. The large model files are never
 committed to GitHub.

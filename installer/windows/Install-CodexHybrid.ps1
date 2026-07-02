@@ -1,5 +1,5 @@
 param(
-    [string]$ReleaseTag = "v2.15.0",
+    [string]$ReleaseTag = "v2.15.1",
     [string]$ProjectRepo = "viezhukai-stack/codex-hybrid-model-switcher",
     [string]$BundledProjectPath,
     [string]$ProviderPresetPath,
@@ -53,6 +53,58 @@ function Fail {
     Write-Host ""
     Write-Host "ERROR: $Message"
     exit $Code
+}
+
+function Get-DirectorySizeBytes {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) {
+        return [int64]0
+    }
+    $total = [int64]0
+    Get-ChildItem -LiteralPath $Path -File -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+        $total += [int64]$_.Length
+    }
+    return $total
+}
+
+function Format-SizeGb {
+    param([int64]$Bytes)
+    return [math]::Round(($Bytes / 1GB), 1)
+}
+
+function Get-FreeSpaceGb {
+    param([string]$Path)
+    $root = [System.IO.Path]::GetPathRoot($Path)
+    if (-not $root) {
+        $root = [System.IO.Path]::GetPathRoot($env:LOCALAPPDATA)
+    }
+    $driveName = $root.Substring(0, 1)
+    $drive = Get-PSDrive -Name $driveName -ErrorAction SilentlyContinue
+    if (-not $drive) {
+        return $null
+    }
+    return [math]::Round(($drive.Free / 1GB), 1)
+}
+
+function Show-DiskSpaceCheck {
+    Write-Step "Checking disk space"
+    $freeGb = Get-FreeSpaceGb -Path $InstallRoot
+    if ($null -eq $freeGb) {
+        Write-Host "Disk free space could not be read. Continue only if at least 15-20 GB is available."
+        return
+    }
+    $payloadModelRoot = Join-Path $PSScriptRoot "payload\models\local-gemma"
+    $payloadModelGb = Format-SizeGb -Bytes (Get-DirectorySizeBytes -Path $payloadModelRoot)
+    Write-Host "Free space on the install drive: $freeGb GB"
+    if ($payloadModelGb -gt 0) {
+        Write-Host "Bundled local model payload: about $payloadModelGb GB"
+        Write-Host "Recommended free space for full local setup: 15-20 GB or more."
+        if ($freeGb -lt 15) {
+            Write-Host "WARNING: free space is low. Local model copy or smoke test may fail."
+        }
+    } else {
+        Write-Host "No bundled local model payload detected."
+    }
 }
 
 function Read-Required {
@@ -342,6 +394,10 @@ function Write-DiagnosticsReport {
     $payloadPython = Test-Path (Join-Path $BundledPythonRoot "python.exe")
     $payloadLlama = $false
     $payloadLocalModel = $false
+    $installedLlama = $false
+    $installedLocalModel = $false
+    $localProviderEnabled = $false
+    $localOnlyConfig = $false
     $llamaPayloadRoot = Join-Path $PSScriptRoot "payload\llama.cpp"
     if (Test-Path $llamaPayloadRoot) {
         $payloadLlama = [bool](Get-ChildItem -LiteralPath $llamaPayloadRoot -Filter "llama-server.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1)
@@ -351,6 +407,27 @@ function Write-DiagnosticsReport {
         $payloadModel = Get-ChildItem -LiteralPath $localModelPayloadRoot -Filter "*.gguf" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -notmatch "mmproj" } | Select-Object -First 1
         $payloadMmproj = Get-ChildItem -LiteralPath $localModelPayloadRoot -Filter "*.gguf" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -match "mmproj" } | Select-Object -First 1
         $payloadLocalModel = [bool]($payloadModel -and $payloadMmproj)
+    }
+    if (Test-Path $LlamaRoot) {
+        $installedLlama = [bool](Get-ChildItem -LiteralPath $LlamaRoot -Filter "llama-server.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1)
+    }
+    $installedLocalModelRoot = Join-Path $ModelRoot "local-gemma"
+    if (Test-Path $installedLocalModelRoot) {
+        $installedModel = Get-ChildItem -LiteralPath $installedLocalModelRoot -Filter "*.gguf" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -notmatch "mmproj" } | Select-Object -First 1
+        $installedMmproj = Get-ChildItem -LiteralPath $installedLocalModelRoot -Filter "*.gguf" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -match "mmproj" } | Select-Object -First 1
+        $installedLocalModel = [bool]($installedModel -and $installedMmproj)
+    }
+    if (Test-Path $ConfigPath) {
+        try {
+            $privateConfig = Get-Content -LiteralPath $ConfigPath -Raw | ConvertFrom-Json
+            $providers = @($privateConfig.providers)
+            $localProviderEnabled = [bool](@($providers | Where-Object { $_.kind -eq "local" }).Count)
+            $cloudProviderCount = @($providers | Where-Object { $_.kind -eq "cloud" }).Count
+            $localOnlyConfig = ($localProviderEnabled -and $cloudProviderCount -eq 0)
+        } catch {
+            $localProviderEnabled = $false
+            $localOnlyConfig = $false
+        }
     }
     $pythonCommand = "none"
     if ($python.Count -gt 0) {
@@ -380,6 +457,11 @@ function Write-DiagnosticsReport {
         "bundled_portable_python=$payloadPython",
         "bundled_llama_cpp=$payloadLlama",
         "bundled_local_model=$payloadLocalModel",
+        "installed_llama_cpp=$installedLlama",
+        "installed_local_model=$installedLocalModel",
+        "local_provider_enabled=$localProviderEnabled",
+        "local_only_config=$localOnlyConfig",
+        "install_drive_free_gb=$(Get-FreeSpaceGb -Path $InstallRoot)",
         "private_config_present=$(Test-Path $ConfigPath)",
         "api_key_env_name=$ApiKeyEnv",
         "api_key_env_set=$([bool]([Environment]::GetEnvironmentVariable($ApiKeyEnv, 'User') -or [Environment]::GetEnvironmentVariable($ApiKeyEnv, 'Process')))",
@@ -573,6 +655,8 @@ function Install-LocalModelSelection {
     $target = Join-Path $ModelRoot "local-gemma"
     New-Item -ItemType Directory -Force -Path $target | Out-Null
     $sourceDir = Split-Path -Parent $Selection.ModelPath
+    $sourceSizeGb = Format-SizeGb -Bytes (Get-DirectorySizeBytes -Path $sourceDir)
+    Write-Host "Copying about $sourceSizeGb GB of local model files. Please wait; this can take several minutes."
     Get-ChildItem -LiteralPath $sourceDir -File -ErrorAction SilentlyContinue | ForEach-Object {
         Copy-FileIfChanged -Source $_.FullName -Destination (Join-Path $target $_.Name)
     }
@@ -863,6 +947,7 @@ Write-Host "Release: $ReleaseTag"
 Write-Host "Default mode: dry-run only. No real Codex switch is applied unless -Apply is provided."
 
 Apply-ProviderPreset
+Show-DiskSpaceCheck
 if ($DiagnosticsOnly) {
     Write-DiagnosticsReport
     exit 0
