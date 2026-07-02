@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
 import shutil
 import subprocess
@@ -18,6 +19,8 @@ PYTHON_EMBED_VERSION = "3.12.10"
 PYTHON_EMBED_NAME = f"python-{PYTHON_EMBED_VERSION}-embed-amd64.zip"
 PYTHON_EMBED_URL = f"https://www.python.org/ftp/python/{PYTHON_EMBED_VERSION}/{PYTHON_EMBED_NAME}"
 PYTHON_EMBED_SHA256 = "4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3"
+DEFAULT_MODEL_SOURCE_URL = "https://huggingface.co/llmfan46/gemma-4-E4B-it-ultra-uncensored-heretic-GGUF"
+DEFAULT_MODEL_LICENSE = "Apache-2.0"
 
 EXCLUDED_DIRS = {
     ".git",
@@ -125,6 +128,74 @@ def add_llama_payload(archive: zipfile.ZipFile, llama_dir: Path) -> None:
     add_directory_payload(archive, llama_dir, Path("payload") / "llama.cpp")
 
 
+def model_payload_files(model_dir: Path) -> tuple[Path, Path, list[Path]]:
+    if not model_dir.exists():
+        raise SystemExit(f"model directory does not exist: {model_dir}")
+    ggufs = sorted((path for path in model_dir.glob("*.gguf") if path.is_file()), key=lambda p: p.name.lower())
+    model = next((path for path in ggufs if "mmproj" not in path.name.lower()), None)
+    mmproj = next((path for path in ggufs if "mmproj" in path.name.lower()), None)
+    if model is None:
+        raise SystemExit(f"GGUF model file not found under: {model_dir}")
+    if mmproj is None:
+        raise SystemExit(f"mmproj GGUF file not found under: {model_dir}")
+    extras = [
+        path
+        for path in model_dir.iterdir()
+        if path.is_file()
+        and path not in {model, mmproj}
+        and path.name != ".DS_Store"
+        and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".txt", ".md", ".json", ".license"}
+    ]
+    return model, mmproj, sorted(extras, key=lambda p: p.name.lower())
+
+
+def add_model_payload(
+    archive: zipfile.ZipFile,
+    model_dir: Path,
+    *,
+    source_url: str = DEFAULT_MODEL_SOURCE_URL,
+    license_name: str = DEFAULT_MODEL_LICENSE,
+    payload_name: str = "local-gemma",
+) -> None:
+    model, mmproj, extras = model_payload_files(model_dir)
+    prefix = Path("payload") / "models" / payload_name
+    files = [model, mmproj, *extras]
+    manifest_files = []
+    for file in files:
+        archive.write(file, prefix / file.name, compress_type=zipfile.ZIP_STORED if file.suffix.lower() == ".gguf" else zipfile.ZIP_DEFLATED)
+        manifest_files.append(
+            {
+                "name": file.name,
+                "size": file.stat().st_size,
+                "sha256": sha256(file),
+            }
+        )
+    manifest = {
+        "payload": payload_name,
+        "model_id": "local/gemma",
+        "display_name": "Local Gemma 4 E4B",
+        "source_url": source_url,
+        "license": license_name,
+        "files": manifest_files,
+    }
+    archive.writestr(str(prefix / "MODEL_MANIFEST.json"), json.dumps(manifest, indent=2) + "\n")
+    archive.writestr(
+        str(prefix / "NOTICE.txt"),
+        "\n".join(
+            [
+                "Codex Hybrid Local Model Payload",
+                "",
+                f"Source: {source_url}",
+                f"License: {license_name}",
+                "",
+                "This package includes model files for private netdisk distribution.",
+                "Do not commit these model files to the Git repository.",
+                "",
+            ]
+        ),
+    )
+
+
 def add_python_payload(archive: zipfile.ZipFile, python_dir: Path) -> None:
     if not python_dir.exists():
         raise SystemExit(f"python directory does not exist: {python_dir}")
@@ -175,6 +246,9 @@ def build(
     *,
     thin: bool = False,
     llama_dir: Path | None = None,
+    model_dir: Path | None = None,
+    model_source_url: str = DEFAULT_MODEL_SOURCE_URL,
+    model_license: str = DEFAULT_MODEL_LICENSE,
     python_dir: Path | None = None,
     bundle_python: bool = True,
 ) -> Path:
@@ -203,6 +277,8 @@ def build(
             add_project_payload(archive)
         if llama_dir is not None:
             add_llama_payload(archive, llama_dir)
+        if model_dir is not None:
+            add_model_payload(archive, model_dir, source_url=model_source_url, license_name=model_license)
         if python_dir is None and bundle_python and not thin:
             python_dir = ensure_portable_python()
         if python_dir is not None:
@@ -226,6 +302,21 @@ def main() -> int:
         help="optional llama.cpp runtime directory to bundle under payload/llama.cpp",
     )
     parser.add_argument(
+        "--include-model-dir",
+        type=Path,
+        help="optional local model directory to bundle under payload/models/local-gemma",
+    )
+    parser.add_argument(
+        "--model-source-url",
+        default=DEFAULT_MODEL_SOURCE_URL,
+        help="source URL recorded in MODEL_MANIFEST.json when --include-model-dir is used",
+    )
+    parser.add_argument(
+        "--model-license",
+        default=DEFAULT_MODEL_LICENSE,
+        help="license recorded in MODEL_MANIFEST.json when --include-model-dir is used",
+    )
+    parser.add_argument(
         "--include-python-dir",
         type=Path,
         help="optional portable Python directory to bundle under payload/python",
@@ -240,6 +331,9 @@ def main() -> int:
         args.output,
         thin=args.thin,
         llama_dir=args.include_llama_dir,
+        model_dir=args.include_model_dir,
+        model_source_url=args.model_source_url,
+        model_license=args.model_license,
         python_dir=args.include_python_dir,
         bundle_python=not args.no_python,
     )

@@ -133,7 +133,8 @@ def test_windows_one_click_installer_doc_covers_beginner_setup_boundary():
     text = read("docs/windows-one-click-installer.md")
 
     for marker in (
-        "Codex-Hybrid-Windows-Netdisk-Setup-v2.14.8.zip",
+        "Codex-Hybrid-Windows-Netdisk-Setup-v2.15.0.zip",
+        "Codex-Hybrid-Windows-Full-Local-Setup-v2.15.0.zip",
         "Install Codex Hybrid.cmd",
         "Codex Hybrid Diagnostics.cmd",
         "Restore Official Codex.cmd",
@@ -141,6 +142,7 @@ def test_windows_one_click_installer_doc_covers_beginner_setup_boundary():
         "provider-preset.example.json",
         "payload/codex-hybrid-model-switcher",
         "payload/python",
+        "payload/models/local-gemma",
         "portable Python",
         "does not require CC Switch",
         "https://developers.openai.com/codex/app",
@@ -162,7 +164,8 @@ def test_windows_one_click_installer_doc_covers_beginner_setup_boundary():
     for protected in ("auth.json", "models_cache.json", "state_5.sqlite", "sessions/"):
         assert protected in text
     assert "It does not redistribute Codex Desktop" in text
-    assert "It does not include local model files" in text
+    assert "The base package does not include local model files" in text
+    assert "The full local package may include local model files" in text
 
 
 def test_user_success_criteria_covers_visible_codex_completion():

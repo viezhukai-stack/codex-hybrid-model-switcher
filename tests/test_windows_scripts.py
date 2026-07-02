@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import subprocess
 import sys
 import zipfile
@@ -73,6 +74,14 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "archive/refs/tags/$ReleaseTag.zip" in text
     assert "api.github.com/repos/ggml-org/llama.cpp/releases/latest" in text
     assert "payload\\llama.cpp" in text
+    assert "payload\\models\\local-gemma" in text
+    assert "$ModelRoot = Join-Path $InstallRoot \"models\"" in text
+    assert "Install-LocalModelSelection" in text
+    assert "Bundled local model installed under local app data." in text
+    assert "bundled_local_model" in text
+    assert "--skip-cloud" in text
+    assert "No cloud base_url was provided. Continuing with local-only setup." in text
+    assert "local-gemma" in text
     assert "LlamaServerPath" in text
     assert "Read-Host \"API key\" -AsSecureString" in text
     assert "SetEnvironmentVariable($Name, $plain, \"User\")" in text
@@ -95,8 +104,8 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "powershell -NoProfile -ExecutionPolicy Bypass" in launcher
     assert "-DiagnosticsOnly" in diagnostics
     assert "windows-restore-official.ps1" in restore
-    assert "v2.14.8" in restore
-    assert "This package does not include model files" in readme
+    assert "v2.15.0" in restore
+    assert "Full local model packages may include payload\\models\\local-gemma" in readme
     assert "does not install CC Switch" in readme
     assert "网盘一键安装包" in readme_zh
     assert "不需要安装 Git" in readme_zh
@@ -126,6 +135,9 @@ def test_windows_package_builder_defaults_to_portable_python_with_no_python_esca
     assert "ensure_portable_python" in text
     assert "bundle_python: bool = True" in text
     assert "--no-python" in text
+    assert "--include-model-dir" in text
+    assert "MODEL_MANIFEST.json" in text
+    assert "Apache-2.0" in text
 
 
 def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
@@ -192,3 +204,40 @@ def test_windows_one_click_package_builder_can_bundle_optional_runtime_dirs(tmp_
         names = set(archive.namelist())
     assert "payload/python/python.exe" in names
     assert "payload/llama.cpp/llama-server.exe" in names
+
+
+def test_windows_one_click_package_builder_can_bundle_local_model_payload(tmp_path):
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    (model_dir / "gemma-Q4_K_M.gguf").write_bytes(b"fake-model")
+    (model_dir / "gemma-mmproj-BF16.gguf").write_bytes(b"fake-mmproj")
+    (model_dir / "test_red_square.png").write_bytes(b"png")
+    output = tmp_path / "setup-with-model.zip"
+
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "build-windows-one-click-package.py"),
+            "--output",
+            str(output),
+            "--no-python",
+            "--include-model-dir",
+            str(model_dir),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+    assert proc.returncode == 0, proc.stderr
+    with zipfile.ZipFile(output) as archive:
+        names = set(archive.namelist())
+        manifest = json.loads(archive.read("payload/models/local-gemma/MODEL_MANIFEST.json").decode("utf-8"))
+    assert "payload/models/local-gemma/gemma-Q4_K_M.gguf" in names
+    assert "payload/models/local-gemma/gemma-mmproj-BF16.gguf" in names
+    assert "payload/models/local-gemma/test_red_square.png" in names
+    assert "payload/models/local-gemma/NOTICE.txt" in names
+    assert manifest["license"] == "Apache-2.0"
+    assert {item["name"] for item in manifest["files"]} >= {"gemma-Q4_K_M.gguf", "gemma-mmproj-BF16.gguf"}

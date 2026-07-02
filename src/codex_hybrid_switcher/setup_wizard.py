@@ -52,9 +52,10 @@ def build_first_run_config(
     *,
     platform: str | None = None,
     codex_home: str | None = None,
+    include_cloud: bool = True,
     provider_id: str = DEFAULT_PROVIDER_ID,
     provider_label: str = DEFAULT_PROVIDER_LABEL,
-    base_url: str,
+    base_url: str | None = None,
     model: str = DEFAULT_MODEL,
     api_key_env: str = DEFAULT_API_KEY_ENV,
     wire_api: str = DEFAULT_WIRE_API,
@@ -77,18 +78,19 @@ def build_first_run_config(
                 "model": "gpt-5.5",
             }
         )
-    providers.append(
-        {
-            "id": provider_id,
-            "label": provider_label,
-            "kind": "cloud",
-            "base_url": base_url,
-            "api_key_env": api_key_env,
-            "model": model,
-            "wire_api": wire_api,
-            "route": cloud_route,
-        }
-    )
+    if include_cloud:
+        providers.append(
+            {
+                "id": provider_id,
+                "label": provider_label,
+                "kind": "cloud",
+                "base_url": base_url or "",
+                "api_key_env": api_key_env,
+                "model": model,
+                "wire_api": wire_api,
+                "route": cloud_route,
+            }
+        )
 
     local_model: dict[str, object] = {
         "id": local_model_id,
@@ -148,7 +150,7 @@ def write_config(path: Path, data: dict, *, force: bool = False) -> int:
     return 0
 
 
-def print_next_steps(path: Path, provider_id: str, *, platform_name: str | None = None) -> None:
+def print_next_steps(path: Path, provider_id: str, *, platform_name: str | None = None, cloud_enabled: bool = True) -> None:
     if platform_name == "windows":
         setup_output = r"%USERPROFILE%\Desktop\codex-hybrid-setup-report.md"
         canary_output = r"%USERPROFILE%\Desktop\codex-hybrid-canary-evidence.md"
@@ -161,7 +163,10 @@ def print_next_steps(path: Path, provider_id: str, *, platform_name: str | None 
         final_check_output = "~/Desktop/codex-hybrid-final-check.md"
     print()
     print("Next safe steps:")
-    print(f"  1. Set the API key in your shell or OS environment for this provider.")
+    if cloud_enabled:
+        print("  1. Set the API key in your shell or OS environment for this provider.")
+    else:
+        print("  1. Local-only config: no cloud API key is required.")
     print(f"  2. Run: codex-hybrid-switcher validate-config --config {path}")
     print(f"  3. For bridge route, run: codex-hybrid-switcher bridge-health --config {path}")
     print(f"  4. Run: codex-hybrid-switcher guarded-switch {provider_id} --dry-run --config {path}")
@@ -206,6 +211,7 @@ def run_setup_wizard(
     api_key_env: str | None = None,
     wire_api: str | None = None,
     cloud_route: str | None = None,
+    include_cloud: bool = True,
     include_local: bool = False,
     llama_server_path: str | None = None,
     model_path: str | None = None,
@@ -222,8 +228,11 @@ def run_setup_wizard(
     chosen_cloud_route = cloud_route or DEFAULT_CLOUD_ROUTE
 
     if non_interactive:
-        if not base_url:
+        if include_cloud and not base_url:
             print("--base-url is required in --non-interactive mode.")
+            return 2
+        if not include_cloud and not include_local:
+            print("--skip-cloud requires --include-local in --non-interactive mode.")
             return 2
         chosen_codex_home = codex_home or default_codex_home(platform_name)
         chosen_model = model or DEFAULT_MODEL
@@ -233,29 +242,36 @@ def run_setup_wizard(
         print("This creates a private config only. It does not switch Codex.")
         print()
         chosen_codex_home = prompt_default("Codex home", codex_home or default_codex_home(platform_name), input_func=input_func)
-        chosen_provider_id = prompt_default("Cloud provider id", chosen_provider_id, input_func=input_func)
-        chosen_provider_label = prompt_default("Cloud provider label", chosen_provider_label, input_func=input_func)
-        base_url = prompt_default("OpenAI-compatible base_url", base_url or "https://YOUR-ENDPOINT.example/v1", input_func=input_func)
-        chosen_model = prompt_default("Model id", model or DEFAULT_MODEL, input_func=input_func)
-        chosen_api_key_env = prompt_default("API key environment variable name", api_key_env or DEFAULT_API_KEY_ENV, input_func=input_func)
-        chosen_cloud_route = prompt_default("Cloud route (bridge or direct)", chosen_cloud_route, input_func=input_func)
+        if include_cloud:
+            chosen_provider_id = prompt_default("Cloud provider id", chosen_provider_id, input_func=input_func)
+            chosen_provider_label = prompt_default("Cloud provider label", chosen_provider_label, input_func=input_func)
+            base_url = prompt_default("OpenAI-compatible base_url", base_url or "https://YOUR-ENDPOINT.example/v1", input_func=input_func)
+            chosen_model = prompt_default("Model id", model or DEFAULT_MODEL, input_func=input_func)
+            chosen_api_key_env = prompt_default("API key environment variable name", api_key_env or DEFAULT_API_KEY_ENV, input_func=input_func)
+            chosen_cloud_route = prompt_default("Cloud route (bridge or direct)", chosen_cloud_route, input_func=input_func)
+        else:
+            chosen_model = model or DEFAULT_MODEL
+            chosen_api_key_env = api_key_env or DEFAULT_API_KEY_ENV
         include_local = prompt_yes_no("Add a local llama.cpp provider now", include_local, input_func=input_func)
         if include_local:
             llama_server_path = prompt_default("llama-server path", llama_server_path or "~/path/to/llama-server", input_func=input_func)
             model_path = prompt_default("GGUF model path", model_path or "~/path/to/model.gguf", input_func=input_func)
             mmproj_path = prompt_default("mmproj path", mmproj_path or "~/path/to/mmproj.gguf", input_func=input_func)
 
-    assert base_url is not None
-    if looks_like_secret(chosen_api_key_env):
+    if include_cloud and base_url is None:
+        print("base_url is required when cloud provider setup is enabled.")
+        return 2
+    if include_cloud and looks_like_secret(chosen_api_key_env):
         print("api_key_env should be an environment variable name, not the API key itself.")
         return 2
-    if chosen_cloud_route not in {"bridge", "direct"}:
+    if include_cloud and chosen_cloud_route not in {"bridge", "direct"}:
         print("cloud route must be either 'bridge' or 'direct'.")
         return 2
 
     data = build_first_run_config(
         platform=platform_name,
         codex_home=chosen_codex_home,
+        include_cloud=include_cloud,
         provider_id=chosen_provider_id,
         provider_label=chosen_provider_label,
         base_url=base_url,
@@ -280,5 +296,6 @@ def run_setup_wizard(
             print(f"  - {error}")
         return 1
     run_validate_config(str(target))
-    print_next_steps(target, chosen_provider_id, platform_name=platform_name)
+    next_provider_id = chosen_provider_id if include_cloud else "local-gemma"
+    print_next_steps(target, next_provider_id, platform_name=platform_name, cloud_enabled=include_cloud)
     return 0

@@ -169,7 +169,8 @@ DOC_REQUIREMENTS = {
         "sessions/",
     ),
     "docs/windows-one-click-installer.md": (
-        "Codex-Hybrid-Windows-Netdisk-Setup-v2.14.8.zip",
+        "Codex-Hybrid-Windows-Netdisk-Setup-v2.15.0.zip",
+        "Codex-Hybrid-Windows-Full-Local-Setup-v2.15.0.zip",
         "Install Codex Hybrid.cmd",
         "Codex Hybrid Diagnostics.cmd",
         "Restore Official Codex.cmd",
@@ -177,6 +178,7 @@ DOC_REQUIREMENTS = {
         "provider-preset.example.json",
         "payload/codex-hybrid-model-switcher",
         "payload/python",
+        "payload/models/local-gemma",
         "portable Python",
         "does not require CC Switch",
         "https://developers.openai.com/codex/app",
