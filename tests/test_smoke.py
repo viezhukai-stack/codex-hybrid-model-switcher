@@ -88,8 +88,9 @@ def test_local_smoke_starts_and_stops_managed_bridge(tmp_path, monkeypatch, caps
     def fake_stop(_proc):
         calls["stopped"] = True
 
-    def fake_smoke(*_args, **_kwargs):
+    def fake_smoke(*_args, **kwargs):
         calls["smoke"] = True
+        calls["request_timeout"] = kwargs["request_timeout"]
         return 0
 
     monkeypatch.setattr(local_smoke, "port_open", fake_port_open)
@@ -102,6 +103,34 @@ def test_local_smoke_starts_and_stops_managed_bridge(tmp_path, monkeypatch, caps
 
     assert code == 0
     assert calls["smoke"] is True
+    assert calls["request_timeout"] == 180
     assert calls["stopped"] is True
     assert "Started bridge" in out
     assert "Local smoke passed." in out
+
+
+def test_local_smoke_passes_request_timeout_to_smoke(tmp_path, monkeypatch):
+    config_path = write_local_config(tmp_path)
+    captured = {}
+
+    class DummyProc:
+        pid = 12345
+
+        def poll(self):
+            return None
+
+    monkeypatch.setattr(local_smoke, "port_open", lambda _host, _port: False)
+    monkeypatch.setattr(local_smoke, "wait_for_bridge", lambda _config: True)
+    monkeypatch.setattr(local_smoke, "start_bridge", lambda _config: DummyProc())
+    monkeypatch.setattr(local_smoke, "stop_bridge", lambda _proc: None)
+
+    def fake_smoke(*_args, **kwargs):
+        captured.update(kwargs)
+        return 0
+
+    monkeypatch.setattr(local_smoke, "run_smoke", fake_smoke)
+
+    code = local_smoke.run_local_smoke(str(config_path), request_timeout=900)
+
+    assert code == 0
+    assert captured["request_timeout"] == 900

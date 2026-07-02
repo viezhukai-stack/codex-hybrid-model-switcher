@@ -6,13 +6,13 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.15.1.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.15.2.zip
 ```
 
 For private netdisk sharing with a bundled local model, build and share:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.15.1.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.15.2.zip
 ```
 
 It contains:
@@ -68,6 +68,8 @@ The full local package also contains:
   `https://github.com/ggml-org/llama.cpp/releases`.
 - Runs `validate-config`, `bridge-health`, optional `local-smoke`, and a guarded
   provider dry-run.
+- Gives local model smoke requests up to 900 seconds in the Windows installer,
+  because CPU-only VMs can need several minutes for the first local response.
 - Can optionally unify Codex history from the `openai` bucket into `custom`
   after creating `state_5.sqlite.bak-codex-hybrid-*` and matching
   `sessions/*.jsonl.bak-codex-hybrid-*` backups, so existing project chats
@@ -99,7 +101,7 @@ The full local package also contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.15.1.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.15.2.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -202,7 +204,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.15.1.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.15.2.zip
 ```
 
 Upload that zip to your netdisk.
@@ -226,7 +228,7 @@ one GGUF model and one mmproj GGUF file, then run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py `
-  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.15.1.zip `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.15.2.zip `
   --include-llama-dir D:\Tools\llama.cpp `
   --include-model-dir D:\Models\gemma-4-e4b
 ```

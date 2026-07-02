@@ -30,6 +30,7 @@ REPO_IGNORE_DIRS = {
     "__pycache__",
     ".mypy_cache",
     ".ruff_cache",
+    ".package-cache",
     "build",
     "dist",
 }

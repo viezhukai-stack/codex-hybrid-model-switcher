@@ -144,6 +144,7 @@ def model_payload_files(model_dir: Path) -> tuple[Path, Path, list[Path]]:
         if path.is_file()
         and path not in {model, mmproj}
         and path.name != ".DS_Store"
+        and path.name not in {"MODEL_MANIFEST.json", "NOTICE.txt"}
         and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".txt", ".md", ".json", ".license"}
     ]
     return model, mmproj, sorted(extras, key=lambda p: p.name.lower())

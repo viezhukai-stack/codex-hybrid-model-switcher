@@ -79,6 +79,9 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "Show-DiskSpaceCheck" in text
     assert "Recommended free space for full local setup: 15-20 GB or more." in text
     assert "Copying about $sourceSizeGb GB of local model files. Please wait" in text
+    assert "LocalSmokeTimeoutSeconds = 900" in text
+    assert "Stop-ManagedBridgeOnPort" in text
+    assert '"--request-timeout", "$LocalSmokeTimeoutSeconds"' in text
     assert "Install-LocalModelSelection" in text
     assert "Bundled local model installed under local app data." in text
     assert "bundled_local_model" in text
@@ -112,7 +115,7 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "powershell -NoProfile -ExecutionPolicy Bypass" in launcher
     assert "-DiagnosticsOnly" in diagnostics
     assert "windows-restore-official.ps1" in restore
-    assert "v2.15.1" in restore
+    assert "v2.15.2" in restore
     assert "Full local model packages may include payload\\models\\local-gemma" in readme
     assert "does not install CC Switch" in readme
     assert "网盘一键安装包" in readme_zh
