@@ -3,26 +3,35 @@
 This canary validates the private netdisk full local model package:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.15.2.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.15.3.zip
 ```
 
 The full local package is intentionally not uploaded to GitHub. It is distributed
 through a private netdisk link and includes the Windows installer, portable
 Python, llama.cpp CPU runtime, a GGUF local model, a mmproj vision model, and a
-red-square test image.
+red-square test image. v2.15.3 full packages should also include the Microsoft
+Visual C++ Redistributable x64 installer under `payload/vcredist/`.
 
 ## Current Status
 
-Status: Pending HL Hyper-V VM canary for v2.15.2.
+Status: Pending HL Hyper-V VM canary for v2.15.3.
 
-The v2.15.1 HL VM attempt found two real setup gaps before final UI apply:
+The v2.15.1 and v2.15.2 HL VM attempts found real setup gaps before final UI
+apply:
 
 - A stale managed bridge from an earlier cloud canary could occupy `127.0.0.1:19030`.
 - The CPU-only local text smoke could exceed the old 180-second request timeout
   on a low-performance Hyper-V VM.
+- A clean Windows VM could lack Microsoft Visual C++ Runtime DLLs required by
+  the bundled llama.cpp CPU build, causing `llama-server.exe --version` to exit
+  before local smoke.
+- Local-only fallback after smoke failure tried to create a config with neither
+  cloud nor local provider.
 
-v2.15.2 addresses these by stopping previous managed Codex Hybrid bridge
-processes before local smoke and using a 900-second installer smoke timeout.
+v2.15.3 addresses these by stopping previous managed Codex Hybrid bridge
+processes before local smoke, using a 900-second installer smoke timeout,
+checking `llama-server.exe` before local smoke, installing bundled VC++ Runtime
+when available, and reporting local-only smoke failure directly.
 
 ## Preconditions
 

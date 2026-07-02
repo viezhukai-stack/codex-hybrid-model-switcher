@@ -5,6 +5,19 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.15.3
+
+- Added optional bundled Microsoft Visual C++ Redistributable support for the
+  Windows full-local package so clean machines can run bundled llama.cpp CPU
+  builds before local smoke.
+- Added a Windows installer llama-server runtime check before local smoke. If
+  the runtime fails because VC++ Runtime DLLs are missing, the installer tries
+  the bundled redistributable and reruns the check.
+- Fixed local-only failure handling so a failed local smoke reports the local
+  failure directly instead of attempting an invalid cloudless/providerless
+  config rewrite.
+- Added package-builder support for `payload/vcredist/vc_redist.x64.exe`.
+
 ## v2.15.2
 
 - Increased the Windows full-local installer smoke-test request timeout to 900

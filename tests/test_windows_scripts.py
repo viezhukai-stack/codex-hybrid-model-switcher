@@ -74,6 +74,7 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "archive/refs/tags/$ReleaseTag.zip" in text
     assert "api.github.com/repos/ggml-org/llama.cpp/releases/latest" in text
     assert "payload\\llama.cpp" in text
+    assert "payload\\vcredist\\vc_redist.x64.exe" in text
     assert "payload\\models\\local-gemma" in text
     assert "$ModelRoot = Join-Path $InstallRoot \"models\"" in text
     assert "Show-DiskSpaceCheck" in text
@@ -81,6 +82,10 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "Copying about $sourceSizeGb GB of local model files. Please wait" in text
     assert "LocalSmokeTimeoutSeconds = 900" in text
     assert "Stop-ManagedBridgeOnPort" in text
+    assert "Ensure-LlamaRuntimeRunnable" in text
+    assert "Install-BundledVCRedist" in text
+    assert "Microsoft Visual C++ Runtime" in text
+    assert "llama-server runtime check passed" in text
     assert '"--request-timeout", "$LocalSmokeTimeoutSeconds"' in text
     assert "Install-LocalModelSelection" in text
     assert "Bundled local model installed under local app data." in text
@@ -115,7 +120,7 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "powershell -NoProfile -ExecutionPolicy Bypass" in launcher
     assert "-DiagnosticsOnly" in diagnostics
     assert "windows-restore-official.ps1" in restore
-    assert "v2.15.2" in restore
+    assert "v2.15.3" in restore
     assert "Full local model packages may include payload\\models\\local-gemma" in readme
     assert "does not install CC Switch" in readme
     assert "网盘一键安装包" in readme_zh
@@ -186,10 +191,12 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
 def test_windows_one_click_package_builder_can_bundle_optional_runtime_dirs(tmp_path):
     python_dir = tmp_path / "python-portable"
     llama_dir = tmp_path / "llama"
+    vcredist = tmp_path / "vc_redist.x64.exe"
     python_dir.mkdir()
     llama_dir.mkdir()
     (python_dir / "python.exe").write_text("placeholder", encoding="utf-8")
     (llama_dir / "llama-server.exe").write_text("placeholder", encoding="utf-8")
+    vcredist.write_text("placeholder", encoding="utf-8")
     output = tmp_path / "setup-with-runtimes.zip"
 
     proc = subprocess.run(
@@ -202,6 +209,8 @@ def test_windows_one_click_package_builder_can_bundle_optional_runtime_dirs(tmp_
             str(python_dir),
             "--include-llama-dir",
             str(llama_dir),
+            "--include-vcredist-file",
+            str(vcredist),
         ],
         cwd=ROOT,
         text=True,
@@ -215,6 +224,7 @@ def test_windows_one_click_package_builder_can_bundle_optional_runtime_dirs(tmp_
         names = set(archive.namelist())
     assert "payload/python/python.exe" in names
     assert "payload/llama.cpp/llama-server.exe" in names
+    assert "payload/vcredist/vc_redist.x64.exe" in names
 
 
 def test_windows_one_click_package_builder_can_bundle_local_model_payload(tmp_path):

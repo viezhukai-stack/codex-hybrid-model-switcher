@@ -128,6 +128,12 @@ def add_llama_payload(archive: zipfile.ZipFile, llama_dir: Path) -> None:
     add_directory_payload(archive, llama_dir, Path("payload") / "llama.cpp")
 
 
+def add_vcredist_payload(archive: zipfile.ZipFile, vcredist_file: Path) -> None:
+    if not vcredist_file.exists() or not vcredist_file.is_file():
+        raise SystemExit(f"Visual C++ Redistributable file does not exist: {vcredist_file}")
+    archive.write(vcredist_file, Path("payload") / "vcredist" / "vc_redist.x64.exe")
+
+
 def model_payload_files(model_dir: Path) -> tuple[Path, Path, list[Path]]:
     if not model_dir.exists():
         raise SystemExit(f"model directory does not exist: {model_dir}")
@@ -251,6 +257,7 @@ def build(
     model_source_url: str = DEFAULT_MODEL_SOURCE_URL,
     model_license: str = DEFAULT_MODEL_LICENSE,
     python_dir: Path | None = None,
+    vcredist_file: Path | None = None,
     bundle_python: bool = True,
 ) -> Path:
     version = project_version()
@@ -278,6 +285,8 @@ def build(
             add_project_payload(archive)
         if llama_dir is not None:
             add_llama_payload(archive, llama_dir)
+        if vcredist_file is not None:
+            add_vcredist_payload(archive, vcredist_file)
         if model_dir is not None:
             add_model_payload(archive, model_dir, source_url=model_source_url, license_name=model_license)
         if python_dir is None and bundle_python and not thin:
@@ -323,6 +332,11 @@ def main() -> int:
         help="optional portable Python directory to bundle under payload/python",
     )
     parser.add_argument(
+        "--include-vcredist-file",
+        type=Path,
+        help="optional Microsoft Visual C++ Redistributable x64 installer to bundle under payload/vcredist",
+    )
+    parser.add_argument(
         "--no-python",
         action="store_true",
         help="do not bundle portable Python; the installer will use system Python or winget instead",
@@ -336,6 +350,7 @@ def main() -> int:
         model_source_url=args.model_source_url,
         model_license=args.model_license,
         python_dir=args.include_python_dir,
+        vcredist_file=args.include_vcredist_file,
         bundle_python=not args.no_python,
     )
     return 0
