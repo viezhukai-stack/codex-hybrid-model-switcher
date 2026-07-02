@@ -6,7 +6,13 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.14.8.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.15.0.zip
+```
+
+For private netdisk sharing with a bundled local model, build and share:
+
+```text
+Codex-Hybrid-Windows-Full-Local-Setup-v2.15.0.zip
 ```
 
 It contains:
@@ -20,6 +26,12 @@ It contains:
 - `provider-preset.example.json`
 - `payload/codex-hybrid-model-switcher/`
 - `payload/python/`
+
+The full local package also contains:
+
+- `payload/llama.cpp/`
+- `payload/models/local-gemma/`
+- `payload/models/local-gemma/MODEL_MANIFEST.json`
 
 ## What It Does
 
@@ -40,13 +52,18 @@ It contains:
   `%USERPROFILE%\.codex-hybrid-model-switcher\config.json`.
 - Prefills provider settings from `provider-preset.json` when that file exists
   next to the installer.
-- Stores the provider API key only in a Windows User environment variable.
-- Lets the user choose local GGUF and mmproj files.
+- Stores the provider API key only in a Windows User environment variable when
+  a cloud provider is configured.
+- Automatically uses bundled local GGUF and mmproj files from
+  `payload/models/local-gemma` when present, after copying them into
+  `%LOCALAPPDATA%\CodexHybridModelSwitcher\models\local-gemma`.
+- Lets the user choose local GGUF and mmproj files when the package does not
+  include a local model payload.
 - Uses bundled llama.cpp when `payload/llama.cpp` contains `llama-server.exe`;
   otherwise downloads official llama.cpp Windows release assets from
   `https://github.com/ggml-org/llama.cpp/releases`.
 - Runs `validate-config`, `bridge-health`, optional `local-smoke`, and a guarded
-  cloud dry-run.
+  provider dry-run.
 - Can optionally unify Codex history from the `openai` bucket into `custom`
   after creating `state_5.sqlite.bak-codex-hybrid-*` and matching
   `sessions/*.jsonl.bak-codex-hybrid-*` backups, so existing project chats
@@ -59,7 +76,9 @@ It contains:
 ## What It Does Not Do
 
 - It does not redistribute Codex Desktop.
-- It does not include local model files.
+- The base package does not include local model files.
+- The full local package may include local model files for private netdisk
+  distribution. Those files are not committed to GitHub.
 - It does not require CC Switch. The package includes this project's own
   guarded external switcher.
 - It does not require Git or a GitHub project download when the netdisk payload
@@ -76,24 +95,29 @@ It contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.14.8.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.15.0.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
 4. If Codex is missing, install Codex from the official page, sign in, fully
    close Codex, then run the installer again.
 5. If `provider-preset.json` exists, provider fields are prefilled.
-6. Enter the OpenAI-compatible provider `base_url`, cloud model id, environment
-   variable name, and API key when prompted.
-7. Choose local GGUF and mmproj files if you want local model support.
-8. Choose whether to enable history unification. Enable it if you want existing
+6. If this is the full local package and no cloud `base_url` is provided, the
+   installer continues in local-only mode without an API key.
+7. If you want cloud model support, enter the OpenAI-compatible provider
+   `base_url`, cloud model id, environment variable name, and API key when
+   prompted.
+8. Choose local GGUF and mmproj files only when the package does not already
+   include `payload/models/local-gemma`.
+9. Choose whether to enable history unification. Enable it if you want existing
    official project chats to remain visible after switching to the custom
    provider bucket.
-9. Review the dry-run output.
-10. Only after dry-run looks correct and Codex Desktop is fully closed, type
-   `APPLY` when prompted if you want to perform the real guarded cloud switch.
-11. Use the desktop `Codex Model Switcher.cmd` for later model switches.
-12. Use the desktop `Restore Official Codex.cmd` if you need to return to the
+10. Review the dry-run output.
+11. Only after dry-run looks correct and Codex Desktop is fully closed, type
+   `APPLY` when prompted if you want to perform the real guarded provider
+   switch.
+12. Use the desktop `Codex Model Switcher.cmd` for later model switches.
+13. Use the desktop `Restore Official Codex.cmd` if you need to return to the
     official provider.
 
 ## Command-Line Examples
@@ -125,6 +149,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-CodexHybrid.ps1 `
   -ApiKeyEnv OPENAI_COMPATIBLE_API_KEY `
   -ModelPath D:\Models\model.gguf `
   -MmprojPath D:\Models\mmproj.gguf
+```
+
+Local-only dry-run with bundled or selected local model files:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-CodexHybrid.ps1 `
+  -SkipCloud
 ```
 
 Real apply is explicit:
@@ -167,7 +198,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.14.8.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.15.0.zip
 ```
 
 Upload that zip to your netdisk.
@@ -184,6 +215,21 @@ If you want to bundle a prepared llama.cpp runtime, run:
 ```powershell
 py scripts\build-windows-one-click-package.py --include-llama-dir D:\Tools\llama.cpp
 ```
+
+If you want to build the private full local model package for netdisk sharing,
+prepare a Windows llama.cpp runtime directory and a local model directory with
+one GGUF model and one mmproj GGUF file, then run:
+
+```powershell
+py scripts\build-windows-one-click-package.py `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.15.0.zip `
+  --include-llama-dir D:\Tools\llama.cpp `
+  --include-model-dir D:\Models\gemma-4-e4b
+```
+
+The model payload is written under `payload/models/local-gemma` and includes a
+generated `MODEL_MANIFEST.json` with file sizes, SHA256 hashes, source URL, and
+license.
 
 The default build bundles official Windows embeddable Python 3.12.10. To build
 the smaller package without portable Python, run:

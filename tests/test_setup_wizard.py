@@ -28,6 +28,22 @@ def test_build_first_run_config_defaults_to_cloud_without_local_provider():
     assert data["local_model"]["model_path"] == "~/path/to/model.gguf"
 
 
+def test_build_first_run_config_can_skip_cloud_for_local_only():
+    data = build_first_run_config(
+        include_cloud=False,
+        include_local=True,
+        llama_server_path="C:/llama/llama-server.exe",
+        model_path="C:/models/gemma.gguf",
+        mmproj_path="C:/models/mmproj.gguf",
+    )
+
+    provider_ids = [provider["id"] for provider in data["providers"]]
+
+    assert provider_ids == ["openai-official", "local-gemma"]
+    assert data["providers"][1]["kind"] == "local"
+    assert data["local_model"]["llama_server_path"] == "C:/llama/llama-server.exe"
+
+
 def test_setup_non_interactive_generates_private_config_only(tmp_path, capsys):
     output = tmp_path / "private" / "config.json"
     codex_home = tmp_path / "codex-home"
@@ -82,6 +98,40 @@ def test_setup_next_steps_are_platform_specific_for_windows(tmp_path, capsys):
 
 def test_setup_non_interactive_requires_base_url(tmp_path):
     assert run_setup_wizard(output=str(tmp_path / "config.json"), non_interactive=True) == 2
+
+
+def test_setup_non_interactive_allows_local_only_without_base_url(tmp_path, capsys):
+    output = tmp_path / "config.json"
+
+    code = run_setup_wizard(
+        output=str(output),
+        include_cloud=False,
+        include_local=True,
+        llama_server_path=str(tmp_path / "llama-server.exe"),
+        model_path=str(tmp_path / "model.gguf"),
+        mmproj_path=str(tmp_path / "mmproj.gguf"),
+        non_interactive=True,
+    )
+    out = capsys.readouterr().out
+    config = load_config(str(output))
+
+    assert code == 0
+    assert config.provider("local-gemma")["kind"] == "local"
+    assert "Local-only config: no cloud API key is required." in out
+    assert "guarded-switch local-gemma --dry-run" in out
+
+
+def test_setup_non_interactive_refuses_empty_local_only(tmp_path, capsys):
+    code = run_setup_wizard(
+        output=str(tmp_path / "config.json"),
+        include_cloud=False,
+        include_local=False,
+        non_interactive=True,
+    )
+    out = capsys.readouterr().out
+
+    assert code == 2
+    assert "--skip-cloud requires --include-local" in out
 
 
 def test_setup_refuses_api_key_literal_in_env_field(tmp_path, capsys):

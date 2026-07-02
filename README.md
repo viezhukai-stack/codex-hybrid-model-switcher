@@ -99,7 +99,7 @@ cache, rewrite old conversations, or install always-on recovery services.
 ### Windows one-click setup
 
 For a beginner Windows computer, download
-`Codex-Hybrid-Windows-Netdisk-Setup-v2.14.8.zip`, extract it, and double-click
+`Codex-Hybrid-Windows-Netdisk-Setup-v2.15.0.zip`, extract it, and double-click
 `Install Codex Hybrid.cmd`. This is the package to share through a netdisk or
 other file-transfer link.
 
@@ -109,8 +109,14 @@ project download, prefill provider settings from `provider-preset.json`,
 download official llama.cpp release assets when local model files are selected,
 install a desktop restore-to-official launcher, and stop at guarded dry-run
 before asking for an explicit `APPLY` confirmation. It does not redistribute
-Codex Desktop, install CC Switch, include model files, or apply a real switch
+Codex Desktop, install CC Switch, or apply a real switch
 without explicit confirmation.
+
+For private netdisk sharing, the repository can also build a full local model
+package named `Codex-Hybrid-Windows-Full-Local-Setup-v2.15.0.zip`. That package
+can include `payload/models/local-gemma` so a beginner can use the bundled
+local Gemma model without a cloud API key. The large model files are never
+committed to GitHub.
 If the user enables history unification, the installer backs up
 `state_5.sqlite` and matching `sessions/*.jsonl` files before moving existing
 `openai` project chats into the `custom` bucket and active model so they remain

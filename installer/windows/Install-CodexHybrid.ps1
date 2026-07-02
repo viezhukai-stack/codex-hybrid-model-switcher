@@ -1,5 +1,5 @@
 param(
-    [string]$ReleaseTag = "v2.14.8",
+    [string]$ReleaseTag = "v2.15.0",
     [string]$ProjectRepo = "viezhukai-stack/codex-hybrid-model-switcher",
     [string]$BundledProjectPath,
     [string]$ProviderPresetPath,
@@ -18,6 +18,7 @@ param(
     [switch]$Apply,
     [switch]$NonInteractive,
     [switch]$SkipCodexCheck,
+    [switch]$SkipCloud,
     [switch]$SkipLocal,
     [switch]$SkipLocalSmoke,
     [switch]$SkipLlamaDownload,
@@ -39,6 +40,7 @@ $BundledProjectDefault = Join-Path $PSScriptRoot "payload\codex-hybrid-model-swi
 $BundledPythonRoot = Join-Path $PSScriptRoot "payload\python"
 $InstalledPythonRoot = Join-Path $InstallRoot "python"
 $LlamaRoot = Join-Path $InstallRoot "llama.cpp"
+$ModelRoot = Join-Path $InstallRoot "models"
 
 function Write-Step {
     param([string]$Message)
@@ -339,9 +341,16 @@ function Write-DiagnosticsReport {
     $payloadProject = Test-Path (Join-Path $BundledProjectDefault "bootstrap.py")
     $payloadPython = Test-Path (Join-Path $BundledPythonRoot "python.exe")
     $payloadLlama = $false
+    $payloadLocalModel = $false
     $llamaPayloadRoot = Join-Path $PSScriptRoot "payload\llama.cpp"
     if (Test-Path $llamaPayloadRoot) {
         $payloadLlama = [bool](Get-ChildItem -LiteralPath $llamaPayloadRoot -Filter "llama-server.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1)
+    }
+    $localModelPayloadRoot = Join-Path $PSScriptRoot "payload\models\local-gemma"
+    if (Test-Path $localModelPayloadRoot) {
+        $payloadModel = Get-ChildItem -LiteralPath $localModelPayloadRoot -Filter "*.gguf" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -notmatch "mmproj" } | Select-Object -First 1
+        $payloadMmproj = Get-ChildItem -LiteralPath $localModelPayloadRoot -Filter "*.gguf" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -match "mmproj" } | Select-Object -First 1
+        $payloadLocalModel = [bool]($payloadModel -and $payloadMmproj)
     }
     $pythonCommand = "none"
     if ($python.Count -gt 0) {
@@ -370,6 +379,7 @@ function Write-DiagnosticsReport {
         "bundled_project_payload=$payloadProject",
         "bundled_portable_python=$payloadPython",
         "bundled_llama_cpp=$payloadLlama",
+        "bundled_local_model=$payloadLocalModel",
         "private_config_present=$(Test-Path $ConfigPath)",
         "api_key_env_name=$ApiKeyEnv",
         "api_key_env_set=$([bool]([Environment]::GetEnvironmentVariable($ApiKeyEnv, 'User') -or [Environment]::GetEnvironmentVariable($ApiKeyEnv, 'Process')))",
@@ -473,6 +483,34 @@ function Select-FileOrNull {
     return $null
 }
 
+function Get-BundledLocalModelSelection {
+    $root = Join-Path $PSScriptRoot "payload\models\local-gemma"
+    if (-not (Test-Path $root)) {
+        return $null
+    }
+    $model = Get-ChildItem -LiteralPath $root -Filter "*.gguf" -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch "mmproj" } |
+        Sort-Object Length -Descending |
+        Select-Object -First 1
+    $mmproj = Get-ChildItem -LiteralPath $root -Filter "*.gguf" -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match "mmproj" } |
+        Sort-Object Length -Descending |
+        Select-Object -First 1
+    if (-not $model -or -not $mmproj) {
+        return $null
+    }
+    Write-Host "Using bundled local model files from payload\models\local-gemma."
+    $manifest = Join-Path $root "MODEL_MANIFEST.json"
+    if (Test-Path $manifest) {
+        Write-Host "Local model manifest found."
+    }
+    return @{
+        ModelPath = $model.FullName
+        MmprojPath = $mmproj.FullName
+        Source = "bundled"
+    }
+}
+
 function Resolve-LocalModelSelection {
     if ($SkipLocal) {
         return $null
@@ -480,6 +518,12 @@ function Resolve-LocalModelSelection {
     Write-Step "Checking optional local model files"
     $chosenModel = $ModelPath
     $chosenMmproj = $MmprojPath
+    if (-not $chosenModel -and -not $chosenMmproj) {
+        $bundled = Get-BundledLocalModelSelection
+        if ($bundled) {
+            return $bundled
+        }
+    }
     if (-not $chosenModel) {
         $chosenModel = Select-FileOrNull -Title "Choose local GGUF model file" -Filter "GGUF model (*.gguf)|*.gguf|All files (*.*)|*.*"
     }
@@ -501,6 +545,44 @@ function Resolve-LocalModelSelection {
     return @{
         ModelPath = (Resolve-Path $chosenModel).Path
         MmprojPath = (Resolve-Path $chosenMmproj).Path
+        Source = "selected"
+    }
+}
+
+function Copy-FileIfChanged {
+    param([string]$Source, [string]$Destination)
+    $sourceItem = Get-Item -LiteralPath $Source
+    if (Test-Path $Destination) {
+        $destinationItem = Get-Item -LiteralPath $Destination
+        if ($destinationItem.Length -eq $sourceItem.Length) {
+            return
+        }
+    }
+    Copy-Item -LiteralPath $Source -Destination $Destination -Force
+}
+
+function Install-LocalModelSelection {
+    param($Selection)
+    if (-not $Selection) {
+        return $null
+    }
+    if (-not $Selection.ContainsKey("Source") -or $Selection.Source -ne "bundled") {
+        return $Selection
+    }
+    Write-Step "Installing bundled local model files"
+    $target = Join-Path $ModelRoot "local-gemma"
+    New-Item -ItemType Directory -Force -Path $target | Out-Null
+    $sourceDir = Split-Path -Parent $Selection.ModelPath
+    Get-ChildItem -LiteralPath $sourceDir -File -ErrorAction SilentlyContinue | ForEach-Object {
+        Copy-FileIfChanged -Source $_.FullName -Destination (Join-Path $target $_.Name)
+    }
+    $modelTarget = Join-Path $target (Split-Path -Leaf $Selection.ModelPath)
+    $mmprojTarget = Join-Path $target (Split-Path -Leaf $Selection.MmprojPath)
+    Write-Host "Bundled local model installed under local app data."
+    return @{
+        ModelPath = $modelTarget
+        MmprojPath = $mmprojTarget
+        Source = "installed-bundled"
     }
 }
 
@@ -657,22 +739,28 @@ function Invoke-Switcher {
 }
 
 function Write-Config {
-    param([bool]$IncludeLocal, [string]$LlamaServerPath, [string]$LocalModelPath, [string]$LocalMmprojPath)
+    param([bool]$IncludeCloud, [bool]$IncludeLocal, [string]$LlamaServerPath, [string]$LocalModelPath, [string]$LocalMmprojPath)
     $args = @(
         "setup",
         "--output", $ConfigPath,
         "--platform", "windows",
         "--codex-home", "$env:USERPROFILE\.codex",
-        "--provider-id", $ProviderId,
-        "--provider-label", $ProviderLabel,
-        "--base-url", $BaseUrl,
-        "--model", $Model,
-        "--api-key-env", $ApiKeyEnv,
-        "--wire-api", "responses",
-        "--cloud-route", "bridge",
         "--non-interactive",
         "--force"
     )
+    if ($IncludeCloud) {
+        $args += @(
+            "--provider-id", $ProviderId,
+            "--provider-label", $ProviderLabel,
+            "--base-url", $BaseUrl,
+            "--model", $Model,
+            "--api-key-env", $ApiKeyEnv,
+            "--wire-api", "responses",
+            "--cloud-route", "bridge"
+        )
+    } else {
+        $args += "--skip-cloud"
+    }
     if ($IncludeLocal) {
         $args += @(
             "--include-local",
@@ -684,9 +772,24 @@ function Write-Config {
     Invoke-Switcher -ArgsList $args
 }
 
+function Invoke-ProviderSwitchScript {
+    param([switch]$ApplySwitch)
+    $scriptArgs = @("-ProviderId", $script:SwitchProviderId, "-Config", $ConfigPath)
+    if ($script:SwitchProviderId -eq "local-gemma") {
+        $scriptArgs += "-AllowLocal"
+        if ($script:LocalSmokePassed -or $SkipLocalSmoke) {
+            $scriptArgs += "-SkipLocalSmoke"
+        }
+    }
+    if ($ApplySwitch) {
+        $scriptArgs += "-Apply"
+    }
+    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ProjectPath "scripts\windows-provider-switch.ps1") @scriptArgs
+}
+
 function Invoke-GuardedApply {
-    Write-Step "Applying guarded cloud switch"
-    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ProjectPath "scripts\windows-provider-switch.ps1") -ProviderId $ProviderId -Config $ConfigPath -Apply
+    Write-Step "Applying guarded provider switch"
+    Invoke-ProviderSwitchScript -ApplySwitch
     if ($LASTEXITCODE -ne 0) {
         Fail "Guarded apply failed."
     }
@@ -716,7 +819,7 @@ function Resolve-HistoryUnify {
     }
     Write-Host ""
     Write-Host "Codex Desktop shows project chats by provider bucket."
-    Write-Host "To keep existing official project chats visible after switching to custom, this installer can migrate openai history rows to custom/$Model."
+    Write-Host "To keep existing official project chats visible after switching to custom, this installer can migrate openai history rows to custom/$script:SwitchModel."
     Write-Host "A state_5.sqlite backup is created first. Press Enter to skip."
     $confirm = Read-Host "Type MIGRATE to enable history unification"
     return ($confirm -ceq "MIGRATE")
@@ -724,12 +827,12 @@ function Resolve-HistoryUnify {
 
 function Invoke-HistoryUnifyDryRun {
     Write-Step "Running history unification dry-run"
-    Invoke-Switcher -ArgsList @("unify-history", "--config", $ConfigPath, "--from-provider", "openai", "--to-provider", "custom", "--to-model", $Model, "--dry-run")
+    Invoke-Switcher -ArgsList @("unify-history", "--config", $ConfigPath, "--from-provider", "openai", "--to-provider", "custom", "--to-model", $script:SwitchModel, "--dry-run")
 }
 
 function Invoke-HistoryUnifyApply {
     Write-Step "Applying history unification"
-    Invoke-Switcher -ArgsList @("unify-history", "--config", $ConfigPath, "--from-provider", "openai", "--to-provider", "custom", "--to-model", $Model, "--apply")
+    Invoke-Switcher -ArgsList @("unify-history", "--config", $ConfigPath, "--from-provider", "openai", "--to-provider", "custom", "--to-model", $script:SwitchModel, "--apply")
 }
 
 function Prompt-ApplyAfterDryRun {
@@ -770,19 +873,11 @@ $script:Python = Ensure-Python
 $ProjectPath = Ensure-ProjectRelease
 Configure-PortablePythonPath -PythonCommand $script:Python -ProjectRoot $ProjectPath
 
-$BaseUrl = Read-Required -Prompt "OpenAI-compatible base_url" -Default $BaseUrl
-$modelDefault = "provider-gpt-main"
-if ($Model) {
-    $modelDefault = $Model
-}
-$Model = Read-Required -Prompt "Cloud model id" -Default $modelDefault
-$ApiKeyEnv = Read-Required -Prompt "API key environment variable name" -Default $ApiKeyEnv
-Ensure-ApiKeyEnvironment -Name $ApiKeyEnv
-
 $localSelection = Resolve-LocalModelSelection
 $includeLocal = $false
 $llamaServer = $null
 if ($localSelection) {
+    $localSelection = Install-LocalModelSelection -Selection $localSelection
     $llamaServer = Ensure-LlamaRuntime
     if ($llamaServer) {
         $includeLocal = $true
@@ -791,12 +886,47 @@ if ($localSelection) {
     }
 }
 
+$includeCloud = $false
+if ($SkipCloud) {
+    Write-Host "Cloud provider setup skipped by option."
+} elseif ($BaseUrl) {
+    $includeCloud = $true
+} elseif (-not $includeLocal) {
+    $includeCloud = $true
+} else {
+    Write-Host "No cloud base_url was provided. Continuing with local-only setup."
+    Write-Host "You can rerun later with -BaseUrl, -Model, and -ApiKeyEnv to add a cloud provider."
+}
+
+if ($includeCloud) {
+    $BaseUrl = Read-Required -Prompt "OpenAI-compatible base_url" -Default $BaseUrl
+    $modelDefault = "provider-gpt-main"
+    if ($Model) {
+        $modelDefault = $Model
+    }
+    $Model = Read-Required -Prompt "Cloud model id" -Default $modelDefault
+    $ApiKeyEnv = Read-Required -Prompt "API key environment variable name" -Default $ApiKeyEnv
+    Ensure-ApiKeyEnvironment -Name $ApiKeyEnv
+}
+
+if (-not $includeCloud -and -not $includeLocal) {
+    Fail "No usable provider was configured. Provide cloud settings or bundled/selected local model files."
+}
+
+$script:SwitchProviderId = $ProviderId
+$script:SwitchModel = $Model
+if (-not $includeCloud -and $includeLocal) {
+    $script:SwitchProviderId = "local-gemma"
+    $script:SwitchModel = "local/gemma"
+}
+$script:LocalSmokePassed = $false
+
 Write-Step "Creating private config"
 Backup-PrivateConfig
 if ($includeLocal) {
-    Write-Config -IncludeLocal $true -LlamaServerPath $llamaServer -LocalModelPath $localSelection.ModelPath -LocalMmprojPath $localSelection.MmprojPath
+    Write-Config -IncludeCloud $includeCloud -IncludeLocal $true -LlamaServerPath $llamaServer -LocalModelPath $localSelection.ModelPath -LocalMmprojPath $localSelection.MmprojPath
 } else {
-    Write-Config -IncludeLocal $false -LlamaServerPath "" -LocalModelPath "" -LocalMmprojPath ""
+    Write-Config -IncludeCloud $includeCloud -IncludeLocal $false -LlamaServerPath "" -LocalModelPath "" -LocalMmprojPath ""
 }
 
 Write-Step "Validating private config"
@@ -828,15 +958,20 @@ if ($includeLocal -and -not $SkipLocalSmoke) {
     $smokeCode = Invoke-Switcher -ArgsList @("local-smoke", "--config", $ConfigPath) -AllowFailure
     if ($smokeCode -ne 0) {
         Write-Host "Local smoke failed. Rewriting config without the local provider."
-        Write-Config -IncludeLocal $false -LlamaServerPath "" -LocalModelPath "" -LocalMmprojPath ""
+        Write-Config -IncludeCloud $includeCloud -IncludeLocal $false -LlamaServerPath "" -LocalModelPath "" -LocalMmprojPath ""
         $includeLocal = $false
+        if (-not $includeCloud) {
+            Fail "Local-only setup cannot continue because local smoke failed."
+        }
+    } else {
+        $script:LocalSmokePassed = $true
     }
 }
 
-Write-Step "Running guarded cloud dry-run"
-& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ProjectPath "scripts\windows-provider-switch.ps1") -ProviderId $ProviderId -Config $ConfigPath
+Write-Step "Running guarded provider dry-run"
+Invoke-ProviderSwitchScript
 if ($LASTEXITCODE -ne 0) {
-    Fail "Cloud guarded dry-run failed."
+    Fail "Guarded provider dry-run failed."
 }
 
 if ($Apply) {

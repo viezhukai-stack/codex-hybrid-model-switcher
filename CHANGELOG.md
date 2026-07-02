@@ -5,6 +5,17 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.15.0
+
+- Added a private netdisk full local package path that can bundle
+  `payload/models/local-gemma` with a GGUF model, mmproj file, test image,
+  generated `MODEL_MANIFEST.json`, and license/source notice.
+- Added local-only first-run setup so a beginner Windows package can configure
+  and switch to `local-gemma` without requiring a cloud base URL or API key.
+- Updated the Windows installer to auto-detect bundled local model files, run
+  local smoke before enabling the local provider, and run guarded provider
+  dry-run/apply against either cloud or local providers.
+
 ## v2.14.8
 
 - Fixed Windows beginner history unification to migrate matching

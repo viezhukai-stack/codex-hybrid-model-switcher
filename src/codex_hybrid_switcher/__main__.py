@@ -78,6 +78,7 @@ def main(argv: list[str] | None = None) -> int:
     setup.add_argument("--api-key-env")
     setup.add_argument("--wire-api")
     setup.add_argument("--cloud-route", choices=["bridge", "direct"])
+    setup.add_argument("--skip-cloud", action="store_true")
     setup.add_argument("--include-local", action="store_true")
     setup.add_argument("--llama-server-path")
     setup.add_argument("--model-path")
@@ -181,6 +182,7 @@ def main(argv: list[str] | None = None) -> int:
             api_key_env=args.api_key_env,
             wire_api=args.wire_api,
             cloud_route=args.cloud_route,
+            include_cloud=not args.skip_cloud,
             include_local=args.include_local,
             llama_server_path=args.llama_server_path,
             model_path=args.model_path,
