@@ -5,6 +5,13 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.15.5
+
+- Added a Windows managed bridge start fallback for restricted job/remoting
+  environments: if `CREATE_BREAKAWAY_FROM_JOB` returns access denied, the
+  switcher retries without that flag, then retries once more without detached
+  flags.
+
 ## v2.15.4
 
 - Fixed Windows PowerShell 5 handling for the bundled `llama-server.exe

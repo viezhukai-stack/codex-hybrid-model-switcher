@@ -448,3 +448,39 @@ def test_start_bridge_uses_detached_windows_flags_and_log(tmp_path, monkeypatch)
     assert calls["popen"]["cmd"][:3] == [switcher.sys.executable, "-m", "codex_hybrid_switcher"]
     assert (runtime / "bridge.pid").read_text(encoding="utf-8") == "12345"
     assert (runtime / "bridge.log").exists()
+
+
+def test_start_bridge_retries_without_breakaway_flag_on_windows_permission_error(tmp_path, monkeypatch):
+    config_path, _codex_home = write_config(tmp_path)
+    config = load_config(str(config_path))
+    runtime = tmp_path / "runtime"
+    calls = {"flags": [], "port_checks": 0}
+
+    class FakeProcess:
+        pid = 12345
+
+        def poll(self):
+            return None
+
+    def fake_port_open(_host, _port):
+        calls["port_checks"] += 1
+        return calls["port_checks"] > 1
+
+    def fake_popen(_cmd, **kwargs):
+        calls["flags"].append(kwargs["creationflags"])
+        if len(calls["flags"]) == 1:
+            raise PermissionError("breakaway denied")
+        return FakeProcess()
+
+    monkeypatch.setattr(switcher.sys, "platform", "win32")
+    monkeypatch.setattr(switcher, "runtime_dir", lambda _config: runtime)
+    monkeypatch.setattr(switcher, "port_open", fake_port_open)
+    monkeypatch.setattr(switcher.subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200, raising=False)
+    monkeypatch.setattr(switcher.subprocess, "DETACHED_PROCESS", 0x00000008, raising=False)
+    monkeypatch.setattr(switcher.subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0x01000000, raising=False)
+    monkeypatch.setattr(switcher.subprocess, "Popen", fake_popen)
+
+    switcher.start_bridge(config)
+
+    assert calls["flags"] == [0x01000208, 0x00000208]
+    assert (runtime / "bridge.pid").read_text(encoding="utf-8") == "12345"
