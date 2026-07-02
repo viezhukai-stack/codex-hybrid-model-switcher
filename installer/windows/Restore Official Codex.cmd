@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 set "PAYLOAD_RESTORE=%~dp0payload\codex-hybrid-model-switcher\scripts\windows-restore-official.ps1"
-set "INSTALLED_ROOT=%LOCALAPPDATA%\CodexHybridModelSwitcher\releases\v2.15.0\project"
+set "INSTALLED_ROOT=%LOCALAPPDATA%\CodexHybridModelSwitcher\releases\v2.15.1\project"
 set "INSTALLED_RESTORE=%INSTALLED_ROOT%\scripts\windows-restore-official.ps1"
 
 if exist "%INSTALLED_RESTORE%" (
