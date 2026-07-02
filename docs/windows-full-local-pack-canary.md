@@ -3,18 +3,18 @@
 This canary validates the private netdisk full local model package:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.15.3.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.15.5.zip
 ```
 
 The full local package is intentionally not uploaded to GitHub. It is distributed
 through a private netdisk link and includes the Windows installer, portable
-Python, llama.cpp CPU runtime, a GGUF local model, a mmproj vision model, and a
-red-square test image. v2.15.3 full packages should also include the Microsoft
-Visual C++ Redistributable x64 installer under `payload/vcredist/`.
+Python, llama.cpp CPU runtime, a GGUF local model, a mmproj vision model, a
+red-square test image, and the Microsoft Visual C++ Redistributable x64
+installer under `payload/vcredist/`.
 
 ## Current Status
 
-Status: Pending HL Hyper-V VM canary for v2.15.3.
+Status: Passed on the HL Hyper-V VM with `v2.15.5`.
 
 The v2.15.1 and v2.15.2 HL VM attempts found real setup gaps before final UI
 apply:
@@ -28,10 +28,42 @@ apply:
 - Local-only fallback after smoke failure tried to create a config with neither
   cloud nor local provider.
 
-v2.15.3 addresses these by stopping previous managed Codex Hybrid bridge
+v2.15.5 addresses these by stopping previous managed Codex Hybrid bridge
 processes before local smoke, using a 900-second installer smoke timeout,
 checking `llama-server.exe` before local smoke, installing bundled VC++ Runtime
-when available, and reporting local-only smoke failure directly.
+when available, reporting local-only smoke failure directly, and retrying
+managed bridge startup without `CREATE_BREAKAWAY_FROM_JOB` when Windows
+restricted-job execution denies that flag.
+
+## HL Hyper-V VM Result
+
+Package:
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.15.5.zip`
+
+SHA256:
+`aaa9626bac44fb08320d12f850b335a804a525b6d7918833744e97e28f3e9c33`
+
+Result:
+
+- The VM used the full local package without entering a cloud API key.
+- The installer detected the bundled local model payload.
+- The installer copied the local model into local app data.
+- The installer used bundled portable Python.
+- The installer used bundled llama.cpp CPU runtime.
+- The installer verified or installed the bundled Microsoft VC++ Runtime.
+- Local text smoke returned `OK`.
+- Local image smoke returned `Red`.
+- Guarded dry-run planned only the local provider/model switch.
+- Real `APPLY` backed up `config.toml` and switched Codex to `local-gemma`.
+- `auth.json`, `models_cache.json`, and `state_5.sqlite` remained unchanged.
+- The managed bridge stayed available on `127.0.0.1:19030`.
+- A direct post-apply bridge request returned `OK`.
+- In Codex Desktop, account information remained visible.
+- In Codex Desktop, plugins remained visible.
+- In Codex Desktop, project conversations remained visible.
+- A new Codex Desktop test message returned normally.
+
+Verdict: Passed.
 
 ## Preconditions
 
