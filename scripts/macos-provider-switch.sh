@@ -6,6 +6,7 @@ config="${HOME}/.codex-hybrid-model-switcher/config.json"
 apply=false
 allow_local=false
 skip_local_smoke=false
+env_file="${CODEX_HYBRID_ENV_FILE:-${HOME}/.codex-hybrid-model-switcher/env.sh}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -38,6 +39,11 @@ done
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 python_bin="${PYTHON:-python3}"
+
+if [[ -f "${env_file}" ]]; then
+  # shellcheck disable=SC1090
+  source "${env_file}"
+fi
 
 invoke_switcher() {
   PYTHONPATH="${repo_dir}/src" "${python_bin}" -m codex_hybrid_switcher "$@"

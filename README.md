@@ -47,6 +47,9 @@ Start here:
 - If you only have stock Codex Desktop: [`START_HERE.md`](START_HERE.md)
 - Windows one-click beginner setup: [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md)
 - Windows full local package canary: [`docs/windows-full-local-pack-canary.md`](docs/windows-full-local-pack-canary.md)
+- macOS one-click beginner setup: [`docs/macos-one-click-installer.md`](docs/macos-one-click-installer.md)
+- macOS full local package: [`docs/macos-full-local-pack.md`](docs/macos-full-local-pack.md)
+- macOS full local package canary: [`docs/macos-full-local-pack-canary.md`](docs/macos-full-local-pack-canary.md)
 - Final self-check after setup: [`FINAL_CHECK.md`](FINAL_CHECK.md)
 - Hand this repo to Codex: [`docs/agent-assisted-setup.md`](docs/agent-assisted-setup.md)
 - Zero-install bootstrap: [`docs/bootstrap.md`](docs/bootstrap.md)
@@ -126,6 +129,38 @@ If the user enables history unification, the installer backs up
 visible after switching.
 
 See [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md).
+
+### macOS one-click setup
+
+For a beginner Mac cloud setup, download
+`Codex-Hybrid-macOS-Netdisk-Setup-v2.16.0.zip`, extract it, and double-click
+`Install Codex Hybrid.command`.
+
+The macOS installer uses the bundled project payload, can prefill provider
+settings from `provider-preset.json`, stores the provider API key only in the
+user's private `~/.codex-hybrid-model-switcher/env.sh` file, installs a Desktop
+model switcher, and stops at guarded dry-run before asking for explicit
+`APPLY`. It does not include Codex Desktop, CC Switch, llama.cpp, local GGUF
+models, or API keys.
+
+See [`docs/macos-one-click-installer.md`](docs/macos-one-click-installer.md).
+
+For private netdisk sharing, the repository can also build a full local model
+package named `Codex-Hybrid-macOS-Full-Local-Setup-v2.17.3.zip`. That package
+can include both macOS x64 and arm64 llama.cpp runtimes plus
+`payload/models/local-gemma`, so a beginner can use the bundled local Gemma
+model without a cloud API key. The large model files are never committed to
+GitHub.
+If the user enables history unification, the installer backs up
+`state_5.sqlite` and matching `sessions/*.jsonl` files before moving existing
+`openai` project chats into the `custom` bucket and active model so they remain
+visible after switching. Python 3.10+ is required; macOS packages do not bundle
+Python by default, but the builder can include a tested runtime under
+`payload/python`.
+
+See [`docs/macos-full-local-pack.md`](docs/macos-full-local-pack.md).
+The v2.17.3 full-local package has a real Mac UI canary recorded in
+[`docs/macos-full-local-pack-canary.md`](docs/macos-full-local-pack-canary.md).
 
 If you want Codex itself to configure this project for you, open this repository
 in Codex and start with [`START_HERE.md`](START_HERE.md). The root `AGENTS.md`
