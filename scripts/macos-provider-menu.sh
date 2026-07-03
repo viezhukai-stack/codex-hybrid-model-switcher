@@ -2,6 +2,7 @@
 set -euo pipefail
 
 config="${HOME}/.codex-hybrid-model-switcher/config.json"
+env_file="${CODEX_HYBRID_ENV_FILE:-${HOME}/.codex-hybrid-model-switcher/env.sh}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -19,6 +20,11 @@ done
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 python_bin="${PYTHON:-python3}"
 switch_script="${repo_dir}/scripts/macos-provider-switch.sh"
+
+if [[ -f "${env_file}" ]]; then
+  # shellcheck disable=SC1090
+  source "${env_file}"
+fi
 
 if [[ ! -f "${config}" ]]; then
   echo "Private config not found: ${config}" >&2

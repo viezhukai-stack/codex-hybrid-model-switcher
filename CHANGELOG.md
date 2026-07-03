@@ -5,6 +5,57 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.17.3
+
+- Fixed macOS full-local canaries when a previous Codex Hybrid bridge is already
+  listening on `127.0.0.1:19030`. The installer now stops only managed
+  `codex_hybrid_switcher bridge` processes before local smoke, and refuses to do
+  so while Codex Desktop is still running.
+- Recorded the 2026-07-04 real Mac UI canary for the full-local package:
+  account, plugin entry, project conversations, and a responding test chat were
+  confirmed after package use and main-profile restore.
+
+## v2.17.2
+
+- Updated the macOS installer to automatically open Codex Desktop after a
+  successful guarded `APPLY`, reducing beginner confusion after provider switch.
+
+## v2.17.1
+
+- Added optional macOS installer history unification so users can dry-run and,
+  after explicit `MIGRATE` plus guarded `APPLY`, back up and migrate existing
+  `openai` history metadata into the `custom` bucket for project conversation
+  visibility.
+- Improved macOS Python handling with clearer Python 3.10+ beginner guidance,
+  official macOS download fallback, diagnostics fields, and optional
+  `payload/python` packaging support for a future tested portable runtime.
+- Updated macOS one-click and full-local documentation to distinguish normal
+  config-only switching from explicit, backup-first history unification.
+
+## v2.17.0
+
+- Added a macOS full-local private netdisk package path that bundles Gemma 4
+  E4B GGUF, mmproj, test image, generated model manifest, source notice, and
+  both macOS x64 and arm64 llama.cpp runtimes.
+- Extended the macOS installer to detect bundled local payloads, copy the model
+  to user app support, select the matching `llama-server` by Mac architecture,
+  run local text and vision smoke, and configure `local-gemma` without requiring
+  a cloud API key.
+- Added full-local package documentation and package-builder options while
+  keeping the real Codex switch guarded by dry-run, Codex-quit, and explicit
+  `APPLY`.
+
+## v2.16.0
+
+- Added a lightweight macOS netdisk one-click package path with double-click
+  install, diagnostics, and restore entries.
+- Added macOS installer support for bundled project payloads, provider presets,
+  private `env.sh` API-key storage with permission `600`, guarded dry-run, and
+  Desktop switcher launcher installation.
+- Added `scripts/build-macos-one-click-package.py` and macOS beginner
+  documentation. The macOS package is cloud-only; local GGUF/llama.cpp bundling
+  remains a later package line.
+
 ## v2.15.5
 
 - Added a Windows managed bridge start fallback for restricted job/remoting
