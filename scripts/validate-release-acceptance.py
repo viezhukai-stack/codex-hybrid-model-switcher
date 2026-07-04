@@ -169,8 +169,8 @@ DOC_REQUIREMENTS = {
         "sessions/",
     ),
     "docs/windows-one-click-installer.md": (
-        "Codex-Hybrid-Windows-Netdisk-Setup-v2.15.5.zip",
-        "Codex-Hybrid-Windows-Full-Local-Setup-v2.15.5.zip",
+        "Codex-Hybrid-Windows-Netdisk-Setup-v2.17.4.zip",
+        "Codex-Hybrid-Windows-Full-Local-Setup-v2.17.4.zip",
         "Install Codex Hybrid.cmd",
         "Codex Hybrid Diagnostics.cmd",
         "Restore Official Codex.cmd",

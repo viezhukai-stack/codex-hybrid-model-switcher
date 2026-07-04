@@ -16,6 +16,11 @@ installer under `payload/vcredist/`.
 
 Status: Passed on the HL Hyper-V VM with `v2.15.5`.
 
+Current private netdisk distribution uses
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.17.4.zip`. v2.17.4 keeps the same
+full-local runtime path and cleans the netdisk payload by excluding repository
+development files.
+
 The v2.15.1 and v2.15.2 HL VM attempts found real setup gaps before final UI
 apply:
 

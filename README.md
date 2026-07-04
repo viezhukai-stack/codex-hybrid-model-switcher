@@ -101,12 +101,13 @@ cache, rewrite old conversations, or install always-on recovery services.
 
 ## Quick Start
 
-### Windows one-click setup
+### Windows full local one-click setup
 
-For a beginner Windows computer, download
-`Codex-Hybrid-Windows-Netdisk-Setup-v2.15.5.zip`, extract it, and double-click
-`Install Codex Hybrid.cmd`. This is the package to share through a netdisk or
-other file-transfer link.
+For a beginner Windows computer, share
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.17.4.zip`, extract the entire zip,
+and double-click `Install Codex Hybrid.cmd`. This is the recommended netdisk
+package because it includes the local model path and does not require a cloud
+API key.
 
 The installer can open the official Codex app page when Codex is missing,
 use bundled portable Python, use the bundled project payload without GitHub
@@ -117,12 +118,10 @@ before asking for an explicit `APPLY` confirmation. It does not redistribute
 Codex Desktop, install CC Switch, or apply a real switch
 without explicit confirmation.
 
-For private netdisk sharing, the repository can also build a full local model
-package named `Codex-Hybrid-Windows-Full-Local-Setup-v2.15.5.zip`. That package
-can include `payload/models/local-gemma`, `payload/llama.cpp`, and
-`payload/vcredist/vc_redist.x64.exe` so a beginner can use the bundled local
-Gemma model without a cloud API key. The large model files are never committed
-to GitHub.
+The full local package can include `payload/models/local-gemma`,
+`payload/llama.cpp`, and `payload/vcredist/vc_redist.x64.exe` so a beginner can
+use the bundled local Gemma model without a cloud API key. The large model files
+are never committed to GitHub.
 If the user enables history unification, the installer backs up
 `state_5.sqlite` and matching `sessions/*.jsonl` files before moving existing
 `openai` project chats into the `custom` bucket and active model so they remain
@@ -130,24 +129,12 @@ visible after switching.
 
 See [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md).
 
-### macOS one-click setup
+### macOS full local one-click setup
 
-For a beginner Mac cloud setup, download
-`Codex-Hybrid-macOS-Netdisk-Setup-v2.16.0.zip`, extract it, and double-click
-`Install Codex Hybrid.command`.
-
-The macOS installer uses the bundled project payload, can prefill provider
-settings from `provider-preset.json`, stores the provider API key only in the
-user's private `~/.codex-hybrid-model-switcher/env.sh` file, installs a Desktop
-model switcher, and stops at guarded dry-run before asking for explicit
-`APPLY`. It does not include Codex Desktop, CC Switch, llama.cpp, local GGUF
-models, or API keys.
-
-See [`docs/macos-one-click-installer.md`](docs/macos-one-click-installer.md).
-
-For private netdisk sharing, the repository can also build a full local model
-package named `Codex-Hybrid-macOS-Full-Local-Setup-v2.17.3.zip`. That package
-can include both macOS x64 and arm64 llama.cpp runtimes plus
+For a beginner Mac computer, share
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.17.4.zip`, extract the entire zip, and
+double-click `Install Codex Hybrid.command`. This is the recommended netdisk
+package because it includes both macOS x64 and arm64 llama.cpp runtimes plus
 `payload/models/local-gemma`, so a beginner can use the bundled local Gemma
 model without a cloud API key. The large model files are never committed to
 GitHub.
