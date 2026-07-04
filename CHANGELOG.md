@@ -5,6 +5,16 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.17.4
+
+- Cleaned the netdisk package payload so beginner full-local zips no longer
+  include repository development files such as `.github`, `docs`, `tests`, or
+  `scripts/validate-*`.
+- Updated the current private netdisk package line to Windows and macOS
+  `v2.17.4` full-local artifacts and refreshed beginner distribution notes.
+- This release does not change the local model runtime path; it is a packaging
+  and distribution cleanup on top of the already-canary-tested full-local flow.
+
 ## v2.17.3
 
 - Fixed macOS full-local canaries when a previous Codex Hybrid bridge is already

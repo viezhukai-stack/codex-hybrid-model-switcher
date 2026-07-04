@@ -122,7 +122,7 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "powershell -NoProfile -ExecutionPolicy Bypass" in launcher
     assert "-DiagnosticsOnly" in diagnostics
     assert "windows-restore-official.ps1" in restore
-    assert "v2.15.5" in restore
+    assert "v2.17.4" in restore
     assert "Full local model packages may include payload\\models\\local-gemma" in readme
     assert "does not install CC Switch" in readme
     assert "网盘一键安装包" in readme_zh
@@ -188,6 +188,10 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     assert not any(name.startswith(".git/") for name in names)
     assert not any(name.startswith(".venv/") for name in names)
     assert not any(name.startswith("dist/") for name in names)
+    assert not any(name.startswith("payload/codex-hybrid-model-switcher/.github/") for name in names)
+    assert not any(name.startswith("payload/codex-hybrid-model-switcher/docs/") for name in names)
+    assert not any(name.startswith("payload/codex-hybrid-model-switcher/tests/") for name in names)
+    assert not any(name.startswith("payload/codex-hybrid-model-switcher/scripts/validate-") for name in names)
 
 
 def test_windows_one_click_package_builder_can_bundle_optional_runtime_dirs(tmp_path):

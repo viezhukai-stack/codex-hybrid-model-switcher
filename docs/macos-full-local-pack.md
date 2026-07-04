@@ -1,6 +1,6 @@
 # macOS Full Local Model Package
 
-`Codex-Hybrid-macOS-Full-Local-Setup-v2.17.3.zip` is the private netdisk
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.17.4.zip` is the private netdisk
 package for Mac users who should be able to use a bundled local model without a
 cloud API key.
 
@@ -38,7 +38,7 @@ python3 scripts/build-macos-one-click-package.py --full-local
 ```
 
 The package is written to
-`dist/Codex-Hybrid-macOS-Full-Local-Setup-v2.17.3.zip`.
+`dist/Codex-Hybrid-macOS-Full-Local-Setup-v2.17.4.zip`.
 
 The build script uses the cached model directory by default:
 

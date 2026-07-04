@@ -23,13 +23,16 @@ DEFAULT_MODEL_SOURCE_URL = "https://huggingface.co/llmfan46/gemma-4-E4B-it-ultra
 DEFAULT_MODEL_LICENSE = "Apache-2.0"
 
 EXCLUDED_DIRS = {
+    ".github",
     ".git",
     ".mypy_cache",
     ".pytest_cache",
     ".ruff_cache",
     ".venv",
     "__pycache__",
+    "docs",
     "dist",
+    "tests",
 }
 EXCLUDED_SUFFIXES = {
     ".pyc",
@@ -47,6 +50,8 @@ def project_version() -> str:
 
 def should_include(path: Path) -> bool:
     if any(part in EXCLUDED_DIRS for part in path.parts):
+        return False
+    if path.parts[:1] == ("scripts",) and path.name.startswith("validate-"):
         return False
     if path.suffix in EXCLUDED_SUFFIXES:
         return False

@@ -19,6 +19,11 @@ sha256: 27120d176555b542a0c046c937f3667c2e36cad763f881a1ef7e17b474964625
 
 Passed.
 
+Current private netdisk distribution uses
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.17.4.zip`. v2.17.4 keeps the same
+full-local runtime path and cleans the netdisk payload by excluding repository
+development files.
+
 The operator completed a real UI test of the macOS full-local package and
 confirmed:
 

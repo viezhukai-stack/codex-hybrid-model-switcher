@@ -177,6 +177,10 @@ def test_macos_one_click_package_builder_creates_expected_zip(tmp_path):
     assert not any(name.startswith(".venv/") for name in names)
     assert not any(name.startswith("dist/") for name in names)
     assert not any(name.startswith(".package-cache/") for name in names)
+    assert not any(name.startswith("payload/codex-hybrid-model-switcher/.github/") for name in names)
+    assert not any(name.startswith("payload/codex-hybrid-model-switcher/docs/") for name in names)
+    assert not any(name.startswith("payload/codex-hybrid-model-switcher/tests/") for name in names)
+    assert not any(name.startswith("payload/codex-hybrid-model-switcher/scripts/validate-") for name in names)
 
 
 def test_macos_package_builder_can_bundle_full_local_payload(tmp_path):

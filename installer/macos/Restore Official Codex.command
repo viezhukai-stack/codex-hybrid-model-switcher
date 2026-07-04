@@ -3,7 +3,7 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 payload_restore="${script_dir}/payload/codex-hybrid-model-switcher/scripts/macos-restore-official.sh"
-installed_restore="${HOME}/Library/Application Support/CodexHybridModelSwitcher/releases/v2.17.3/project/scripts/macos-restore-official.sh"
+installed_restore="${HOME}/Library/Application Support/CodexHybridModelSwitcher/releases/v2.17.4/project/scripts/macos-restore-official.sh"
 
 if [[ -f "${installed_restore}" ]]; then
   bash "${installed_restore}" "$@"

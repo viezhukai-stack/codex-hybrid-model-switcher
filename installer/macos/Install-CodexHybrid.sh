@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-release_tag="v2.17.3"
+release_tag="v2.17.4"
 provider_id="cloud-gpt-main"
 provider_label="Cloud GPT Main"
 base_url=""
