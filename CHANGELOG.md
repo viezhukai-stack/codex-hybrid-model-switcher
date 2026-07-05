@@ -5,6 +5,16 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+- Added a hot-router stream shim for `gemini-pro-agent` / `Gemini 3.1 Pro
+  (High)` so malformed upstream streams that stop after
+  `response.created` / `response.in_progress` can be retried upstream as
+  non-streaming and returned to Codex as a complete Responses SSE stream.
+- Added structured llama.cpp local-model tuning keys for low-VRAM multimodal
+  machines, including `gpu_layers`, `batch_size`, `ubatch_size`,
+  `threads_batch`, `flash_attn`, `op_offload`, `mmproj_offload`, `fit`,
+  `cache_ram`, and `ctx_checkpoints`, while keeping `extra_args` available for
+  advanced flags.
+
 ## v2.17.5
 
 - Added a Windows 2.0 hot-router runtime and desktop launcher so the normal

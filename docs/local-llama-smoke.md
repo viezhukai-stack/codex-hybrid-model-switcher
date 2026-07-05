@@ -93,3 +93,47 @@ Stop immediately if:
 Do not switch Codex Desktop to the local provider until this smoke test passes.
 After it passes, use `guarded-switch <local-provider-id> --allow-local` or the
 Windows workflow in `docs/windows-user-flow.md`.
+
+## Low-VRAM Multimodal Tuning
+
+Some Windows machines can load a Q4 local model but fail when llama.cpp also
+loads the multimodal projector. Common symptoms include:
+
+- Vulkan `ErrorOutOfDeviceMemory`
+- `failed to load multimodal model`
+- `failed to allocate compute buffers`
+- `GGML_ASSERT` during startup
+
+Keep the cloud setup intact and tune only the private `local_model` block. The
+bridge supports both `extra_args` and structured llama.cpp keys. A conservative
+starting point for older 8 GB GPUs or tight shared memory is:
+
+```json
+{
+  "local_model": {
+    "context_window": 8192,
+    "ctx_size": 512,
+    "gpu_layers": 0,
+    "parallel_slots": 1,
+    "threads": 6,
+    "threads_batch": 6,
+    "batch_size": 128,
+    "ubatch_size": 64,
+    "flash_attn": "auto",
+    "fit": "on",
+    "op_offload": false,
+    "mmproj_offload": false
+  }
+}
+```
+
+Use this as a smoke-test profile, not a universal default. It preserves the
+`mmproj_path` so image input remains available, but it favors startup stability
+over long context and speed. If text-only startup succeeds but multimodal
+startup fails, test with `--no-mmproj` only as a diagnostic; do not remove the
+configured `mmproj_path` unless the user accepts losing vision capability.
+
+If a machine still cannot start with the conservative profile, treat that as a
+hardware/runtime fit issue. Leave the cloud hot-router mode working and try a
+smaller GGUF, a different llama.cpp build, or a machine with more available
+RAM/VRAM.

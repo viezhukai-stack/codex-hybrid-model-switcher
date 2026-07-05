@@ -8,7 +8,10 @@ from codex_hybrid_switcher.hot_router import (
     local_catalog_entry,
     local_model_ids,
     merge_local_models,
+    responses_sse_body,
     should_route_local,
+    should_shim_cloud_responses_stream,
+    stream_shim_payload,
 )
 
 
@@ -82,3 +85,43 @@ def test_catalog_data_shape_gets_openai_compatible_local_model(tmp_path):
     assert added == 1
     assert shape == "data"
     assert {"id": "local/gemma", "object": "model", "owned_by": "local"} in data["data"]
+
+
+def test_gemini_high_uses_default_cloud_stream_shim():
+    provider = {"id": "cloud-main", "kind": "cloud", "base_url": "https://example.test/v1"}
+
+    assert should_shim_cloud_responses_stream(provider, "gemini-pro-agent", "/v1/responses", True)
+    assert not should_shim_cloud_responses_stream(provider, "gemini-3.1-pro-preview", "/v1/responses", True)
+    assert not should_shim_cloud_responses_stream(provider, "gemini-pro-agent", "/v1/responses", False)
+
+
+def test_cloud_stream_shim_can_be_disabled_per_provider():
+    provider = {
+        "id": "cloud-main",
+        "kind": "cloud",
+        "base_url": "https://example.test/v1",
+        "response_stream_shim_models": [],
+    }
+
+    assert not should_shim_cloud_responses_stream(provider, "gemini-pro-agent", "/v1/responses", True)
+
+
+def test_stream_shim_payload_forces_non_streaming_upstream_request():
+    raw = json.dumps({"model": "gemini-pro-agent", "input": "hi", "stream": True}).encode("utf-8")
+
+    data = json.loads(stream_shim_payload(raw).decode("utf-8"))
+
+    assert data["model"] == "gemini-pro-agent"
+    assert data["stream"] is False
+
+
+def test_responses_sse_body_has_codex_completion_events():
+    body = responses_sse_body("gemini-pro-agent", "ok").decode("utf-8")
+
+    assert "event: response.created" in body
+    assert "event: response.in_progress" in body
+    assert "event: response.output_text.delta" in body
+    assert "event: response.completed" in body
+    assert "data: [DONE]" in body
+    assert '"model": "gemini-pro-agent"' in body
+    assert '"delta": "ok"' in body

@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from pathlib import Path
+from types import SimpleNamespace
+
 from codex_hybrid_switcher.bridge import (
     bridge_model_ids,
     chat_parts_from_content,
     clean_local_text,
     image_url_from_part,
+    local_llama_command,
+    optional_llama_args,
     responses_input_to_messages,
 )
 from codex_hybrid_switcher.config import AppConfig
@@ -111,3 +116,50 @@ def test_bridge_models_do_not_advertise_official_fallback_for_multiple_bridge_cl
     )
 
     assert bridge_model_ids(config) == ["provider-a", "provider-b"]
+
+
+def test_optional_llama_args_support_low_vram_multimodal_tuning():
+    args = optional_llama_args(
+        {
+            "gpu_layers": 0,
+            "parallel_slots": 1,
+            "threads": 6,
+            "threads_batch": 6,
+            "batch_size": 128,
+            "ubatch_size": 64,
+            "flash_attn": "auto",
+            "fit": "on",
+            "op_offload": False,
+            "mmproj_offload": False,
+        }
+    )
+
+    assert "-ngl" in args
+    assert args[args.index("-ngl") + 1] == "0"
+    assert "--batch-size" in args
+    assert args[args.index("--batch-size") + 1] == "128"
+    assert "--ubatch-size" in args
+    assert args[args.index("--ubatch-size") + 1] == "64"
+    assert "--no-op-offload" in args
+    assert "--no-mmproj-offload" in args
+
+
+def test_local_llama_command_uses_structured_args_before_extra_args():
+    bridge = SimpleNamespace(host="127.0.0.1", llama_port=19031)
+    local = {
+        "ctx_size": 512,
+        "gpu_layers": 0,
+        "batch_size": 128,
+        "ubatch_size": 64,
+        "extra_args": ["--jinja", "--reasoning", "off"],
+    }
+
+    cmd = local_llama_command(local, bridge, Path("llama-server"), Path("model.gguf"), Path("mmproj.gguf"))
+
+    assert cmd[:2] == ["llama-server", "-m"]
+    assert "-c" in cmd
+    assert cmd[cmd.index("-c") + 1] == "512"
+    assert "--mmproj" in cmd
+    assert "--batch-size" in cmd
+    assert "--ubatch-size" in cmd
+    assert cmd[-3:] == ["--jinja", "--reasoning", "off"]
