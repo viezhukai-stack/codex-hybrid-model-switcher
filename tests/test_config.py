@@ -36,6 +36,15 @@ def test_load_config_and_expand_paths(tmp_path, monkeypatch):
     assert config.provider_for_model("local/test")["kind"] == "local"
 
 
+def test_load_config_accepts_utf8_bom(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text('\ufeff{"providers":[{"id":"cloud","kind":"cloud","model":"m","base_url":"https://example.test/v1","api_key_env":"KEY"}]}', encoding="utf-8")
+
+    config = load_config(str(config_path))
+
+    assert config.provider("cloud")["model"] == "m"
+
+
 def test_expand_path_supports_user_and_environment(tmp_path, monkeypatch):
     monkeypatch.setenv("MODEL_ROOT", str(tmp_path / "models"))
 

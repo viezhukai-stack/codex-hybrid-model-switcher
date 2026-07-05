@@ -200,6 +200,21 @@ def start_bridge(config: AppConfig) -> None:
     raise RuntimeError("bridge did not become healthy within 30 seconds")
 
 
+def run_ensure_bridge(config_path: str | None = None) -> int:
+    config = load_config(config_path)
+    bridge = config.bridge
+    if port_open(bridge.host, bridge.port):
+        print(f"Bridge is already listening on {bridge.host}:{bridge.port}.")
+        return 0
+    try:
+        start_bridge(config)
+    except Exception as exc:
+        print(f"Failed to start bridge on {bridge.host}:{bridge.port}: {exc}")
+        return 1
+    print(f"Bridge is listening on {bridge.host}:{bridge.port}.")
+    return 0
+
+
 def stop_bridge(config: AppConfig) -> None:
     pid = read_bridge_pid(config)
     if not pid:

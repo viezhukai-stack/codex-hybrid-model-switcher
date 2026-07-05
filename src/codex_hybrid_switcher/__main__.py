@@ -10,6 +10,8 @@ from .doctor import run_doctor
 from .env_help import run_env_help
 from .final_check import add_final_check_args, run_final_check
 from .history import run_history_status, run_restore_history_backup, run_unify_history
+from .hot_router import run_hot_router
+from .hot_router_mode import run_hot_router_mode
 from .local_smoke import run_local_smoke
 from .private_config import init_config, run_validate_config
 from .real_canary import add_real_canary_template_args, run_real_canary_template
@@ -17,7 +19,7 @@ from .report import run_setup_report
 from .security import run_security_scan
 from .setup_wizard import run_setup_wizard
 from .smoke import run_smoke
-from .switcher import guarded_switch_provider, interactive_menu, switch_provider
+from .switcher import guarded_switch_provider, interactive_menu, run_ensure_bridge, switch_provider
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -30,6 +32,17 @@ def main(argv: list[str] | None = None) -> int:
         return parser
 
     add_config(sub.add_parser("bridge"))
+    ensure_bridge = sub.add_parser("ensure-bridge")
+    ensure_bridge.add_argument("--config", dest="sub_config")
+    hot_router = sub.add_parser("hot-router")
+    hot_router.add_argument("--config", dest="sub_config")
+    hot_router.add_argument("--host", default="127.0.0.1")
+    hot_router.add_argument("--port", type=int, default=19032)
+    hot_router_mode = sub.add_parser("hot-router-mode")
+    hot_router_mode.add_argument("mode_command", choices=["enable", "restore", "status"])
+    hot_router_mode.add_argument("--config", dest="sub_config")
+    hot_router_mode.add_argument("--router-url", default="http://127.0.0.1:19032/v1")
+    hot_router_mode.add_argument("--allow-codex-running", action="store_true")
     bridge_health = sub.add_parser("bridge-health")
     bridge_health.add_argument("--config", dest="sub_config")
     bridge_health.add_argument("--strict", action="store_true")
@@ -121,6 +134,17 @@ def main(argv: list[str] | None = None) -> int:
     config_path = getattr(args, "sub_config", None) or args.config
     if args.command == "bridge":
         return run_bridge(config_path)
+    if args.command == "ensure-bridge":
+        return run_ensure_bridge(config_path)
+    if args.command == "hot-router":
+        return run_hot_router(config_path, host=args.host, port=args.port)
+    if args.command == "hot-router-mode":
+        return run_hot_router_mode(
+            args.mode_command,
+            config_path,
+            router_url=args.router_url,
+            allow_codex_running=args.allow_codex_running,
+        )
     if args.command == "bridge-health":
         return run_bridge_health(config_path, strict=args.strict, timeout=args.timeout)
     if args.command == "local-smoke":

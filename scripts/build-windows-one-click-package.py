@@ -99,6 +99,11 @@ def project_payload_files() -> list[Path]:
         Path("pyproject.toml"),
         Path("src/codex_hybrid_switcher/__init__.py"),
         Path("src/codex_hybrid_switcher/history.py"),
+        Path("src/codex_hybrid_switcher/hot_router.py"),
+        Path("src/codex_hybrid_switcher/hot_router_mode.py"),
+        Path("scripts/windows-hot-router-start.ps1"),
+        Path("scripts/windows-hot-router-mode.ps1"),
+        Path("scripts/Start Codex Hot Router.cmd"),
         Path("scripts/windows-provider-switch.ps1"),
         Path("scripts/windows-restore-official.ps1"),
         Path("scripts/install-windows-launcher.ps1"),
@@ -273,6 +278,7 @@ def build(
         temp_output.unlink()
     files = (
         INSTALLER_ROOT / "Install Codex Hybrid.cmd",
+        INSTALLER_ROOT / "Start Codex Hot Router.cmd",
         INSTALLER_ROOT / "Codex Hybrid Diagnostics.cmd",
         INSTALLER_ROOT / "Restore Official Codex.cmd",
         INSTALLER_ROOT / "Install-CodexHybrid.ps1",

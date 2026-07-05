@@ -92,7 +92,7 @@ class AppConfig:
 
 def load_config(path: str | None = None) -> AppConfig:
     config_path = expand_path(path or os.environ.get("CODEX_HYBRID_CONFIG") or DEFAULT_CONFIG)
-    data = json.loads(config_path.read_text(encoding="utf-8"))
+    data = json.loads(config_path.read_text(encoding="utf-8-sig"))
     if not isinstance(data, dict):
         raise ValueError(f"config must be a JSON object: {config_path}")
     return AppConfig(config_path, data)

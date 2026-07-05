@@ -104,7 +104,7 @@ cache, rewrite old conversations, or install always-on recovery services.
 ### Windows full local one-click setup
 
 For a beginner Windows computer, share
-`Codex-Hybrid-Windows-Full-Local-Setup-v2.17.4.zip`, extract the entire zip,
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.17.5.zip`, extract the entire zip,
 and double-click `Install Codex Hybrid.cmd`. This is the recommended netdisk
 package because it includes the local model path and does not require a cloud
 API key.
@@ -113,15 +113,18 @@ The installer can open the official Codex app page when Codex is missing,
 use bundled portable Python, use the bundled project payload without GitHub
 project download, prefill provider settings from `provider-preset.json`,
 download official llama.cpp release assets when local model files are selected,
-install a desktop restore-to-official launcher, and stop at guarded dry-run
-before asking for an explicit `APPLY` confirmation. It does not redistribute
-Codex Desktop, install CC Switch, or apply a real switch
-without explicit confirmation.
+install desktop launchers for the guarded switcher, official restore, and the
+Windows hot router, and stop at guarded dry-run before asking for an explicit
+`APPLY` confirmation. It does not redistribute Codex Desktop, install CC
+Switch, or apply a real switch without explicit confirmation.
 
 The full local package can include `payload/models/local-gemma`,
 `payload/llama.cpp`, and `payload/vcredist/vc_redist.x64.exe` so a beginner can
 use the bundled local Gemma model without a cloud API key. The large model files
 are never committed to GitHub.
+The default local model id remains the generic `local/gemma`; machine-specific
+model ids such as larger private Gemma variants belong only in that machine's
+private config.
 If the user enables history unification, the installer backs up
 `state_5.sqlite` and matching `sessions/*.jsonl` files before moving existing
 `openai` project chats into the `custom` bucket and active model so they remain

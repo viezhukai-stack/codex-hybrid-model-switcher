@@ -6,18 +6,19 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.17.4.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.17.5.zip
 ```
 
 For private netdisk sharing with a bundled local model, build and share:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.17.4.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.17.5.zip
 ```
 
 It contains:
 
 - `Install Codex Hybrid.cmd`
+- `Start Codex Hot Router.cmd`
 - `Codex Hybrid Diagnostics.cmd`
 - `Restore Official Codex.cmd`
 - `Install-CodexHybrid.ps1`
@@ -79,7 +80,15 @@ The full local package also contains:
   after creating `state_5.sqlite.bak-codex-hybrid-*` and matching
   `sessions/*.jsonl.bak-codex-hybrid-*` backups, so existing project chats
   remain visible after switching.
-- Installs the desktop `Codex Model Switcher.cmd` launcher.
+- Installs the desktop `Start Codex Hot Router.cmd` launcher. This is the
+  recommended daily Windows 2.0 entry: it checks/starts the lightweight bridge
+  on `127.0.0.1:19030`, starts or reuses the hot router on `127.0.0.1:19032`,
+  then opens Codex Desktop.
+- Installs the desktop `Codex Model Switcher.cmd` launcher for guarded
+  maintenance switches and legacy mode.
+- Installs the desktop `Enable Codex Hot Router Mode.cmd` and
+  `Restore Codex 19030 Mode.cmd` helpers for the custom provider `base_url`
+  toggle.
 - Installs the desktop `Restore Official Codex.cmd` launcher.
 - Writes a redacted diagnostics report when `Codex Hybrid Diagnostics.cmd` is
   double-clicked.
@@ -103,10 +112,13 @@ The full local package also contains:
 - It does not apply a real Codex switch by default.
 - It does not install LaunchAgents, KeepAlive jobs, scheduled tasks, or recovery
   loops.
+- It does not hard-code machine-specific local model ids. The package default is
+  the generic `local/gemma`; private machines can override that in their private
+  config.
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.17.4.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.17.5.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -127,8 +139,13 @@ The full local package also contains:
 11. Only after dry-run looks correct and Codex Desktop is fully closed, type
    `APPLY` when prompted if you want to perform the real guarded provider
    switch.
-12. Use the desktop `Codex Model Switcher.cmd` for later model switches.
-13. Use the desktop `Restore Official Codex.cmd` if you need to return to the
+12. For Windows 2.0 hot-router mode, quit Codex, start the router, run
+   `Enable Codex Hot Router Mode.cmd` once, then use `Start Codex Hot Router.cmd`
+   for normal daily launches and Codex's bottom-right model selector for model
+   switching.
+13. Use the desktop `Codex Model Switcher.cmd` only for guarded maintenance
+   switches or the older external-switcher mode.
+14. Use the desktop `Restore Official Codex.cmd` if you need to return to the
     official provider.
 
 ## Command-Line Examples
@@ -209,7 +226,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.17.4.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.17.5.zip
 ```
 
 Upload that zip to your netdisk.
@@ -233,7 +250,7 @@ one GGUF model and one mmproj GGUF file, then run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py `
-  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.17.4.zip `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.17.5.zip `
   --include-llama-dir D:\Tools\llama.cpp `
   --include-vcredist-file D:\Installers\vc_redist.x64.exe `
   --include-model-dir D:\Models\gemma-4-e4b

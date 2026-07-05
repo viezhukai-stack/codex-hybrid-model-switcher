@@ -5,8 +5,12 @@ Use this after both canaries pass:
 - cloud provider canary
 - local llama.cpp smoke
 
-This workflow makes the external switcher the source of truth. Codex Desktop's
-bottom-right model selector is not the source of truth.
+This document covers both Windows modes:
+
+- 2.0 hot-router mode: `Start Codex Hot Router.cmd` is the daily launcher, and
+  Codex Desktop's bottom-right model selector is the source of truth.
+- Maintenance mode: `Codex Model Switcher.cmd` remains available for guarded
+  provider switches and older external-switcher workflows.
 
 ## Boundary
 
@@ -55,8 +59,19 @@ After cloud and local canaries pass, install the guarded launcher:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-windows-launcher.ps1
 ```
 
-This creates `Codex Model Switcher.cmd` on the desktop. The launcher runs
-`scripts\windows-provider-menu.ps1`, not the raw Python `menu` command.
+This creates `Start Codex Hot Router.cmd`, `Codex Model Switcher.cmd`,
+`Enable Codex Hot Router Mode.cmd`, `Restore Codex 19030 Mode.cmd`, and
+`Restore Official Codex.cmd` on the desktop.
+
+`Start Codex Hot Router.cmd` always:
+
+- checks or starts the lightweight bridge on `127.0.0.1:19030`
+- starts or reuses the hot router on `127.0.0.1:19032`
+- opens Codex Desktop after the router is healthy
+- keeps the router in the foreground window instead of installing a service
+
+`Codex Model Switcher.cmd` runs `scripts\windows-provider-menu.ps1`, not the raw
+Python `menu` command.
 
 The launcher always:
 
@@ -66,8 +81,8 @@ The launcher always:
 - delegates the real switch to `scripts\windows-provider-switch.ps1`
 - requires `-AllowLocal` internally for local providers
 
-It does not open Codex automatically. Open Codex manually after a successful
-apply and verify account, plugins, project conversations, and one new test chat.
+The maintenance switcher does not open Codex automatically. The hot-router
+launcher does open Codex automatically after health checks pass.
 
 ## Apply
 

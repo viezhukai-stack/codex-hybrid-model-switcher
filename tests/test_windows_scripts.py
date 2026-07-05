@@ -14,6 +14,11 @@ def test_installed_windows_launcher_uses_guarded_menu_script():
     text = (ROOT / "scripts" / "install-windows-launcher.ps1").read_text(encoding="utf-8")
 
     assert "windows-provider-menu.ps1" in text
+    assert "windows-hot-router-start.ps1" in text
+    assert "windows-hot-router-mode.ps1" in text
+    assert "Start Codex Hot Router.cmd" in text
+    assert "Enable Codex Hot Router Mode.cmd" in text
+    assert "Restore Codex 19030 Mode.cmd" in text
     assert "codex-hybrid-switcher menu" not in text
 
 
@@ -52,6 +57,7 @@ def test_windows_bootstrap_handles_beginner_stock_machine_path():
 
 def test_windows_one_click_installer_has_safe_beginner_boundaries():
     text = (ROOT / "installer" / "windows" / "Install-CodexHybrid.ps1").read_text(encoding="utf-8")
+    hot_router = (ROOT / "installer" / "windows" / "Start Codex Hot Router.cmd").read_text(encoding="utf-8")
     launcher = (ROOT / "installer" / "windows" / "Install Codex Hybrid.cmd").read_text(encoding="utf-8")
     diagnostics = (ROOT / "installer" / "windows" / "Codex Hybrid Diagnostics.cmd").read_text(encoding="utf-8")
     restore = (ROOT / "installer" / "windows" / "Restore Official Codex.cmd").read_text(encoding="utf-8")
@@ -120,9 +126,11 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "Copy-Item -LiteralPath $modelsCache" not in text
     assert "Copy-Item -LiteralPath $stateDb" not in text
     assert "powershell -NoProfile -ExecutionPolicy Bypass" in launcher
+    assert "windows-hot-router-start.ps1" in hot_router
+    assert "v2.17.5" in hot_router
     assert "-DiagnosticsOnly" in diagnostics
     assert "windows-restore-official.ps1" in restore
-    assert "v2.17.4" in restore
+    assert "v2.17.5" in restore
     assert "Full local model packages may include payload\\models\\local-gemma" in readme
     assert "does not install CC Switch" in readme
     assert "网盘一键安装包" in readme_zh
@@ -156,6 +164,37 @@ def test_windows_package_builder_defaults_to_portable_python_with_no_python_esca
     assert "--include-model-dir" in text
     assert "MODEL_MANIFEST.json" in text
     assert "Apache-2.0" in text
+    assert "Start Codex Hot Router.cmd" in text
+    assert "windows-hot-router-start.ps1" in text
+
+
+def test_windows_hot_router_launcher_checks_bridge_before_router_and_opens_codex():
+    text = (ROOT / "scripts" / "windows-hot-router-start.ps1").read_text(encoding="utf-8")
+    cmd = (ROOT / "scripts" / "Start Codex Hot Router.cmd").read_text(encoding="utf-8")
+
+    assert text.index("ensure-bridge") < text.index('@("hot-router"')
+    assert "127.0.0.1:19030" in text
+    assert "127.0.0.1:$Port" in text
+    assert "OpenAI.Codex_2p2nqsd0c76g0!App" in text
+    assert "Register-ScheduledTask" not in text
+    assert "New-Service" not in text
+    assert "Start-Service" not in text
+    assert "windows-hot-router-start.ps1" in cmd
+
+
+def test_windows_hot_router_mode_launcher_only_delegates_base_url_toggle():
+    text = (ROOT / "scripts" / "windows-hot-router-mode.ps1").read_text(encoding="utf-8")
+    enable = (ROOT / "scripts" / "Enable Codex Hot Router Mode.cmd").read_text(encoding="utf-8")
+    restore = (ROOT / "scripts" / "Restore Codex 19030 Mode.cmd").read_text(encoding="utf-8")
+
+    assert "hot-router-mode" in text
+    assert "127.0.0.1:19032/v1" in text
+    assert "models_cache.json" not in text
+    assert "state_5.sqlite" not in text
+    assert "auth.json" not in text
+    assert "windows-hot-router-mode.ps1" in enable
+    assert "-Action enable" in enable
+    assert "-Action restore" in restore
 
 
 def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
@@ -174,6 +213,7 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     with zipfile.ZipFile(output) as archive:
         names = set(archive.namelist())
     assert "Install Codex Hybrid.cmd" in names
+    assert "Start Codex Hot Router.cmd" in names
     assert "Codex Hybrid Diagnostics.cmd" in names
     assert "Restore Official Codex.cmd" in names
     assert "Install-CodexHybrid.ps1" in names
@@ -183,6 +223,11 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     assert "payload/codex-hybrid-model-switcher/bootstrap.py" in names
     assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/__init__.py" in names
     assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/history.py" in names
+    assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/hot_router.py" in names
+    assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/hot_router_mode.py" in names
+    assert "payload/codex-hybrid-model-switcher/scripts/windows-hot-router-start.ps1" in names
+    assert "payload/codex-hybrid-model-switcher/scripts/windows-hot-router-mode.ps1" in names
+    assert "payload/codex-hybrid-model-switcher/scripts/Start Codex Hot Router.cmd" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-provider-switch.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-restore-official.ps1" in names
     assert not any(name.startswith(".git/") for name in names)

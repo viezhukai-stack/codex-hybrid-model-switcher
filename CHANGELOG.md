@@ -5,6 +5,20 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.17.5
+
+- Added a Windows 2.0 hot-router runtime and desktop launcher so the normal
+  Windows flow can keep Codex pointed at `127.0.0.1:19032` and use Codex's
+  bottom-right model selector while routing local models through the lightweight
+  bridge on `127.0.0.1:19030`.
+- Added `ensure-bridge` and hot-router mode helpers. The helper starts only the
+  lightweight bridge; llama.cpp on `19031` still starts on local-model demand and
+  exits by the existing idle policy.
+- Made private JSON config loading UTF-8 BOM tolerant for Windows PowerShell
+  generated files.
+- Kept packaged local model defaults generic as `local-gemma` / `local/gemma`;
+  machine-specific private model ids are not hard-coded into GitHub defaults.
+
 ## v2.17.4
 
 - Cleaned the netdisk package payload so beginner full-local zips no longer
