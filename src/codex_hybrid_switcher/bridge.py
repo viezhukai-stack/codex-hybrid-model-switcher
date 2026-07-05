@@ -22,6 +22,62 @@ from .config import AppConfig, expand_path, load_config
 LOCAL_API_KEY = "codex-local-bridge"
 
 
+def optional_llama_args(local: dict[str, Any]) -> list[str]:
+    args: list[str] = []
+    scalar_args = [
+        ("gpu_layers", "-ngl"),
+        ("parallel_slots", "-np"),
+        ("threads", "--threads"),
+        ("threads_batch", "--threads-batch"),
+        ("batch_size", "--batch-size"),
+        ("ubatch_size", "--ubatch-size"),
+        ("cache_ram", "--cache-ram"),
+        ("ctx_checkpoints", "--ctx-checkpoints"),
+        ("checkpoint_min_step", "--checkpoint-min-step"),
+        ("flash_attn", "--flash-attn"),
+        ("device", "--device"),
+        ("fit", "-fit"),
+    ]
+    for key, flag in scalar_args:
+        if key in local and local[key] is not None:
+            args.extend([flag, str(local[key])])
+
+    false_flags = [
+        ("op_offload", "--no-op-offload"),
+        ("mmproj_offload", "--no-mmproj-offload"),
+        ("cache_prompt", "--no-cache-prompt"),
+        ("cache_idle_slots", "--no-cache-idle-slots"),
+        ("cont_batching", "--no-cont-batching"),
+    ]
+    for key, flag in false_flags:
+        if local.get(key) is False:
+            args.append(flag)
+
+    return args
+
+
+def local_llama_command(local: dict[str, Any], bridge: Any, llama_server: Path, model: Path, mmproj: Path) -> list[str]:
+    context_window = local.get("ctx_size") or local.get("context_window") or 8192
+    cmd = [
+        str(llama_server),
+        "-m",
+        str(model),
+        "--mmproj",
+        str(mmproj),
+        "--host",
+        bridge.host,
+        "--port",
+        str(bridge.llama_port),
+        "--api-key",
+        LOCAL_API_KEY,
+        "-c",
+        str(context_window),
+    ]
+    cmd.extend(optional_llama_args(local))
+    cmd.extend(str(x) for x in local.get("extra_args", []))
+    return cmd
+
+
 class BridgeRuntime:
     def __init__(self, config: AppConfig) -> None:
         self.config = config
@@ -67,22 +123,8 @@ class BridgeRuntime:
                     raise RuntimeError(f"required local file missing: {path}")
 
             bridge = self.config.bridge
-            cmd = [
-                str(required[0]),
-                "-m",
-                str(required[1]),
-                "--mmproj",
-                str(required[2]),
-                "--host",
-                bridge.host,
-                "--port",
-                str(bridge.llama_port),
-                "--api-key",
-                LOCAL_API_KEY,
-                "-c",
-                str(local.get("context_window") or 8192),
-            ]
-            cmd.extend(str(x) for x in local.get("extra_args", []))
+            cmd = local_llama_command(local, bridge, required[0], required[1], required[2])
+            print(f"starting local llama-server: {subprocess.list2cmdline(cmd)}")
             self.local_proc = subprocess.Popen(
                 cmd,
                 cwd=str(required[0].parent),

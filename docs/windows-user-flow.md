@@ -131,6 +131,23 @@ The local provider apply runs local smoke first by default. This verifies:
 Use `-SkipLocalSmoke` only after a local smoke passed recently on the same
 machine and no local model paths changed.
 
+## Gemini High Notes
+
+Codex may show `Gemini 3.1 Pro (High)` in the bottom-right selector while the
+request body uses the internal model id `gemini-pro-agent`. Do not remove the
+menu item just because the id does not match a `gemini-*-preview` name.
+
+Some upstreams return malformed streaming Responses events for
+`gemini-pro-agent`: the stream may contain only `response.created` and
+`response.in_progress`, then close without `output_text`,
+`response.completed`, or `[DONE]`. The hot router has a built-in shim for this
+model. It sends the upstream request as non-streaming and wraps the final text
+back into a Codex-compatible SSE stream.
+
+The shim is local to the hot router. It does not edit Codex history, account
+files, model cache, or CC Switch state. Router logs mark successful protected
+requests with `gemini_stream_shim=true`.
+
 ## Restore
 
 Quit Codex and switch back to the official provider:

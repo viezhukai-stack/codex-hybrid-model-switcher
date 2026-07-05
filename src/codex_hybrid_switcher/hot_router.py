@@ -16,6 +16,7 @@ from typing import Any
 from .config import AppConfig, load_config
 
 LOCAL_MODEL_PREFIXES = ("local/", "local-")
+DEFAULT_CLOUD_RESPONSE_STREAM_SHIM_MODELS = {"gemini-pro-agent"}
 SENSITIVE_HEADERS = {"authorization", "cookie", "set-cookie", "x-api-key", "openai-api-key"}
 HOP_BY_HOP_HEADERS = {
     "connection",
@@ -334,6 +335,80 @@ def sse_payload(event: str, data: dict[str, Any]) -> bytes:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n".encode("utf-8")
 
 
+def responses_sse_body(model: str, text: str) -> bytes:
+    response = response_json(model, text)
+    response_id = str(response["id"])
+    item = response["output"][0]
+    item_id = str(item["id"])
+    content_part = item["content"][0]
+    created_at = int(response["created_at"])
+    in_progress_item = {"id": item_id, "type": "message", "status": "in_progress", "role": "assistant", "content": []}
+    chunks = [
+        sse_payload(
+            "response.created",
+            {
+                "type": "response.created",
+                "response": {
+                    "id": response_id,
+                    "object": "response",
+                    "created_at": created_at,
+                    "status": "in_progress",
+                    "model": model,
+                    "output": [],
+                },
+            },
+        ),
+        sse_payload(
+            "response.in_progress",
+            {
+                "type": "response.in_progress",
+                "response": {
+                    "id": response_id,
+                    "object": "response",
+                    "created_at": created_at,
+                    "status": "in_progress",
+                    "model": model,
+                },
+            },
+        ),
+        sse_payload("response.output_item.added", {"type": "response.output_item.added", "output_index": 0, "item": in_progress_item}),
+        sse_payload(
+            "response.content_part.added",
+            {"type": "response.content_part.added", "item_id": item_id, "output_index": 0, "content_index": 0, "part": {"type": "output_text", "text": "", "annotations": []}},
+        ),
+        sse_payload("response.output_text.delta", {"type": "response.output_text.delta", "item_id": item_id, "output_index": 0, "content_index": 0, "delta": text}),
+        sse_payload("response.output_text.done", {"type": "response.output_text.done", "item_id": item_id, "output_index": 0, "content_index": 0, "text": text}),
+        sse_payload("response.content_part.done", {"type": "response.content_part.done", "item_id": item_id, "output_index": 0, "content_index": 0, "part": content_part}),
+        sse_payload("response.output_item.done", {"type": "response.output_item.done", "output_index": 0, "item": item}),
+        sse_payload("response.completed", {"type": "response.completed", "response": response}),
+        b"data: [DONE]\n\n",
+    ]
+    return b"".join(chunks)
+
+
+def stream_shim_payload(raw: bytes) -> bytes:
+    payload = json.loads(raw.decode("utf-8-sig") or "{}")
+    if not isinstance(payload, dict):
+        payload = {}
+    payload["stream"] = False
+    return json.dumps(payload, ensure_ascii=False).encode("utf-8")
+
+
+def cloud_response_stream_shim_models(provider: dict[str, Any]) -> set[str]:
+    configured = provider.get("response_stream_shim_models")
+    if configured is None:
+        return set(DEFAULT_CLOUD_RESPONSE_STREAM_SHIM_MODELS)
+    if isinstance(configured, list):
+        return {item for item in configured if isinstance(item, str) and item}
+    return set()
+
+
+def should_shim_cloud_responses_stream(provider: dict[str, Any] | None, model: str | None, endpoint: str, stream: bool | None) -> bool:
+    if not provider or not model:
+        return False
+    return endpoint.endswith("/responses") and stream is True and model in cloud_response_stream_shim_models(provider)
+
+
 class HotRouter:
     def __init__(self, config: AppConfig, host: str = "127.0.0.1", port: int = 19032, local_catalog_timeout: float = 2.0) -> None:
         self.config = config
@@ -554,7 +629,11 @@ class HotRouterHandler(BaseHTTPRequestHandler):
             return
 
         if self.command == "POST" and route == "local" and endpoint.endswith("/responses") and stream is True:
-            self.proxy_local_responses_stream(request_id, raw, model or "local/unknown")
+            self.proxy_responses_stream_shim(request_id, raw, model or "local/unknown", upstream, "local", None, {"stream_shim": True})
+            return
+
+        if self.command == "POST" and route == "cloud" and should_shim_cloud_responses_stream(provider, model, endpoint, stream):
+            self.proxy_responses_stream_shim(request_id, raw, model or "cloud/unknown", upstream, "cloud", provider, {"gemini_stream_shim": True})
             return
 
         headers = filtered_incoming_headers(self, len(raw) if self.command in {"POST", "PUT", "PATCH"} else None)
@@ -575,46 +654,46 @@ class HotRouterHandler(BaseHTTPRequestHandler):
             self.write_json(502, payload)
             log_event("response", request_id=request_id, status=502, route=route, error=payload["error"], response_bytes=0)
 
-    def proxy_local_responses_stream(self, request_id: str, raw: bytes, model: str) -> None:
+    def proxy_responses_stream_shim(
+        self,
+        request_id: str,
+        raw: bytes,
+        model: str,
+        upstream: str,
+        route: str,
+        provider: dict[str, Any] | None,
+        log_fields: dict[str, Any],
+    ) -> None:
         try:
-            payload = json.loads(raw.decode("utf-8-sig") or "{}")
-            payload["stream"] = False
-            upstream_raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            upstream_raw = stream_shim_payload(raw)
+            headers = {"Content-Type": "application/json", "Content-Length": str(len(upstream_raw))}
+            if provider:
+                apply_provider_auth(headers, provider)
             status, response_headers, response_body = read_upstream(
-                target_url(self.router.local_upstream, self.path),
+                target_url(upstream, self.path),
                 "POST",
-                {"Content-Type": "application/json", "Content-Length": str(len(upstream_raw))},
+                headers,
                 data=upstream_raw,
                 timeout=600,
             )
             if not (200 <= status < 300):
                 self.send_upstream(status, response_headers, response_body)
-                log_event("response", request_id=request_id, status=status, route="local", response_bytes=len(response_body), stream_shim=True)
+                log_event("response", request_id=request_id, status=status, route=route, response_bytes=len(response_body), **log_fields)
                 return
             parsed = json.loads(response_body.decode("utf-8-sig") or "{}")
             text = response_text_from_json(parsed if isinstance(parsed, dict) else {})
-            response = response_json(model, text)
-            chunks = [
-                sse_payload("response.created", {k: v for k, v in response.items() if k != "output"}),
-                sse_payload("response.output_item.added", {"output_index": 0, "item": response["output"][0]}),
-                sse_payload("response.content_part.added", {"item_id": response["output"][0]["id"], "output_index": 0, "content_index": 0, "part": response["output"][0]["content"][0]}),
-                sse_payload("response.output_text.delta", {"item_id": response["output"][0]["id"], "output_index": 0, "content_index": 0, "delta": text}),
-                sse_payload("response.output_text.done", {"item_id": response["output"][0]["id"], "output_index": 0, "content_index": 0, "text": text}),
-                sse_payload("response.completed", {"response": response}),
-                b"data: [DONE]\n\n",
-            ]
-            body = b"".join(chunks)
+            body = responses_sse_body(model, text)
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
             self.send_header("Cache-Control", "no-cache")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
-            log_event("response", request_id=request_id, status=200, route="local", response_bytes=len(body), stream_shim=True)
+            log_event("response", request_id=request_id, status=200, route=route, response_bytes=len(body), **log_fields)
         except Exception as exc:
             payload = {"error": f"{type(exc).__name__}: {exc}"}
             self.write_json(502, payload)
-            log_event("response", request_id=request_id, status=502, route="local", error=payload["error"], response_bytes=0, stream_shim=True)
+            log_event("response", request_id=request_id, status=502, route=route, error=payload["error"], response_bytes=0, **log_fields)
 
 
 def handler_for(router: HotRouter) -> type[HotRouterHandler]:
