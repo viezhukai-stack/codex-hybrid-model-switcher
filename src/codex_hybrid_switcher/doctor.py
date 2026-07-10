@@ -145,6 +145,20 @@ def catalog_model_ids(payload: Any) -> list[str]:
     return ids
 
 
+def run_native_command(args: list[str], *, merge_stderr: bool = False) -> tuple[subprocess.CompletedProcess[str] | None, str | None]:
+    try:
+        proc = subprocess.run(
+            args,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT if merge_stderr else subprocess.DEVNULL,
+            check=False,
+        )
+    except OSError as exc:
+        return None, f"{type(exc).__name__}: {exc}"
+    return proc, None
+
+
 def run_native_codex_checks(config) -> bool:
     app_info = native_codex_app_info()
     if not app_info:
@@ -156,55 +170,71 @@ def run_native_codex_checks(config) -> bool:
         print("WARN bundled Codex CLI: not found")
         return False
 
-    before = protected_hashes(config)
-    version = subprocess.run([str(cli), "--version"], text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
-    print(f"{'OK' if version.returncode == 0 else 'WARN'} bundled Codex CLI: {version.stdout.strip() or '<no version>'}")
-    doctor = subprocess.run(
-        [str(cli), "doctor", "--json"],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
+    hashes_ok = True
     try:
-        doctor_payload = json.loads(doctor.stdout or "{}")
+        before = protected_hashes(config)
+    except OSError as exc:
+        before = None
+        hashes_ok = False
+        print(f"WARN native diagnostics could not hash protected Codex files before checks: {type(exc).__name__}")
+
+    version, version_error = run_native_command([str(cli), "--version"], merge_stderr=True)
+    version_ok = version is not None and version.returncode == 0
+    version_output = version.stdout.strip() if version is not None else version_error
+    print(f"{'OK' if version_ok else 'WARN'} bundled Codex CLI: {version_output or '<no version>'}")
+
+    doctor, doctor_error = run_native_command([str(cli), "doctor", "--json"])
+    try:
+        doctor_payload = json.loads(doctor.stdout or "{}") if doctor is not None else {}
         doctor_json = isinstance(doctor_payload, dict)
     except json.JSONDecodeError:
         doctor_payload = {}
         doctor_json = False
-    doctor_status = str(doctor_payload.get("overallStatus") or ("ok" if doctor.returncode == 0 else "warn"))
+    doctor_status = str(
+        doctor_payload.get("overallStatus")
+        or (doctor_error if doctor is None else ("ok" if doctor.returncode == 0 else "warn"))
+    )
     failed_checks = [
         str(check_id)
         for check_id, check in (doctor_payload.get("checks") or {}).items()
         if isinstance(check, dict) and str(check.get("status") or "").lower() not in {"ok", "pass"}
     ]
-    doctor_ok = doctor.returncode == 0 and doctor_json and doctor_status.lower() not in {"fail", "error"}
+    doctor_ok = (
+        doctor is not None
+        and doctor.returncode == 0
+        and doctor_json
+        and doctor_status.lower() not in {"fail", "error"}
+    )
     print(f"{'OK' if doctor_ok else 'WARN'} native codex doctor --json: {doctor_status}")
     if failed_checks:
         print("  - non-passing checks: " + ", ".join(failed_checks))
 
-    models = subprocess.run(
-        [str(cli), "debug", "models", "--bundled"],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
+    models, models_error = run_native_command([str(cli), "debug", "models", "--bundled"])
     try:
-        model_ids = catalog_model_ids(json.loads(models.stdout or "{}"))
+        model_ids = catalog_model_ids(json.loads(models.stdout or "{}")) if models is not None else []
     except json.JSONDecodeError:
         model_ids = []
-    print(f"{'OK' if models.returncode == 0 and model_ids else 'WARN'} bundled model catalog: {len(model_ids)} models")
+    models_ok = models is not None and models.returncode == 0 and bool(model_ids)
+    model_status = f"{len(model_ids)} models" if models is not None else str(models_error or "unavailable")
+    print(f"{'OK' if models_ok else 'WARN'} bundled model catalog: {model_status}")
     if model_ids:
         print("  - " + ", ".join(model_ids))
 
-    after = protected_hashes(config)
-    changed = [name for name in before if before[name] != after[name]]
-    if changed:
-        print("ERROR native diagnostics changed protected Codex files: " + ", ".join(changed))
-        return False
-    print("OK native diagnostics left protected Codex files unchanged")
-    return version.returncode == 0 and doctor_ok and models.returncode == 0 and bool(model_ids)
+    try:
+        after = protected_hashes(config)
+    except OSError as exc:
+        after = None
+        hashes_ok = False
+        print(f"WARN native diagnostics could not hash protected Codex files after checks: {type(exc).__name__}")
+    if before is not None and after is not None:
+        changed = [name for name in before if before[name] != after[name]]
+        if changed:
+            print("ERROR native diagnostics changed protected Codex files: " + ", ".join(changed))
+            return False
+        print("OK native diagnostics left protected Codex files unchanged")
+    else:
+        print("WARN protected-file comparison was incomplete")
+    return version_ok and doctor_ok and models_ok and hashes_ok
 
 
 def run_doctor(config_path: str | None = None, *, strict: bool = False, native_codex: bool = False) -> int:

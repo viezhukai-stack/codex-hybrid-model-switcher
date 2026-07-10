@@ -396,6 +396,10 @@ python -m codex_hybrid_switcher guarded-switch <provider-id>
 python -m codex_hybrid_switcher switch <provider-id>
 ```
 
+`doctor --native-codex` is read-only. On Windows, a remote or restricted shell
+may not be allowed to execute the CLI inside `WindowsApps`; that condition is
+reported as `WARN` while protected-file comparison still runs when available.
+
 ## Isolated Install Validation
 
 Before using this project with a real Codex profile, run the isolated validation:

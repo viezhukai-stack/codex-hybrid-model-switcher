@@ -26,7 +26,9 @@ conservative release process because it edits Codex provider configuration.
   official restore no longer pins an old model and lets Codex choose its current
   recommended model.
 - Added optional native Codex diagnostics through `doctor --native-codex` and
-  unified package versions through generated `VERSION.txt` files.
+  unified package versions through generated `VERSION.txt` files. Native
+  diagnostics now report inaccessible WindowsApps CLI binaries or locked state
+  files as warnings instead of terminating with a traceback.
 
 ## v2.17.5
 
