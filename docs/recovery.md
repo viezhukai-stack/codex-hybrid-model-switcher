@@ -10,3 +10,8 @@ If a switch fails:
 
 This project intentionally does not provide automated recovery loops.
 
+On the first guarded switch away from the official provider, v2.18.0 also saves
+a private `official-config-baseline-*.toml` under
+`~/.codex-hybrid-model-switcher`. `Restore Official Codex` uses that exact
+baseline when available. If it is missing, the fallback restores the built-in
+`openai` provider without pinning an old model ID.

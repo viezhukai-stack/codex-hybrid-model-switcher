@@ -1,5 +1,9 @@
 # Hand This GitHub Project To Codex
 
+Target the 2.0 hot-router workflow: guarded setup first, then a daily launcher
+that checks `19030`, starts `19032`, and opens ChatGPT/Codex. Do not treat the
+legacy external provider menu as the normal daily model selector.
+
 This is the shortest path for a user who only has stock Codex Desktop.
 
 Copy the prompt below into Codex. Replace the placeholders first. Do not paste a

@@ -127,10 +127,14 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "Copy-Item -LiteralPath $stateDb" not in text
     assert "powershell -NoProfile -ExecutionPolicy Bypass" in launcher
     assert "windows-hot-router-start.ps1" in hot_router
-    assert "v2.17.5" in hot_router
+    assert "VERSION.txt" in hot_router
+    assert "pyproject.toml" in hot_router
+    assert 'set "PACKAGE_VERSION=2.18.0"' not in hot_router
     assert "-DiagnosticsOnly" in diagnostics
     assert "windows-restore-official.ps1" in restore
-    assert "v2.17.5" in restore
+    assert "VERSION.txt" in restore
+    assert "pyproject.toml" in restore
+    assert 'set "PACKAGE_VERSION=2.18.0"' not in restore
     assert "Full local model packages may include payload\\models\\local-gemma" in readme
     assert "does not install CC Switch" in readme
     assert "网盘一键安装包" in readme_zh
@@ -174,7 +178,13 @@ def test_windows_hot_router_launcher_checks_bridge_before_router_and_opens_codex
 
     assert text.index("ensure-bridge") < text.index('@("hot-router"')
     assert "127.0.0.1:19030" in text
-    assert "127.0.0.1:$Port" in text
+    assert "$RouterHost`:$Port" in text
+    assert "privateConfig.hot_router" in text
+    assert "Get-StartApps" in text
+    assert "Get-AppxPackageManifest" in text
+    assert "Enable-HotRouterMode" in text
+    assert "windows-hot-router-mode.ps1" in text
+    assert "ChatGPT*" in text
     assert "OpenAI.Codex_2p2nqsd0c76g0!App" in text
     assert "Register-ScheduledTask" not in text
     assert "New-Service" not in text
@@ -188,7 +198,8 @@ def test_windows_hot_router_mode_launcher_only_delegates_base_url_toggle():
     restore = (ROOT / "scripts" / "Restore Codex 19030 Mode.cmd").read_text(encoding="utf-8")
 
     assert "hot-router-mode" in text
-    assert "127.0.0.1:19032/v1" in text
+    assert "RouterUrl" in text
+    assert "--router-url" in text
     assert "models_cache.json" not in text
     assert "state_5.sqlite" not in text
     assert "auth.json" not in text
@@ -213,6 +224,7 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     with zipfile.ZipFile(output) as archive:
         names = set(archive.namelist())
     assert "Install Codex Hybrid.cmd" in names
+    assert "VERSION.txt" in names
     assert "Start Codex Hot Router.cmd" in names
     assert "Codex Hybrid Diagnostics.cmd" in names
     assert "Restore Official Codex.cmd" in names
@@ -237,6 +249,7 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     assert not any(name.startswith("payload/codex-hybrid-model-switcher/docs/") for name in names)
     assert not any(name.startswith("payload/codex-hybrid-model-switcher/tests/") for name in names)
     assert not any(name.startswith("payload/codex-hybrid-model-switcher/scripts/validate-") for name in names)
+    assert not any(name.startswith("payload/codex-hybrid-model-switcher/小白一键配置包codex混合配置2.0版/") for name in names)
 
 
 def test_windows_one_click_package_builder_can_bundle_optional_runtime_dirs(tmp_path):

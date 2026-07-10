@@ -1,22 +1,27 @@
-# macOS One-Click Beginner Installer
+# macOS Full One-Click Beginner Installer
 
-`Codex-Hybrid-macOS-Netdisk-Setup-v2.16.0.zip` is the lightweight macOS
-beginner package. It configures one cloud OpenAI-compatible provider and stops
-at guarded dry-run before any real Codex switch.
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.0.zip` is the supported macOS
+beginner distribution. It includes the local model path and can also configure
+an optional OpenAI-compatible cloud provider.
+
+Current macOS Codex builds may be installed as `ChatGPT.app`. The installer
+discovers bundle id `com.openai.codex` first, then falls back to explicit
+`ChatGPT.app` and legacy `Codex.app` paths.
 
 ## What It Includes
 
 - Double-click entries: `Install Codex Hybrid.command`,
-  `Codex Hybrid Diagnostics.command`, and `Restore Official Codex.command`.
+  `Start Codex Hybrid 2.0.command`, `Enable Codex Hybrid 2.0.command`,
+  `Restore Codex 19030 Mode.command`, `Codex Hybrid Diagnostics.command`, and
+  `Restore Official Codex.command`.
 - A bundled project payload under `payload/codex-hybrid-model-switcher`.
 - A sample `provider-preset.example.json` for distributors.
 
-It does not include Codex Desktop, CC Switch, llama.cpp, local GGUF models, or
-API keys.
+It does not include Codex Desktop, CC Switch, account files, or API keys.
 
 ## Beginner Flow
 
-1. Install and sign in to official Codex Desktop.
+1. Install and sign in to official ChatGPT/Codex Desktop.
 2. Extract the whole zip.
 3. Optionally create `provider-preset.json` next to the installer with
    `base_url`, `model`, and `api_key_env`. Do not put the API key value in this
@@ -28,7 +33,8 @@ API keys.
    after switching into the `custom` provider bucket. The installer dry-runs this
    migration first.
 7. Review the guarded dry-run.
-8. Quit Codex Desktop completely, type `APPLY`, reopen Codex, and verify
+8. Quit Codex Desktop completely, type `APPLY`, then use
+   `Start Codex Hybrid 2.0.command` to open Codex and verify
    account, plugins, project conversations, and one new test chat.
 
 ## Safety Rules
@@ -46,16 +52,17 @@ API keys.
   continued by another provider.
 - Python 3.10+ is required. If Python is missing, the installer opens the
   official macOS Python download page and asks the user to rerun after install.
-- The bottom-right Codex model label is not the source of truth; the external
-  provider config is.
+- In normal 2.0 mode, the bottom-right Codex model selector is the model
+  switching interface. `Codex Model Switcher.command` is maintenance-only.
 
 ## Build
 
 ```bash
-python scripts/build-macos-one-click-package.py
+python scripts/build-macos-one-click-package.py --full-local
 ```
 
-The package is written to `dist/Codex-Hybrid-macOS-Netdisk-Setup-v2.16.0.zip`.
+The package is written to
+`dist/Codex-Hybrid-macOS-Full-Local-Setup-v2.18.0.zip`.
 
 ## Validation
 

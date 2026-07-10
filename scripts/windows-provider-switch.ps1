@@ -56,7 +56,7 @@ function Expand-PrivatePath($Value) {
 
 function Assert-CodexStopped() {
     $running = Get-Process -ErrorAction SilentlyContinue | Where-Object {
-        $_.ProcessName -like "Codex*" -or $_.ProcessName -eq "codex"
+        $_.ProcessName -like "Codex*" -or $_.ProcessName -like "ChatGPT*" -or $_.ProcessName -eq "codex"
     }
     if ($running) {
         Fail "Codex appears to be running. Quit Codex completely before applying the switch."

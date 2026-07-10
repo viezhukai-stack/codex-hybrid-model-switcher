@@ -39,6 +39,8 @@ done
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 python_bin="${PYTHON:-python3}"
+# shellcheck disable=SC1091
+source "${repo_dir}/scripts/macos-app-common.sh"
 
 if [[ -f "${env_file}" ]]; then
   # shellcheck disable=SC1090
@@ -50,7 +52,7 @@ invoke_switcher() {
 }
 
 assert_codex_stopped() {
-  if pgrep -f "Codex.app|codex app-server|codex-command-runner" >/dev/null 2>&1; then
+  if codex_is_running; then
     echo "Codex appears to be running. Quit Codex completely before applying the switch." >&2
     exit 2
   fi

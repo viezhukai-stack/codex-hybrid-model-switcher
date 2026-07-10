@@ -2,8 +2,20 @@
 setlocal
 cd /d "%~dp0"
 
+set "PACKAGE_VERSION="
+if exist "%~dp0VERSION.txt" set /p PACKAGE_VERSION=<"%~dp0VERSION.txt"
+set "PROJECT_TOML=%~dp0payload\codex-hybrid-model-switcher\pyproject.toml"
+if not exist "%PROJECT_TOML%" set "PROJECT_TOML=%~dp0..\..\pyproject.toml"
+if not defined PACKAGE_VERSION if exist "%PROJECT_TOML%" for /f "tokens=2 delims==" %%V in ('findstr /B /C:"version = " "%PROJECT_TOML%"') do set "PACKAGE_VERSION=%%V"
+if defined PACKAGE_VERSION set "PACKAGE_VERSION=%PACKAGE_VERSION: =%"
+if defined PACKAGE_VERSION set "PACKAGE_VERSION=%PACKAGE_VERSION:"=%"
+if not defined PACKAGE_VERSION (
+  echo Package version could not be read from VERSION.txt or pyproject.toml.
+  pause
+  exit /b 1
+)
 set "PAYLOAD_RESTORE=%~dp0payload\codex-hybrid-model-switcher\scripts\windows-restore-official.ps1"
-set "INSTALLED_ROOT=%LOCALAPPDATA%\CodexHybridModelSwitcher\releases\v2.17.5\project"
+set "INSTALLED_ROOT=%LOCALAPPDATA%\CodexHybridModelSwitcher\releases\v%PACKAGE_VERSION%\project"
 set "INSTALLED_RESTORE=%INSTALLED_ROOT%\scripts\windows-restore-official.ps1"
 
 if exist "%INSTALLED_RESTORE%" (

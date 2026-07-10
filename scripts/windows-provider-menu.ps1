@@ -43,8 +43,9 @@ function Show-Providers($ConfigPath) {
     Write-Host ""
     Write-Host "Codex Model Switcher"
     Write-Host "===================="
+    Write-Host "Maintenance mode: normal 2.0 use should start from Start Codex Hot Router.cmd."
     Write-Host "Codex Desktop must be fully closed before applying a switch."
-    Write-Host "The bottom-right Codex model selector is not the source of truth."
+    Write-Host "This maintenance menu changes the configured provider directly."
     Write-Host ""
 
     for ($i = 0; $i -lt $providers.Count; $i++) {

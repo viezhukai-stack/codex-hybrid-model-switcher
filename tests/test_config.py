@@ -15,6 +15,14 @@ def test_load_config_and_expand_paths(tmp_path, monkeypatch):
                 "codex_home": "$TEST_CODEX_HOME",
                 "cc_switch_home": "~/cc-switch-placeholder",
                 "bridge": {"port": 19040, "llama_port": 19041, "idle_seconds": 7},
+                "hot_router": {
+                    "host": "127.0.0.2",
+                    "port": 19042,
+                    "default_cloud_provider_id": "cloud",
+                    "hidden_model_ids": ["hidden-model"],
+                    "model_aliases": {"old-model": "new-model"},
+                    "catalog_cache_seconds": 9,
+                },
                 "providers": [
                     {"id": "cloud", "kind": "cloud", "model": "provider-model"},
                     {"id": "local", "kind": "local", "model": "local/test"},
@@ -32,6 +40,12 @@ def test_load_config_and_expand_paths(tmp_path, monkeypatch):
     assert config.bridge.port == 19040
     assert config.bridge.llama_port == 19041
     assert config.bridge.idle_seconds == 7
+    assert config.hot_router.host == "127.0.0.2"
+    assert config.hot_router.port == 19042
+    assert config.hot_router.default_cloud_provider_id == "cloud"
+    assert config.hot_router.hidden_model_ids == ("hidden-model",)
+    assert config.hot_router.model_aliases == {"old-model": "new-model"}
+    assert config.hot_router.catalog_cache_seconds == 9
     assert config.provider("cloud")["model"] == "provider-model"
     assert config.provider_for_model("local/test")["kind"] == "local"
 
@@ -105,3 +119,19 @@ def test_provider_for_official_model_does_not_guess_between_multiple_bridge_clou
 
     assert config.provider_for_model("gpt-5.5") is None
     assert config.provider_for_model("codex-auto-review") is None
+
+
+def test_hot_router_defaults_are_dynamic_and_local_only_safe(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps({"providers": [{"id": "local", "kind": "local", "model": "local/gemma"}]}),
+        encoding="utf-8",
+    )
+
+    router = load_config(str(config_path)).hot_router
+
+    assert router.host == "127.0.0.1"
+    assert router.port == 19032
+    assert router.default_cloud_provider_id is None
+    assert router.visible_model_ids == ()
+    assert router.hidden_model_ids == ()

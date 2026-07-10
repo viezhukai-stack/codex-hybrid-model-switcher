@@ -1,6 +1,9 @@
 # macOS Full Local Pack Canary
 
-This records the real macOS UI canary for the private netdisk full-local package:
+This records the real macOS UI canaries for the private netdisk full-local
+package.
+
+Original full-local canary:
 
 ```text
 Codex-Hybrid-macOS-Full-Local-Setup-v2.17.3.zip
@@ -19,10 +22,59 @@ sha256: 27120d176555b542a0c046c937f3667c2e36cad763f881a1ef7e17b474964625
 
 Passed.
 
-Current private netdisk distribution uses
-`Codex-Hybrid-macOS-Full-Local-Setup-v2.17.4.zip`. v2.17.4 keeps the same
-full-local runtime path and cleans the netdisk payload by excluding repository
-development files.
+Current private netdisk distribution uses:
+
+```text
+Codex-Hybrid-macOS-Full-Local-Setup-v2.18.0.zip
+sha256: 1636f56cf27b1008967d34f4f10f84ee76fcd61a69c46c990676cca7cfa49334
+```
+
+v2.18.0 keeps the same full-local runtime path and adds compatibility for the
+upgraded ChatGPT/Codex app path, the shared 2.0 hot router, dynamic cloud
+catalogs, and rebuilt package payloads that exclude repository development
+files.
+
+## v2.18.0 UI Canary
+
+Date: 2026-07-10
+
+Result: Passed.
+
+The controlled v2.18.0 canary used `Begin v2.18 Mac Canary.command` to quit the
+upgraded ChatGPT/Codex app, stop the previous managed bridge/router processes,
+start the repository-maintained shared hot router on `127.0.0.1:19032`, and
+reopen ChatGPT/Codex.
+
+Confirmed by the operator after restart:
+
+- Account information remained visible.
+- Plugin/MCP entry points remained visible.
+- Project conversations remained visible.
+- The model list included `gpt-5.6-sol`.
+- The model list included the configured local model.
+- A `gpt-5.6-sol` test conversation replied normally.
+- A local model test conversation replied normally.
+
+Additional router checks before the UI confirmation showed the installed
+v2.18.0 shared router could route `gpt-5.6-sol` to `OK`, the configured local
+text model to `OK`, and local vision to `Red`.
+
+Safety observation:
+
+- `auth.json` hash stayed unchanged.
+- `state_5.sqlite` hash stayed unchanged.
+- `config.toml` changed as expected for the v2.18.0 hot-router launch path.
+- `models_cache.json` hash changed during upgraded app launch. This is recorded
+  as a Codex/ChatGPT model-cache refresh observation, not as an installer or
+  switcher write.
+
+Backup pointer:
+
+```text
+~/CodexModelSwitcher/backups/v2.18.0-mac-ui-canary-20260710-214909
+```
+
+## v2.17.3 UI Canary
 
 The operator completed a real UI test of the macOS full-local package and
 confirmed:
@@ -57,6 +109,9 @@ new-thread/runtime state from the restored main session.
 - This canary proves the v2.17.3 macOS full-local package can be installed and
   used in Codex Desktop without breaking account, plugin, project conversation,
   or reply behavior on the tested Mac.
+- The v2.18.0 package has passed package integrity, model manifest, runtime,
+  redaction audits, isolated router checks, and the controlled upgraded-app UI
+  canary on the tested Mac.
 - It does not prove performance on every Mac. Local model speed remains
   hardware-dependent.
 - Lightweight macOS cloud packages are no longer the distribution priority; the

@@ -11,6 +11,7 @@ function Fail($Message) {
 }
 
 $switchScript = Join-Path $PSScriptRoot "windows-provider-switch.ps1"
+$hotRouterModeScript = Join-Path $PSScriptRoot "windows-hot-router-mode.ps1"
 if (!(Test-Path -LiteralPath $switchScript)) {
     Fail "Provider switch script was not found."
 }
@@ -35,6 +36,16 @@ $confirm = Read-Host "Restore official Codex now"
 if ($confirm -cne "APPLY") {
     Write-Host "Cancelled. No files were changed."
     exit 0
+}
+
+if (Test-Path -LiteralPath $hotRouterModeScript) {
+    $statusOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File $hotRouterModeScript -Action status -Config $Config 2>$null | Out-String
+    if ($statusOutput -match '"active"\s*:\s*true') {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $hotRouterModeScript -Action restore -Config $Config
+        if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+        }
+    }
 }
 
 & powershell -NoProfile -ExecutionPolicy Bypass -File $switchScript -ProviderId "openai-official" -Config $Config -Apply

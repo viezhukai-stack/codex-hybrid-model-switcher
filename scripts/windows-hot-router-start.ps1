@@ -1,6 +1,7 @@
 param(
     [string]$Config = "$env:USERPROFILE\.codex-hybrid-model-switcher\config.json",
-    [int]$Port = 19032
+    [string]$RouterHost,
+    [Nullable[int]]$Port
 )
 
 $ErrorActionPreference = "Stop"
@@ -44,7 +45,7 @@ function Invoke-Switcher($ArgsList, [switch]$AllowFailure) {
 
 function Test-HotRouter() {
     try {
-        $url = "http://127.0.0.1:$Port/health"
+        $url = "http://$RouterHost`:$Port/health"
         $json = (Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 2).Content | ConvertFrom-Json
         return ($json.router -eq "codex-hot-router")
     }
@@ -53,13 +54,87 @@ function Test-HotRouter() {
     }
 }
 
+function Get-CodexAppId() {
+    $app = Get-StartApps -ErrorAction SilentlyContinue | Where-Object {
+        $_.AppID -like "OpenAI.Codex_*!App" -or $_.Name -in @("ChatGPT", "Codex")
+    } | Select-Object -First 1
+    if ($app -and $app.AppID) {
+        return $app.AppID
+    }
+    $package = Get-AppxPackage OpenAI.Codex -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($package) {
+        try {
+            $manifest = Get-AppxPackageManifest -Package $package
+            $application = @($manifest.Package.Applications.Application) | Select-Object -First 1
+            if ($application -and $application.Id -and $package.PackageFamilyName) {
+                return "$($package.PackageFamilyName)!$($application.Id)"
+            }
+        }
+        catch {
+            Write-Host "WARNING: could not read the OpenAI.Codex package AppID from its manifest."
+        }
+    }
+    return "OpenAI.Codex_2p2nqsd0c76g0!App"
+}
+
 function Open-CodexDesktop() {
-    Start-Process "shell:AppsFolder\OpenAI.Codex_2p2nqsd0c76g0!App"
+    $appId = Get-CodexAppId
+    Start-Process "shell:AppsFolder\$appId"
+}
+
+function Test-CodexRunning() {
+    $running = Get-Process -ErrorAction SilentlyContinue | Where-Object {
+        $_.ProcessName -like "Codex*" -or $_.ProcessName -like "ChatGPT*" -or $_.ProcessName -eq "codex"
+    }
+    return [bool]$running
+}
+
+function Test-HotRouterMode() {
+    $codexConfig = Join-Path $env:USERPROFILE ".codex\config.toml"
+    if (!(Test-Path -LiteralPath $codexConfig)) {
+        return $false
+    }
+    $routerUrl = "http://$RouterHost`:$Port/v1"
+    return [bool]((Get-Content -LiteralPath $codexConfig -Raw -Encoding UTF8) -match [regex]::Escape("base_url = `"$routerUrl`""))
+}
+
+function Enable-HotRouterMode() {
+    if (Test-HotRouterMode) {
+        return
+    }
+    if (Test-CodexRunning) {
+        Fail "Codex/ChatGPT is running. Quit it completely before enabling 2.0 hot-router mode."
+    }
+    $modeScript = Join-Path $PSScriptRoot "windows-hot-router-mode.ps1"
+    if (!(Test-Path -LiteralPath $modeScript)) {
+        Fail "Hot-router mode helper was not found: $modeScript"
+    }
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $modeScript -Action enable -Config $Config -RouterUrl "http://$RouterHost`:$Port/v1"
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+    }
 }
 
 if ($env:OS -ne "Windows_NT") {
     Fail "This launcher is for Windows only."
 }
+
+if (Test-Path -LiteralPath $Config) {
+    try {
+        $privateConfig = Get-Content -LiteralPath $Config -Raw -Encoding UTF8 | ConvertFrom-Json
+        if (-not $RouterHost -and $privateConfig.hot_router.host) {
+            $RouterHost = [string]$privateConfig.hot_router.host
+        }
+        if (-not $Port -and $privateConfig.hot_router.port) {
+            $Port = [int]$privateConfig.hot_router.port
+        }
+    }
+    catch {
+        Write-Host "WARNING: could not read hot_router host/port from private config; using defaults."
+    }
+}
+if (-not $RouterHost) { $RouterHost = "127.0.0.1" }
+if (-not $Port) { $Port = 19032 }
 
 Write-Host "Checking local bridge on 127.0.0.1:19030..."
 Invoke-Switcher -ArgsList @("ensure-bridge", "--config", $Config) -AllowFailure
@@ -67,25 +142,41 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "WARNING: local bridge did not become healthy. Cloud models can still work, but local models will fail until the bridge is fixed."
 }
 
-Write-Host "Checking Codex hot router on 127.0.0.1:$Port..."
+Write-Host "Checking Codex hot router on $RouterHost`:$Port..."
 if (Test-HotRouter) {
-    Write-Host "Codex hot router is already running. Opening Codex..."
+    Write-Host "Codex hot router is already running."
+    Enable-HotRouterMode
+    Write-Host "Opening Codex..."
     Open-CodexDesktop
     exit 0
 }
 
-Write-Host "Starting Codex hot router on 127.0.0.1:$Port..."
+Write-Host "Starting Codex hot router on $RouterHost`:$Port..."
 Write-Host "Codex will open automatically after the router is healthy."
 Write-Host "Keep this window open. Closing it stops the router."
 Write-Host ""
 
+$appTarget = "shell:AppsFolder\$(Get-CodexAppId)"
+$modeScript = Join-Path $PSScriptRoot "windows-hot-router-mode.ps1"
+$routerUrl = "http://$RouterHost`:$Port/v1"
+$codexConfigToml = Join-Path $env:USERPROFILE ".codex\config.toml"
 $watcher = @"
-`$url = 'http://127.0.0.1:$Port/health'
+`$url = 'http://$RouterHost`:$Port/health'
 for (`$i = 0; `$i -lt 30; `$i++) {
     try {
         `$json = (Invoke-WebRequest -UseBasicParsing -Uri `$url -TimeoutSec 2).Content | ConvertFrom-Json
         if (`$json.router -eq 'codex-hot-router') {
-            Start-Process 'shell:AppsFolder\OpenAI.Codex_2p2nqsd0c76g0!App'
+            `$modeActive = `$false
+            if (Test-Path -LiteralPath '$codexConfigToml') {
+                `$modeActive = [bool]((Get-Content -LiteralPath '$codexConfigToml' -Raw -Encoding UTF8) -match [regex]::Escape('base_url = "$routerUrl"'))
+            }
+            if (-not `$modeActive) {
+                `$running = Get-Process -ErrorAction SilentlyContinue | Where-Object { `$_.ProcessName -like 'Codex*' -or `$_.ProcessName -like 'ChatGPT*' -or `$_.ProcessName -eq 'codex' }
+                if (`$running) { exit 2 }
+                & powershell -NoProfile -ExecutionPolicy Bypass -File '$modeScript' -Action enable -Config '$Config' -RouterUrl '$routerUrl'
+                if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }
+            }
+            Start-Process '$appTarget'
             exit 0
         }
     } catch {}
@@ -94,4 +185,4 @@ for (`$i = 0; `$i -lt 30; `$i++) {
 "@
 
 Start-Process powershell -WindowStyle Hidden -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $watcher)
-Invoke-Switcher -ArgsList @("hot-router", "--config", $Config, "--port", "$Port")
+Invoke-Switcher -ArgsList @("hot-router", "--config", $Config, "--host", $RouterHost, "--port", "$Port")

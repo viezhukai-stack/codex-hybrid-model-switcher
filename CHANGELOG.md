@@ -5,6 +5,48 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.18.0
+
+- Added macOS compatibility for the upgraded ChatGPT desktop app that now hosts
+  Codex. macOS launchers, guarded switch checks, installer detection, and
+  diagnostics now recognize both `ChatGPT.app` and legacy `Codex.app`.
+- Aligned the current macOS 2.0 hot-router catalog behavior with Windows 2.0:
+  cloud models now come from the live provider catalog by default, so new models
+  such as `gpt-5.6-sol` are not blocked by a stale static visible allowlist.
+- Made the repository hot router the shared macOS and Windows 2.0 runtime. The
+  live cloud catalog is dynamic by default, while model aliases, hidden models,
+  and an optional default cloud provider are private-config settings.
+- Added verified CA discovery for HTTPS cloud providers, preferring `certifi`
+  and common system/OpenSSL CA bundles without disabling certificate checks.
+- Added a local-only hot-router catalog so the full local package can expose
+  `local/gemma` on `127.0.0.1:19032` without a cloud API key.
+- Added the macOS `Start Codex Hybrid 2.0.command`, enable, and `19030` restore
+  launchers. The legacy model switcher remains a maintenance entry.
+- Added bundle-id-first macOS app discovery, dynamic Windows AppID discovery,
+  and explicit `ChatGPT.exe` running-process protection.
+- Added backup-first official configuration baselines. When no baseline exists,
+  official restore no longer pins an old model and lets Codex choose its current
+  recommended model.
+- Added optional native Codex diagnostics through `doctor --native-codex` and
+  unified package versions through generated `VERSION.txt` files. Native
+  diagnostics now report inaccessible WindowsApps CLI binaries or locked state
+  files as warnings instead of terminating with a traceback.
+- Fixed macOS running-app detection under `set -o pipefail` by avoiding
+  `ps | grep -q` pipelines, so guarded apply and canary launchers do not
+  mistakenly treat a running ChatGPT/Codex app as closed.
+- Rebuilt the private full-local netdisk packages after the compatibility fixes:
+  macOS SHA256
+  `1636f56cf27b1008967d34f4f10f84ee76fcd61a69c46c990676cca7cfa49334`
+  and Windows SHA256
+  `cb057af4cd7adae07ddaa54b2dd35b333d63620aa1cb97de2765bfeca3f5e9a8`.
+- Recorded the controlled macOS v2.18.0 UI canary after the upgraded
+  ChatGPT/Codex app restart: account, plugins, project conversations, model
+  list, `gpt-5.6-sol`, and the configured local model were confirmed working.
+  `auth.json` and `state_5.sqlite` stayed unchanged; the upgraded app refreshed
+  `models_cache.json` during launch.
+
+## v2.17.5
+
 - Added a hot-router stream shim for `gemini-pro-agent` / `Gemini 3.1 Pro
   (High)` so malformed upstream streams that stop after
   `response.created` / `response.in_progress` can be retried upstream as
@@ -14,9 +56,6 @@ conservative release process because it edits Codex provider configuration.
   `threads_batch`, `flash_attn`, `op_offload`, `mmproj_offload`, `fit`,
   `cache_ram`, and `ctx_checkpoints`, while keeping `extra_args` available for
   advanced flags.
-
-## v2.17.5
-
 - Added a Windows 2.0 hot-router runtime and desktop launcher so the normal
   Windows flow can keep Codex pointed at `127.0.0.1:19032` and use Codex's
   bottom-right model selector while routing local models through the lightweight

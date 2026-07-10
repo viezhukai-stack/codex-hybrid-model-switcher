@@ -18,6 +18,7 @@ done
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 switch_script="${repo_dir}/scripts/macos-provider-switch.sh"
+hot_router_mode_script="${repo_dir}/scripts/macos-hot-router-mode.sh"
 
 if [[ ! -f "${switch_script}" ]]; then
   echo "Provider switch script was not found." >&2
@@ -41,6 +42,13 @@ read -r -p "Restore official Codex now: " confirm
 if [[ "${confirm}" != "APPLY" ]]; then
   echo "Cancelled. No files were changed."
   exit 0
+fi
+
+if [[ -f "${hot_router_mode_script}" ]]; then
+  status_output="$(bash "${hot_router_mode_script}" status --config "${config}" 2>/dev/null || true)"
+  if [[ "${status_output}" == *'"active": true'* ]]; then
+    bash "${hot_router_mode_script}" restore --config "${config}"
+  fi
 fi
 
 bash "${switch_script}" --provider-id "openai-official" --config "${config}" --apply

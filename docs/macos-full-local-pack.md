@@ -1,12 +1,14 @@
 # macOS Full Local Model Package
 
-`Codex-Hybrid-macOS-Full-Local-Setup-v2.17.4.zip` is the private netdisk
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.0.zip` is the private netdisk
 package for Mac users who should be able to use a bundled local model without a
 cloud API key.
 
 ## What It Includes
 
 - The same double-click installer entries as the lightweight macOS package.
+- `Start Codex Hybrid 2.0.command`, `Enable Codex Hybrid 2.0.command`, and
+  `Restore Codex 19030 Mode.command`.
 - The bundled project payload under `payload/codex-hybrid-model-switcher`.
 - macOS llama.cpp runtimes for both `macos-x64` and `macos-arm64`.
 - `payload/models/local-gemma` with the GGUF model, mmproj file, test image,
@@ -15,9 +17,14 @@ cloud API key.
 It does not include Codex Desktop, CC Switch, account files, API keys, or any
 real Codex state.
 
+Current macOS Codex builds may be hosted inside `ChatGPT.app` instead of a
+separate `Codex.app`. The installer discovers bundle id `com.openai.codex`
+first, then keeps explicit `ChatGPT.app` and legacy `Codex.app` paths as
+fallbacks. Running-process protection also recognizes App Translocation paths.
+
 ## Beginner Flow
 
-1. Install and sign in to official Codex Desktop.
+1. Install and sign in to official ChatGPT/Codex Desktop.
 2. Extract the whole zip.
 3. Double-click `Install Codex Hybrid.command`.
 4. Wait while the installer copies about 6 GB of local model files into
@@ -27,8 +34,9 @@ real Codex state.
 6. If existing official project chats should remain visible after switching to
    `custom/local-gemma`, type `MIGRATE` when the installer asks about history
    unification. The installer dry-runs this first.
-7. After local smoke and guarded dry-run pass, quit Codex Desktop completely,
-   type `APPLY`, let the installer reopen Codex, and verify
+7. After local smoke and guarded dry-run pass, quit ChatGPT/Codex Desktop completely,
+   type `APPLY`, then use `Start Codex Hybrid 2.0.command` for normal launches.
+   Verify
    account, plugins, project conversations, and one new local test chat.
 
 ## Build
@@ -38,7 +46,7 @@ python3 scripts/build-macos-one-click-package.py --full-local
 ```
 
 The package is written to
-`dist/Codex-Hybrid-macOS-Full-Local-Setup-v2.17.4.zip`.
+`dist/Codex-Hybrid-macOS-Full-Local-Setup-v2.18.0.zip`.
 
 The build script uses the cached model directory by default:
 
@@ -54,6 +62,8 @@ It downloads fixed llama.cpp `b9860` macOS runtimes when they are not already in
 - Local smoke must pass before the installer enables `local-gemma`, unless
   `--skip-local-smoke` is used for troubleshooting.
 - Real apply is refused while Codex appears to be running.
+- Normal 2.0 use points Codex at `127.0.0.1:19032`; the maintenance rollback
+  restores the previous `19030` provider URL from a guarded backup.
 - Real apply writes only `~/.codex/config.toml` and creates a timestamped
   backup.
 - The installer does not edit `auth.json`, `models_cache.json`,

@@ -4,6 +4,7 @@ import argparse
 import difflib
 import hashlib
 import os
+import re
 import signal
 import shutil
 import socket
@@ -69,11 +70,23 @@ def codex_is_running() -> bool:
             proc = subprocess.run(["tasklist"], text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
             if proc.returncode != 0:
                 return True
-            return "Codex" in proc.stdout
+            output = proc.stdout.lower()
+            return any(
+                process in output
+                for process in ("chatgpt.exe", "codex.exe", "codex-command-runner")
+            )
         proc = subprocess.run(["ps", "-axo", "command"], text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
         if proc.returncode != 0:
             return True
-        return "Codex.app" in proc.stdout or "codex app-server" in proc.stdout
+        for line in proc.stdout.splitlines():
+            command = line.strip()
+            if re.search(r"/(ChatGPT|Codex)\.app/Contents/MacOS/(ChatGPT|Codex)$", command):
+                return True
+            if re.search(r"/(ChatGPT|Codex)\.app/Contents/Resources/codex( .*)? app-server\b", command):
+                return True
+            if re.search(r"/(ChatGPT|Codex)\.app/Contents/Resources/(codex-command-runner|codex-code-mode-host)\b", command):
+                return True
+        return False
     except OSError:
         return True
 
@@ -91,6 +104,35 @@ def runtime_dir(config: AppConfig) -> Path:
     path = Path.home() / ".codex-hybrid-model-switcher"
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def official_baseline_path(config: AppConfig) -> Path:
+    digest = hashlib.sha256(str(config.codex_home).encode("utf-8")).hexdigest()[:12]
+    return Path.home() / ".codex-hybrid-model-switcher" / f"official-config-baseline-{digest}.toml"
+
+
+def current_model_provider(config_text: str) -> str:
+    for line in config_text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("["):
+            break
+        match = re.match(r'^model_provider\s*=\s*["\']([^"\']+)["\']', stripped)
+        if match:
+            return match.group(1)
+    return "openai"
+
+
+def capture_official_baseline(config: AppConfig, existing: str) -> Path | None:
+    baseline = official_baseline_path(config)
+    if baseline.exists() or current_model_provider(existing) != "openai":
+        return None
+    baseline.parent.mkdir(parents=True, exist_ok=True)
+    baseline.write_text(existing, encoding="utf-8")
+    try:
+        baseline.chmod(0o600)
+    except OSError:
+        pass
+    return baseline
 
 
 def bridge_pid_file(config: AppConfig) -> Path:
@@ -232,10 +274,13 @@ def stop_bridge(config: AppConfig) -> None:
 
 
 def render_config(provider: dict, config: AppConfig, *, root_extras: str = "", custom_provider_extras: str = "") -> str:
-    model = str(provider.get("model") or "gpt-5.5")
+    model_value = provider.get("model")
+    model = str(model_value) if model_value else ""
     root = root_extras.strip()
     if provider.get("kind") == "official":
-        text = f'model_provider = "openai"\nmodel = "{model}"\nreview_model = "{model}"\n'
+        text = 'model_provider = "openai"\n'
+        if model:
+            text += f'model = "{model}"\nreview_model = "{model}"\n'
         if root:
             text += f"\n{root}\n"
         return text
@@ -276,6 +321,14 @@ def build_config_text(existing: str, provider: dict, config: AppConfig) -> str:
     if preserved:
         return f"{managed}\n\n{preserved}\n"
     return f"{managed}\n"
+
+
+def planned_config_text(existing: str, provider: dict, config: AppConfig) -> str:
+    if provider.get("kind") == "official":
+        baseline = official_baseline_path(config)
+        if baseline.exists():
+            return baseline.read_text(encoding="utf-8", errors="replace")
+    return build_config_text(existing, provider, config)
 
 
 def extract_custom_provider_extras(existing: str) -> str:
@@ -383,7 +436,7 @@ def switch_provider(provider_id: str, config_path: str | None = None, *, force: 
     provider = config.provider(provider_id)
     path = codex_config_path(config)
     existing = path.read_text(encoding="utf-8", errors="replace") if path.exists() else ""
-    text = build_config_text(existing, provider, config)
+    text = planned_config_text(existing, provider, config)
     if dry_run:
         print("Dry run: no files changed, no backup created, bridge not started or stopped.")
         if provider_requires_bridge(provider, config):
@@ -402,6 +455,9 @@ def switch_provider(provider_id: str, config_path: str | None = None, *, force: 
     if codex_is_running() and not force:
         print("Codex Desktop appears to be running. Quit Codex completely, then rerun the switch.")
         return 2
+    baseline = None
+    if provider.get("kind") != "official":
+        baseline = capture_official_baseline(config, existing)
     requires_bridge = provider_requires_bridge(provider, config)
     if requires_bridge:
         start_bridge(config)
@@ -412,6 +468,8 @@ def switch_provider(provider_id: str, config_path: str | None = None, *, force: 
         stop_bridge(config)
     if backup:
         print(f"Backed up previous config: {backup}")
+    if baseline:
+        print(f"Saved original official config baseline: {baseline}")
     print(f"Switched Codex provider to {provider_id}")
     return 0
 

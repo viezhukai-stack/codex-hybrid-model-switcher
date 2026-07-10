@@ -2,7 +2,7 @@ param(
     [ValidateSet("enable", "restore", "status")]
     [string]$Action = "status",
     [string]$Config = "$env:USERPROFILE\.codex-hybrid-model-switcher\config.json",
-    [string]$RouterUrl = "http://127.0.0.1:19032/v1"
+    [string]$RouterUrl
 )
 
 $ErrorActionPreference = "Stop"
@@ -49,7 +49,7 @@ if ($env:OS -ne "Windows_NT") {
 }
 
 $argsList = @("hot-router-mode", $Action, "--config", $Config)
-if ($Action -eq "enable") {
+if ($Action -eq "enable" -and $RouterUrl) {
     $argsList += @("--router-url", $RouterUrl)
 }
 

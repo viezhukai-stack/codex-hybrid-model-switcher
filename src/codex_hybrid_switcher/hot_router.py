@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import socket
+import ssl
 import time
 import urllib.error
 import urllib.parse
@@ -31,6 +32,33 @@ HOP_BY_HOP_HEADERS = {
     "content-length",
     "accept-encoding",
 }
+CATALOG_CONDITIONAL_HEADERS = {"if-match", "if-none-match", "if-modified-since", "if-unmodified-since", "if-range"}
+CATALOG_VALIDATOR_HEADERS = {"etag", "last-modified", "expires"}
+
+
+def build_tls_context() -> ssl.SSLContext:
+    try:
+        import certifi  # type: ignore
+
+        return ssl.create_default_context(cafile=certifi.where())
+    except (ImportError, OSError, ssl.SSLError):
+        pass
+    for candidate in (
+        "/etc/ssl/cert.pem",
+        "/etc/ssl/certs/ca-certificates.crt",
+        "/usr/local/etc/openssl@3/cert.pem",
+        "/opt/homebrew/etc/openssl@3/cert.pem",
+    ):
+        if not Path(candidate).is_file():
+            continue
+        try:
+            return ssl.create_default_context(cafile=candidate)
+        except (OSError, ssl.SSLError):
+            continue
+    return ssl.create_default_context()
+
+
+TLS_CONTEXT = build_tls_context()
 
 
 def runtime_root() -> Path:
@@ -103,7 +131,29 @@ def cloud_providers(config: AppConfig) -> list[dict[str, Any]]:
     return [provider for provider in config.providers if provider.get("kind") == "cloud" and provider.get("base_url")]
 
 
+def cloud_provider_by_id(config: AppConfig, provider_id: str | None) -> dict[str, Any] | None:
+    if not provider_id:
+        return None
+    try:
+        provider = config.provider(provider_id)
+    except KeyError:
+        return None
+    return dict(provider) if provider.get("kind") == "cloud" and provider.get("base_url") else None
+
+
+def cloud_connection_key(provider: dict[str, Any]) -> tuple[str, str, str, str]:
+    return (
+        str(provider.get("base_url") or "").rstrip("/"),
+        str(provider.get("api_key_env") or ""),
+        str(provider.get("route") or "direct"),
+        str(provider.get("wire_api") or "responses"),
+    )
+
+
 def primary_cloud_provider(config: AppConfig) -> dict[str, Any] | None:
+    configured = cloud_provider_by_id(config, config.hot_router.default_cloud_provider_id)
+    if configured:
+        return configured
     clouds = cloud_providers(config)
     if not clouds:
         return None
@@ -116,13 +166,26 @@ def cloud_provider_for_model(config: AppConfig, model: str | None) -> dict[str, 
         provider = config.provider_for_model(model)
         if provider and provider.get("kind") == "cloud":
             return provider
+    configured = cloud_provider_by_id(config, config.hot_router.default_cloud_provider_id)
+    if configured:
+        if model:
+            configured["model"] = model
+        return configured
     clouds = cloud_providers(config)
     if len(clouds) == 1:
         return dict(clouds[0])
-    bridge_clouds = [provider for provider in clouds if str(provider.get("route") or "direct") == "bridge"]
-    if len(bridge_clouds) == 1:
-        return dict(bridge_clouds[0])
+    if clouds and len({cloud_connection_key(provider) for provider in clouds}) == 1:
+        shared = dict(clouds[0])
+        if model:
+            shared["model"] = model
+        return shared
     return None
+
+
+def resolve_model_alias(config: AppConfig, model: str | None) -> str | None:
+    if not model:
+        return model
+    return config.hot_router.model_aliases.get(model, model)
 
 
 def target_url(upstream_base: str, path: str) -> str:
@@ -140,11 +203,16 @@ def hop_by_hop_header(name: str) -> bool:
     return name.lower() in HOP_BY_HOP_HEADERS
 
 
-def filtered_incoming_headers(handler: BaseHTTPRequestHandler, body_len: int | None = None) -> dict[str, str]:
+def filtered_incoming_headers(
+    handler: BaseHTTPRequestHandler,
+    body_len: int | None = None,
+    *,
+    catalog: bool = False,
+) -> dict[str, str]:
     headers: dict[str, str] = {}
     for name, value in handler.headers.items():
         lower = name.lower()
-        if hop_by_hop_header(name) or lower in SENSITIVE_HEADERS:
+        if hop_by_hop_header(name) or lower in SENSITIVE_HEADERS or (catalog and lower in CATALOG_CONDITIONAL_HEADERS):
             continue
         headers[name] = value
     if body_len is not None:
@@ -161,8 +229,11 @@ def apply_provider_auth(headers: dict[str, str], provider: dict[str, Any]) -> No
 
 def read_upstream(url: str, method: str, headers: dict[str, str], *, data: bytes | None = None, timeout: float = 30) -> tuple[int, dict[str, str], bytes]:
     request = urllib.request.Request(url, data=data, headers=headers, method=method)
+    open_kwargs: dict[str, Any] = {"timeout": timeout}
+    if urllib.parse.urlsplit(url).scheme.lower() == "https":
+        open_kwargs["context"] = TLS_CONTEXT
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with urllib.request.urlopen(request, **open_kwargs) as response:
             return response.status, dict(response.headers.items()), response.read()
     except urllib.error.HTTPError as exc:
         return exc.code, dict(exc.headers.items()), exc.read()
@@ -277,6 +348,48 @@ def merge_local_models(cloud_body: bytes, local_ids: list[str], config: AppConfi
         return json.dumps(list(cloud_obj) + additions, ensure_ascii=False, separators=(",", ":")).encode("utf-8"), len(additions), "list"
 
     return cloud_body, 0, type(cloud_obj).__name__
+
+
+def filter_catalog_models(
+    body: bytes,
+    visible_ids: set[str],
+    hidden_ids: set[str],
+) -> tuple[bytes, int, int, str]:
+    try:
+        obj = json.loads(body.decode("utf-8-sig"))
+    except Exception:
+        return body, 0, 0, "unknown"
+
+    items = catalog_items(obj)
+    if not items:
+        return body, 0, 0, type(obj).__name__
+    kept: list[dict[str, Any]] = []
+    hidden_removed = 0
+    visible_removed = 0
+    for item in items:
+        mid = model_id(item)
+        if mid and mid in hidden_ids:
+            hidden_removed += 1
+            continue
+        if visible_ids and mid and mid not in visible_ids and not should_route_local(mid):
+            visible_removed += 1
+            continue
+        kept.append(item)
+
+    if isinstance(obj, dict) and isinstance(obj.get("data"), list):
+        result = dict(obj)
+        result["data"] = kept
+        shape = "data"
+    elif isinstance(obj, dict) and isinstance(obj.get("models"), list):
+        result = dict(obj)
+        result["models"] = kept
+        shape = "models"
+    elif isinstance(obj, list):
+        result = kept
+        shape = "list"
+    else:
+        return body, hidden_removed, visible_removed, type(obj).__name__
+    return json.dumps(result, ensure_ascii=False, separators=(",", ":")).encode("utf-8"), hidden_removed, visible_removed, shape
 
 
 def response_text_from_json(data: dict[str, Any]) -> str:
@@ -410,10 +523,16 @@ def should_shim_cloud_responses_stream(provider: dict[str, Any] | None, model: s
 
 
 class HotRouter:
-    def __init__(self, config: AppConfig, host: str = "127.0.0.1", port: int = 19032, local_catalog_timeout: float = 2.0) -> None:
+    def __init__(
+        self,
+        config: AppConfig,
+        host: str | None = None,
+        port: int | None = None,
+        local_catalog_timeout: float = 2.0,
+    ) -> None:
         self.config = config
-        self.host = host
-        self.port = port
+        self.host = host or config.hot_router.host
+        self.port = port or config.hot_router.port
         self.local_catalog_timeout = local_catalog_timeout
         self.catalog_cache: dict[str, Any] = {"expires_at": 0.0}
 
@@ -451,7 +570,7 @@ class HotRouter:
             self.catalog_cache.update(
                 {
                     "key": self.cache_key(path),
-                    "expires_at": time.time() + 15,
+                    "expires_at": time.time() + self.config.hot_router.catalog_cache_seconds,
                     "status": status,
                     "headers": dict(headers),
                     "body": body,
@@ -469,6 +588,9 @@ class HotRouter:
             "config": str(self.config.path),
             "logFile": str(log_file()),
             "localModels": local_model_ids(self.config),
+            "defaultCloudProviderId": self.config.hot_router.default_cloud_provider_id,
+            "hiddenModelIds": list(self.config.hot_router.hidden_model_ids),
+            "visibleFilterEnabled": bool(self.config.hot_router.visible_model_ids),
         }
         state_file().write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -512,6 +634,10 @@ class HotRouterHandler(BaseHTTPRequestHandler):
                     "local_upstream": self.router.local_upstream,
                     "log_file": str(log_file()),
                     "local_models": local_model_ids(self.router.config),
+                    "default_cloud_provider_id": self.router.config.hot_router.default_cloud_provider_id,
+                    "visible_filter_enabled": bool(self.router.config.hot_router.visible_model_ids),
+                    "visible_models": list(self.router.config.hot_router.visible_model_ids),
+                    "hidden_models": list(self.router.config.hot_router.hidden_model_ids),
                 },
             )
             return
@@ -527,8 +653,9 @@ class HotRouterHandler(BaseHTTPRequestHandler):
         request_id = uuid.uuid4().hex
         endpoint = urllib.parse.urlsplit(self.path).path
         provider = primary_cloud_provider(self.router.config)
-        if not provider:
-            self.write_json(502, {"error": "no cloud provider configured for hot router catalog"})
+        local_ids = local_model_ids(self.router.config)
+        if not provider and not local_ids:
+            self.write_json(502, {"error": "no cloud or local provider configured for hot router catalog"})
             return
 
         log_event("request", request_id=request_id, method=self.command, endpoint=endpoint, model=None, route="catalog")
@@ -539,24 +666,28 @@ class HotRouterHandler(BaseHTTPRequestHandler):
             log_event("response", request_id=request_id, status=status, route="catalog", response_bytes=len(body), **meta)
             return
 
-        headers = filtered_incoming_headers(self)
-        apply_provider_auth(headers, provider)
-        try:
-            status, response_headers, body = read_upstream(
-                target_url(str(provider["base_url"]), self.path),
-                self.command,
-                headers,
-                timeout=30,
-            )
-        except Exception as exc:
-            payload = {"error": f"cloud catalog unavailable: {type(exc).__name__}: {exc}"}
-            self.write_json(502, payload)
-            log_event("response", request_id=request_id, status=502, route="catalog", error=payload["error"], response_bytes=0)
-            return
+        if provider:
+            headers = filtered_incoming_headers(self, catalog=True)
+            apply_provider_auth(headers, provider)
+            try:
+                status, response_headers, body = read_upstream(
+                    target_url(str(provider["base_url"]), self.path),
+                    self.command,
+                    headers,
+                    timeout=30,
+                )
+            except Exception as exc:
+                payload = {"error": f"cloud catalog unavailable: {type(exc).__name__}: {exc}"}
+                self.write_json(502, payload)
+                log_event("response", request_id=request_id, status=502, route="catalog", error=payload["error"], response_bytes=0)
+                return
+        else:
+            status = 200
+            response_headers = {"Content-Type": "application/json"}
+            body = json.dumps({"models": []}, separators=(",", ":")).encode("utf-8")
 
         local_source = "none"
         local_error = None
-        local_ids = local_model_ids(self.router.config)
         local_found = 0
         local_added = 0
         shape = "unknown"
@@ -588,12 +719,27 @@ class HotRouterHandler(BaseHTTPRequestHandler):
                 local_error = "local upstream port is not listening"
                 local_source = "fallback"
 
+        visible_ids = set(self.router.config.hot_router.visible_model_ids)
+        hidden_ids = set(self.router.config.hot_router.hidden_model_ids)
+        body, hidden_removed, visible_removed, filter_shape = filter_catalog_models(body, visible_ids, hidden_ids)
+        if shape in {"unknown", "none"}:
+            shape = filter_shape
+
+        response_headers = {
+            name: value
+            for name, value in response_headers.items()
+            if name.lower() not in CATALOG_VALIDATOR_HEADERS
+        }
+        response_headers["Cache-Control"] = "no-store"
+
         meta = {
             "local_models_added": local_added,
             "local_models_found": local_found,
             "local_catalog_source": local_source,
             "local_catalog_error": local_error,
             "catalog_shape": shape,
+            "hidden_models_removed": hidden_removed,
+            "visible_models_removed": visible_removed,
         }
         self.router.store_catalog(self.path, status, response_headers, body, meta)
         self.send_upstream(status, response_headers, body)
@@ -607,7 +753,13 @@ class HotRouterHandler(BaseHTTPRequestHandler):
             raw = self.rfile.read(length) if length else b""
         body = parse_json_body(raw)
         model = extract_model(body)
-        route, upstream, provider = self.router.route_for_model(model)
+        upstream_model = resolve_model_alias(self.router.config, model)
+        upstream_raw = raw
+        if upstream_model != model and body:
+            upstream_body = dict(body)
+            upstream_body["model"] = upstream_model
+            upstream_raw = json.dumps(upstream_body, ensure_ascii=False).encode("utf-8")
+        route, upstream, provider = self.router.route_for_model(upstream_model)
         endpoint = urllib.parse.urlsplit(self.path).path
         stream = body.get("stream") if isinstance(body.get("stream"), bool) else None
 
@@ -617,10 +769,12 @@ class HotRouterHandler(BaseHTTPRequestHandler):
             method=self.command,
             endpoint=endpoint,
             model=model,
+            upstream_model=upstream_model,
             route=route,
             reasoning=extract_reasoning(body),
             stream=stream,
             content_length=len(raw),
+            upstream_content_length=len(upstream_raw),
         )
 
         if route == "error":
@@ -629,14 +783,33 @@ class HotRouterHandler(BaseHTTPRequestHandler):
             return
 
         if self.command == "POST" and route == "local" and endpoint.endswith("/responses") and stream is True:
-            self.proxy_responses_stream_shim(request_id, raw, model or "local/unknown", upstream, "local", None, {"stream_shim": True})
+            self.proxy_responses_stream_shim(
+                request_id,
+                upstream_raw,
+                upstream_model or "local/unknown",
+                upstream,
+                "local",
+                None,
+                {"stream_shim": True},
+            )
             return
 
-        if self.command == "POST" and route == "cloud" and should_shim_cloud_responses_stream(provider, model, endpoint, stream):
-            self.proxy_responses_stream_shim(request_id, raw, model or "cloud/unknown", upstream, "cloud", provider, {"gemini_stream_shim": True})
+        if self.command == "POST" and route == "cloud" and should_shim_cloud_responses_stream(provider, upstream_model, endpoint, stream):
+            self.proxy_responses_stream_shim(
+                request_id,
+                upstream_raw,
+                upstream_model or "cloud/unknown",
+                upstream,
+                "cloud",
+                provider,
+                {"cloud_stream_shim": True},
+            )
             return
 
-        headers = filtered_incoming_headers(self, len(raw) if self.command in {"POST", "PUT", "PATCH"} else None)
+        headers = filtered_incoming_headers(
+            self,
+            len(upstream_raw) if self.command in {"POST", "PUT", "PATCH"} else None,
+        )
         if provider:
             apply_provider_auth(headers, provider)
         try:
@@ -644,7 +817,7 @@ class HotRouterHandler(BaseHTTPRequestHandler):
                 target_url(upstream, self.path),
                 self.command,
                 headers,
-                data=raw if self.command in {"POST", "PUT", "PATCH"} else None,
+                data=upstream_raw if self.command in {"POST", "PUT", "PATCH"} else None,
                 timeout=600,
             )
             self.send_upstream(status, response_headers, response_body)
@@ -704,12 +877,12 @@ def handler_for(router: HotRouter) -> type[HotRouterHandler]:
     return BoundHotRouterHandler
 
 
-def run_hot_router(config_path: str | None = None, *, host: str = "127.0.0.1", port: int = 19032) -> int:
+def run_hot_router(config_path: str | None = None, *, host: str | None = None, port: int | None = None) -> int:
     config = load_config(config_path)
     router = HotRouter(config, host=host, port=port)
     router.write_state()
-    server = ThreadingHTTPServer((host, port), handler_for(router))
-    print(f"Codex hot router listening on http://{host}:{port}/v1")
+    server = ThreadingHTTPServer((router.host, router.port), handler_for(router))
+    print(f"Codex hot router listening on http://{router.host}:{router.port}/v1")
     print(f"Cloud provider: {primary_cloud_provider(config).get('id') if primary_cloud_provider(config) else '<missing>'}")
     print(f"Local bridge: {router.local_upstream}")
     print(f"Log: {log_file()}")
@@ -725,7 +898,7 @@ def run_hot_router(config_path: str | None = None, *, host: str = "127.0.0.1", p
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run the Codex hot router.")
     parser.add_argument("--config")
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=19032)
+    parser.add_argument("--host")
+    parser.add_argument("--port", type=int)
     args = parser.parse_args(argv)
     return run_hot_router(args.config, host=args.host, port=args.port)

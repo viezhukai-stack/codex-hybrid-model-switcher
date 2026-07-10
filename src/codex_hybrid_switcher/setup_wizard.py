@@ -75,7 +75,6 @@ def build_first_run_config(
                 "id": "openai-official",
                 "label": "OpenAI Official",
                 "kind": "official",
-                "model": "gpt-5.5",
             }
         )
     if include_cloud:
@@ -133,6 +132,14 @@ def build_first_run_config(
             "port": 19030,
             "llama_port": 19031,
             "idle_seconds": 600,
+        },
+        "hot_router": {
+            "host": "127.0.0.1",
+            "port": 19032,
+            "default_cloud_provider_id": provider_id if include_cloud else None,
+            "hidden_model_ids": [],
+            "model_aliases": {},
+            "catalog_cache_seconds": 15,
         },
         "providers": providers,
         "local_model": local_model,

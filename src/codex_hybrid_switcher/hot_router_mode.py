@@ -129,10 +129,11 @@ def run_hot_router_mode(
     command: str,
     config_path: str | None = None,
     *,
-    router_url: str = DEFAULT_ROUTER_URL,
+    router_url: str | None = None,
     allow_codex_running: bool = False,
 ) -> int:
     config = load_config(config_path)
+    router_url = router_url or f"http://{config.hot_router.host}:{config.hot_router.port}/v1"
     codex_config = codex_config_path(config)
     marker = active_file(config.path)
 
@@ -191,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Enable or restore Codex hot router mode.")
     parser.add_argument("command", choices=["enable", "restore", "status"])
     parser.add_argument("--config")
-    parser.add_argument("--router-url", default=DEFAULT_ROUTER_URL)
+    parser.add_argument("--router-url")
     parser.add_argument("--allow-codex-running", action="store_true")
     args = parser.parse_args(argv)
     try:

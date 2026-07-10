@@ -30,12 +30,18 @@ Edit only your local private config:
 - provider `model`
 - provider `route` (`bridge` for normal API-key providers, `direct` only for
   providers known to work with Codex Desktop direct auth)
+- `hot_router.default_cloud_provider_id` for newly published cloud model IDs
+- optional private `hot_router.hidden_model_ids` and `hot_router.model_aliases`
 - local `llama_server_path`
 - local `model_path`
 - local `mmproj_path`
 
 Keep API keys in environment variables or your local provider manager. Do not
 write key values into the config.
+
+Leave `hot_router.visible_model_ids` absent or empty for the normal dynamic
+catalog. A non-empty value is an explicit troubleshooting allowlist and can hide
+future models until it is updated.
 
 With `route=bridge`, Codex's planned `config.toml` points at
 `127.0.0.1:19030`; the bridge uses `api_key_env` to forward to the real
