@@ -356,8 +356,9 @@ codex_auth_present() {
 }
 
 codex_running() {
-  ps -ww -axo args= 2>/dev/null \
-    | grep -q -E '/(ChatGPT|Codex)\.app/Contents/MacOS/(ChatGPT|Codex)$|/(ChatGPT|Codex)\.app/Contents/Resources/codex( .*)? app-server|/(ChatGPT|Codex)\.app/Contents/Resources/(codex-command-runner|codex-code-mode-host)'
+  local process_list
+  process_list="$(ps -ww -axo args= 2>/dev/null || true)"
+  grep -q -E '/(ChatGPT|Codex)\.app/Contents/MacOS/(ChatGPT|Codex)$|/(ChatGPT|Codex)\.app/Contents/Resources/codex( .*)? app-server|/(ChatGPT|Codex)\.app/Contents/Resources/(codex-command-runner|codex-code-mode-host)' <<<"${process_list}"
 }
 
 ensure_codex_ready() {

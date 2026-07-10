@@ -169,6 +169,8 @@ def test_macos_provider_switch_detects_new_chatgpt_desktop_processes():
     assert "com.openai.codex" in text
     assert text.index("mdfind") < text.index('"/Applications/ChatGPT.app"')
     assert 'wait "${cli_pid}"' in text
+    assert "process_list=" in text
+    assert "| grep -q" not in text
 
 
 def test_macos_hot_router_launcher_uses_config_and_native_app_discovery():
