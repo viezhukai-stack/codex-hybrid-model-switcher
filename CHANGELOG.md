@@ -39,6 +39,11 @@ conservative release process because it edits Codex provider configuration.
   `1636f56cf27b1008967d34f4f10f84ee76fcd61a69c46c990676cca7cfa49334`
   and Windows SHA256
   `cb057af4cd7adae07ddaa54b2dd35b333d63620aa1cb97de2765bfeca3f5e9a8`.
+- Recorded the controlled macOS v2.18.0 UI canary after the upgraded
+  ChatGPT/Codex app restart: account, plugins, project conversations, model
+  list, `gpt-5.6-sol`, and the configured local model were confirmed working.
+  `auth.json` and `state_5.sqlite` stayed unchanged; the upgraded app refreshed
+  `models_cache.json` during launch.
 
 ## v2.17.5
 
