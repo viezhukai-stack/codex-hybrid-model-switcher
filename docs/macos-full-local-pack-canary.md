@@ -19,10 +19,17 @@ sha256: 27120d176555b542a0c046c937f3667c2e36cad763f881a1ef7e17b474964625
 
 Passed.
 
-Current private netdisk distribution uses
-`Codex-Hybrid-macOS-Full-Local-Setup-v2.17.4.zip`. v2.17.4 keeps the same
-full-local runtime path and cleans the netdisk payload by excluding repository
-development files.
+Current private netdisk distribution uses:
+
+```text
+Codex-Hybrid-macOS-Full-Local-Setup-v2.18.0.zip
+sha256: 1636f56cf27b1008967d34f4f10f84ee76fcd61a69c46c990676cca7cfa49334
+```
+
+v2.18.0 keeps the same full-local runtime path and adds compatibility for the
+upgraded ChatGPT/Codex app path, the shared 2.0 hot router, dynamic cloud
+catalogs, and rebuilt package payloads that exclude repository development
+files.
 
 The operator completed a real UI test of the macOS full-local package and
 confirmed:
@@ -57,6 +64,9 @@ new-thread/runtime state from the restored main session.
 - This canary proves the v2.17.3 macOS full-local package can be installed and
   used in Codex Desktop without breaking account, plugin, project conversation,
   or reply behavior on the tested Mac.
+- The v2.18.0 package has passed package integrity, model manifest, runtime, and
+  redaction audits after rebuild. A fresh v2.18.0 UI canary is tracked
+  separately because it requires fully quitting the active ChatGPT/Codex app.
 - It does not prove performance on every Mac. Local model speed remains
   hardware-dependent.
 - Lightweight macOS cloud packages are no longer the distribution priority; the

@@ -158,8 +158,10 @@ Python by default, but the builder can include a tested runtime under
 `payload/python`.
 
 See [`docs/macos-full-local-pack.md`](docs/macos-full-local-pack.md).
-The v2.17.3 full-local package has a real Mac UI canary recorded in
-[`docs/macos-full-local-pack-canary.md`](docs/macos-full-local-pack-canary.md).
+The v2.17.3 full-local flow has a real Mac UI canary recorded in
+[`docs/macos-full-local-pack-canary.md`](docs/macos-full-local-pack-canary.md);
+the current v2.18.0 package has been rebuilt and audited for the upgraded
+ChatGPT/Codex app path, with a fresh UI canary tracked separately.
 
 ### 2.0 hot-router configuration
 

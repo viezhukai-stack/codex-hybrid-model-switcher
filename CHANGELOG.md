@@ -31,6 +31,14 @@ conservative release process because it edits Codex provider configuration.
   unified package versions through generated `VERSION.txt` files. Native
   diagnostics now report inaccessible WindowsApps CLI binaries or locked state
   files as warnings instead of terminating with a traceback.
+- Fixed macOS running-app detection under `set -o pipefail` by avoiding
+  `ps | grep -q` pipelines, so guarded apply and canary launchers do not
+  mistakenly treat a running ChatGPT/Codex app as closed.
+- Rebuilt the private full-local netdisk packages after the compatibility fixes:
+  macOS SHA256
+  `1636f56cf27b1008967d34f4f10f84ee76fcd61a69c46c990676cca7cfa49334`
+  and Windows SHA256
+  `cb057af4cd7adae07ddaa54b2dd35b333d63620aa1cb97de2765bfeca3f5e9a8`.
 
 ## v2.17.5
 

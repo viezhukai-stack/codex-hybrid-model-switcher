@@ -21,6 +21,16 @@ Current private netdisk distribution uses
 full-local runtime path and cleans the netdisk payload by excluding repository
 development files.
 
+Current v2.18.0 package SHA256:
+
+```text
+cb057af4cd7adae07ddaa54b2dd35b333d63620aa1cb97de2765bfeca3f5e9a8
+```
+
+The rebuilt v2.18.0 package passed ZIP integrity checks and package structure
+audits for bundled portable Python, llama.cpp, VC++ Runtime, local Gemma GGUF,
+mmproj, test image, model manifest, and redacted project payload.
+
 The v2.15.1 and v2.15.2 HL VM attempts found real setup gaps before final UI
 apply:
 
