@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import socket
+import ssl
 import time
 import urllib.error
 import urllib.parse
@@ -33,6 +34,31 @@ HOP_BY_HOP_HEADERS = {
 }
 CATALOG_CONDITIONAL_HEADERS = {"if-match", "if-none-match", "if-modified-since", "if-unmodified-since", "if-range"}
 CATALOG_VALIDATOR_HEADERS = {"etag", "last-modified", "expires"}
+
+
+def build_tls_context() -> ssl.SSLContext:
+    try:
+        import certifi  # type: ignore
+
+        return ssl.create_default_context(cafile=certifi.where())
+    except (ImportError, OSError, ssl.SSLError):
+        pass
+    for candidate in (
+        "/etc/ssl/cert.pem",
+        "/etc/ssl/certs/ca-certificates.crt",
+        "/usr/local/etc/openssl@3/cert.pem",
+        "/opt/homebrew/etc/openssl@3/cert.pem",
+    ):
+        if not Path(candidate).is_file():
+            continue
+        try:
+            return ssl.create_default_context(cafile=candidate)
+        except (OSError, ssl.SSLError):
+            continue
+    return ssl.create_default_context()
+
+
+TLS_CONTEXT = build_tls_context()
 
 
 def runtime_root() -> Path:
@@ -203,8 +229,11 @@ def apply_provider_auth(headers: dict[str, str], provider: dict[str, Any]) -> No
 
 def read_upstream(url: str, method: str, headers: dict[str, str], *, data: bytes | None = None, timeout: float = 30) -> tuple[int, dict[str, str], bytes]:
     request = urllib.request.Request(url, data=data, headers=headers, method=method)
+    open_kwargs: dict[str, Any] = {"timeout": timeout}
+    if urllib.parse.urlsplit(url).scheme.lower() == "https":
+        open_kwargs["context"] = TLS_CONTEXT
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with urllib.request.urlopen(request, **open_kwargs) as response:
             return response.status, dict(response.headers.items()), response.read()
     except urllib.error.HTTPError as exc:
         return exc.code, dict(exc.headers.items()), exc.read()

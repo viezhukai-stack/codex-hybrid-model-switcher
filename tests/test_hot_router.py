@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import ssl
 import threading
 import urllib.request
 from http.server import ThreadingHTTPServer
@@ -14,6 +15,7 @@ from codex_hybrid_switcher.hot_router import (
     local_model_ids,
     merge_local_models,
     primary_cloud_provider,
+    read_upstream,
     resolve_model_alias,
     responses_sse_body,
     should_route_local,
@@ -211,6 +213,39 @@ def test_local_only_http_catalog_returns_model_without_cloud_key(tmp_path, monke
 
     assert response.status == 200
     assert [item["slug"] for item in payload["models"]] == ["local/gemma"]
+
+
+def test_read_upstream_uses_verified_tls_context_for_https(monkeypatch):
+    captured = {}
+
+    class FakeResponse:
+        status = 200
+        headers = {"Content-Type": "application/json"}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self):
+            return b"{}"
+
+    def fake_urlopen(request, **kwargs):
+        captured["url"] = request.full_url
+        captured.update(kwargs)
+        return FakeResponse()
+
+    monkeypatch.setattr("codex_hybrid_switcher.hot_router.urllib.request.urlopen", fake_urlopen)
+
+    status, headers, body = read_upstream("https://provider.example/v1/models", "GET", {})
+
+    assert status == 200
+    assert headers["Content-Type"] == "application/json"
+    assert body == b"{}"
+    assert captured["url"] == "https://provider.example/v1/models"
+    assert captured["timeout"] == 30
+    assert isinstance(captured["context"], ssl.SSLContext)
 
 
 def test_hot_router_uses_config_host_and_port_when_cli_overrides_are_absent(tmp_path):

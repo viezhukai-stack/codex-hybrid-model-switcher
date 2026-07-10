@@ -16,6 +16,8 @@ conservative release process because it edits Codex provider configuration.
 - Made the repository hot router the shared macOS and Windows 2.0 runtime. The
   live cloud catalog is dynamic by default, while model aliases, hidden models,
   and an optional default cloud provider are private-config settings.
+- Added verified CA discovery for HTTPS cloud providers, preferring `certifi`
+  and common system/OpenSSL CA bundles without disabling certificate checks.
 - Added a local-only hot-router catalog so the full local package can expose
   `local/gemma` on `127.0.0.1:19032` without a cloud API key.
 - Added the macOS `Start Codex Hybrid 2.0.command`, enable, and `19030` restore
