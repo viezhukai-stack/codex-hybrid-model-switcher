@@ -183,6 +183,7 @@ def test_rendered_config_keeps_root_settings_before_provider_section(tmp_path):
     existing = """model = "gpt-5.5"
 model_provider = "custom"
 model_reasoning_effort = "high"
+service_tier = "fast"
 notify = [ "notify.exe", "turn-ended" ]
 
 [model_providers.custom]
@@ -194,14 +195,78 @@ experimental_bearer_token = "secret-token"
 
 [desktop]
 conversationDetailMode = "STEPS_PROSE"
+
+[memories]
+enabled = true
+
+[marketplaces]
+enabled = true
 """
 
     rendered = switcher.build_config_text(existing, provider, config)
 
     assert rendered.index('model_reasoning_effort = "high"') < rendered.index("[model_providers.custom]")
+    assert 'service_tier = "fast"' in rendered
     assert rendered.index('notify = [ "notify.exe", "turn-ended" ]') < rendered.index("[model_providers.custom]")
     assert rendered.index("[model_providers.custom]") < rendered.index("[desktop]")
+    assert "[memories]" in rendered
+    assert "[marketplaces]" in rendered
     assert 'experimental_bearer_token = "secret-token"' in rendered
+
+
+def test_official_provider_without_model_uses_recommended_model_behavior(tmp_path):
+    config_path, _codex_home = write_config(tmp_path)
+    config = load_config(str(config_path))
+    provider = {"id": "openai-official", "kind": "official", "label": "OpenAI Official"}
+    existing = """model_provider = "custom"
+model = "provider-model"
+review_model = "provider-model"
+service_tier = "fast"
+
+[model_providers.custom]
+name = "Custom"
+base_url = "http://127.0.0.1:19030/v1"
+wire_api = "responses"
+
+[plugins]
+enabled = true
+"""
+
+    rendered = switcher.build_config_text(existing, provider, config)
+
+    assert 'model_provider = "openai"' in rendered
+    assert '\nmodel = ' not in rendered
+    assert '\nreview_model = ' not in rendered
+    assert 'service_tier = "fast"' in rendered
+    assert "[plugins]" in rendered
+    assert "[model_providers.custom]" not in rendered
+
+
+def test_first_custom_apply_saves_official_baseline_and_restore_reuses_it(tmp_path, monkeypatch):
+    codex_home = tmp_path / "codex-home"
+    config_path, _ = write_config(tmp_path, codex_home=codex_home)
+    data = json.loads(config_path.read_text(encoding="utf-8"))
+    data["providers"].insert(0, {"id": "openai-official", "label": "OpenAI Official", "kind": "official"})
+    config_path.write_text(json.dumps(data), encoding="utf-8")
+    codex_home.mkdir()
+    original = """model_provider = "openai"
+service_tier = "fast"
+
+[plugins]
+enabled = true
+"""
+    config_toml = codex_home / "config.toml"
+    config_toml.write_text(original, encoding="utf-8")
+    baseline = tmp_path / "official-baseline.toml"
+
+    monkeypatch.setattr(switcher, "official_baseline_path", lambda _config: baseline)
+    monkeypatch.setattr(switcher, "codex_is_running", lambda: False)
+    monkeypatch.setattr(switcher, "stop_bridge", lambda _config: None)
+
+    assert switcher.switch_provider("cloud-gpt-main", str(config_path)) == 0
+    assert baseline.read_text(encoding="utf-8") == original
+    assert switcher.switch_provider("openai-official", str(config_path)) == 0
+    assert config_toml.read_text(encoding="utf-8") == original
 
 
 def test_switch_dry_run_has_no_side_effects(tmp_path, monkeypatch, capsys):
@@ -252,6 +317,67 @@ def test_codex_is_running_detects_windows_codex_process(monkeypatch):
     monkeypatch.setattr(switcher.subprocess, "run", fake_run)
 
     assert switcher.codex_is_running() is True
+
+
+def test_codex_is_running_detects_windows_chatgpt_process(monkeypatch):
+    def fake_run(args, **_kwargs):
+        assert args == ["tasklist"]
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout="ChatGPT.exe  7096 Console")
+
+    monkeypatch.setattr(switcher.sys, "platform", "win32")
+    monkeypatch.setattr(switcher.subprocess, "run", fake_run)
+
+    assert switcher.codex_is_running() is True
+
+
+def test_codex_is_running_detects_macos_chatgpt_codex_processes(monkeypatch):
+    def fake_run(args, **_kwargs):
+        assert args == ["ps", "-axo", "command"]
+        return subprocess.CompletedProcess(
+            args=args,
+            returncode=0,
+            stdout="\n".join(
+                [
+                    "/Applications/ChatGPT.app/Contents/MacOS/ChatGPT",
+                    "/Applications/ChatGPT.app/Contents/Resources/codex -c features.code_mode_host=true app-server --analytics-default-enabled",
+                ]
+            ),
+        )
+
+    monkeypatch.setattr(switcher.sys, "platform", "darwin")
+    monkeypatch.setattr(switcher.subprocess, "run", fake_run)
+
+    assert switcher.codex_is_running() is True
+
+
+def test_codex_is_running_detects_translocated_chatgpt_app(monkeypatch):
+    def fake_run(args, **_kwargs):
+        assert args == ["ps", "-axo", "command"]
+        return subprocess.CompletedProcess(
+            args=args,
+            returncode=0,
+            stdout="/private/var/folders/x/AppTranslocation/d/ChatGPT.app/Contents/MacOS/ChatGPT",
+        )
+
+    monkeypatch.setattr(switcher.sys, "platform", "darwin")
+    monkeypatch.setattr(switcher.subprocess, "run", fake_run)
+
+    assert switcher.codex_is_running() is True
+
+
+def test_codex_is_running_ignores_stale_macos_crashpad_handlers(monkeypatch):
+    def fake_run(args, **_kwargs):
+        assert args == ["ps", "-axo", "command"]
+        return subprocess.CompletedProcess(
+            args=args,
+            returncode=0,
+            stdout="/Applications/Codex.app/Contents/Frameworks/Codex Framework.framework/Helpers/browser_crashpad_handler",
+        )
+
+    monkeypatch.setattr(switcher.sys, "platform", "darwin")
+    monkeypatch.setattr(switcher.subprocess, "run", fake_run)
+
+    assert switcher.codex_is_running() is False
 
 
 def test_switch_refuses_when_codex_is_running_without_writing(tmp_path, monkeypatch, capsys):

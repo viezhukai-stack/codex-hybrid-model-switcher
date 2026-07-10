@@ -24,19 +24,22 @@ Related docs:
 - [`private-config-dryrun.md`](private-config-dryrun.md)
 - [`safety.md`](safety.md)
 
-## Windows Switcher Flow
+## Maintenance Switcher Flow
 
 The Windows flow is intentionally guided: pick a provider, confirm Codex is
 closed, apply the guarded change, then reopen Codex.
 
 ![Windows guarded switcher flow](assets/windows-switcher-flow.svg)
 
-What this demonstrates:
+What this demonstrates for maintenance/direct-switch mode:
 
 - model switching happens outside Codex's bottom-right menu
 - Codex Desktop should be closed before config writes
 - protected files are checked before and after a real switch
 - the launcher should remain boring and recoverable
+
+For normal 2.0 use, start the hot-router launcher and select models from Codex's
+bottom-right menu instead.
 
 Related docs:
 

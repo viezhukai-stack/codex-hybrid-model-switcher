@@ -33,6 +33,7 @@ EXCLUDED_DIRS = {
     "docs",
     "dist",
     "tests",
+    "小白一键配置包codex混合配置2.0版",
 }
 EXCLUDED_SUFFIXES = {
     ".pyc",
@@ -290,6 +291,7 @@ def build(
         if not file.exists():
             raise SystemExit(f"missing installer file: {file}")
     with zipfile.ZipFile(temp_output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("VERSION.txt", version + "\n")
         for file in files:
             archive.write(file, file.name)
         if not thin:

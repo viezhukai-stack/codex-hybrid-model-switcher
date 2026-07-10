@@ -56,8 +56,9 @@ PY
 echo
 echo "Codex Model Switcher"
 echo "===================="
+echo "Maintenance mode: normal 2.0 use should start from Start Codex Hybrid 2.0.command."
 echo "Codex Desktop must be fully closed before applying a switch."
-echo "The bottom-right Codex model selector is not the source of truth."
+echo "This maintenance menu changes the configured provider directly."
 echo
 
 printf "%s\n" "${providers}" | while IFS=$'\t' read -r idx provider_id kind label model; do

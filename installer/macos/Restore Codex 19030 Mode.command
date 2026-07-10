@@ -18,16 +18,16 @@ if [[ -z "${version}" ]]; then
   read -r -p "Press Enter to close this window..."
   exit 1
 fi
-payload_restore="${script_dir}/payload/codex-hybrid-model-switcher/scripts/macos-restore-official.sh"
-installed_restore="${HOME}/Library/Application Support/CodexHybridModelSwitcher/releases/v${version}/project/scripts/macos-restore-official.sh"
+payload_script="${script_dir}/payload/codex-hybrid-model-switcher/scripts/macos-hot-router-mode.sh"
+installed_script="${HOME}/Library/Application Support/CodexHybridModelSwitcher/releases/v${version}/project/scripts/macos-hot-router-mode.sh"
 
-if [[ -f "${installed_restore}" ]]; then
-  bash "${installed_restore}" "$@"
-elif [[ -f "${payload_restore}" ]]; then
-  bash "${payload_restore}" "$@"
+if [[ -f "${installed_script}" ]]; then
+  bash "${installed_script}" restore "$@"
+elif [[ -f "${payload_script}" ]]; then
+  bash "${payload_script}" restore "$@"
 else
-  echo "Restore script was not found."
-  echo "Run Install Codex Hybrid.command first, then try again."
+  echo "Codex Hybrid 2.0 mode script was not found."
+  exit 1
 fi
 
 echo

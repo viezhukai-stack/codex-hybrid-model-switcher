@@ -67,6 +67,7 @@ This creates `Start Codex Hot Router.cmd`, `Codex Model Switcher.cmd`,
 
 - checks or starts the lightweight bridge on `127.0.0.1:19030`
 - starts or reuses the hot router on `127.0.0.1:19032`
+- enables `19032` hot-router mode while Codex is closed when needed
 - opens Codex Desktop after the router is healthy
 - keeps the router in the foreground window instead of installing a service
 

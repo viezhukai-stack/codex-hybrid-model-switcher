@@ -1,5 +1,5 @@
 param(
-    [string]$ReleaseTag = "v2.17.5",
+    [string]$ReleaseTag,
     [string]$ProjectRepo = "viezhukai-stack/codex-hybrid-model-switcher",
     [string]$BundledProjectPath,
     [string]$ProviderPresetPath,
@@ -30,6 +30,35 @@ param(
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+
+if (-not $ReleaseTag) {
+    $versionFile = Join-Path $PSScriptRoot "VERSION.txt"
+    if (Test-Path -LiteralPath $versionFile) {
+        $ReleaseTag = "v$((Get-Content -LiteralPath $versionFile -Raw -Encoding UTF8).Trim())"
+    }
+    else {
+        $projectFiles = @(
+            (Join-Path $PSScriptRoot "payload\codex-hybrid-model-switcher\pyproject.toml"),
+            (Join-Path $PSScriptRoot "..\..\pyproject.toml")
+        )
+        foreach ($projectFile in $projectFiles) {
+            if (-not (Test-Path -LiteralPath $projectFile)) {
+                continue
+            }
+            $versionMatch = [regex]::Match(
+                (Get-Content -LiteralPath $projectFile -Raw -Encoding UTF8),
+                '(?m)^version\s*=\s*"([^"]+)"'
+            )
+            if ($versionMatch.Success) {
+                $ReleaseTag = "v$($versionMatch.Groups[1].Value)"
+                break
+            }
+        }
+        if (-not $ReleaseTag) {
+            throw "Package version could not be read from VERSION.txt or pyproject.toml."
+        }
+    }
+}
 
 $CodexDownloadUrl = "https://developers.openai.com/codex/app"
 $InstallRoot = Join-Path $env:LOCALAPPDATA "CodexHybridModelSwitcher"
@@ -289,6 +318,9 @@ function Test-CodexReady {
         "$env:USERPROFILE\.codex"
     )
     $installed = $false
+    if (Get-AppxPackage OpenAI.Codex -ErrorAction SilentlyContinue) {
+        $installed = $true
+    }
     foreach ($candidate in $installCandidates) {
         if ($candidate -and (Test-Path $candidate)) {
             $installed = $true
@@ -302,7 +334,9 @@ function Test-CodexReady {
         )
         foreach ($root in $shortcuts) {
             if ($root -and (Test-Path $root)) {
-                $match = Get-ChildItem -LiteralPath $root -Filter "*Codex*.lnk" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+                $match = Get-ChildItem -LiteralPath $root -Recurse -ErrorAction SilentlyContinue | Where-Object {
+                    $_.Name -like "*Codex*.lnk" -or $_.Name -like "*ChatGPT*.lnk"
+                } | Select-Object -First 1
                 if ($match) {
                     $installed = $true
                     break
@@ -374,7 +408,7 @@ function Get-OptionalJsonString {
 
 function Test-CodexRunning {
     $running = Get-Process -ErrorAction SilentlyContinue | Where-Object {
-        $_.ProcessName -like "Codex*" -or $_.ProcessName -eq "codex"
+        $_.ProcessName -like "Codex*" -or $_.ProcessName -like "ChatGPT*" -or $_.ProcessName -eq "codex"
     }
     return [bool]$running
 }

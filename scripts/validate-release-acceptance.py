@@ -9,6 +9,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+
+def project_version() -> str:
+    for line in (ROOT / "pyproject.toml").read_text(encoding="utf-8").splitlines():
+        if line.startswith("version = "):
+            return line.split("=", 1)[1].strip().strip('"')
+    raise SystemExit("pyproject.toml missing project version")
+
+
+PROJECT_VERSION = project_version()
+
 REQUIRED_FILES = (
     "HANDOFF_TO_CODEX.md",
     "START_HERE.md",
@@ -23,6 +33,7 @@ REQUIRED_FILES = (
     "docs/windows-hyperv-clean-vm-canary.md",
     "docs/supervised-handoff-drill.md",
     "docs/windows-one-click-installer.md",
+    "docs/macos-full-local-pack.md",
     "docs/final-check.md",
     "docs/stock-codex-handoff-validation.md",
     "docs/release-checklist.md",
@@ -34,12 +45,21 @@ REQUIRED_FILES = (
     "scripts/validate-install.py",
     "scripts/bootstrap-windows.ps1",
     "scripts/build-windows-one-click-package.py",
+    "scripts/build-macos-one-click-package.py",
+    "scripts/macos-hot-router-start.sh",
+    "scripts/macos-hot-router-mode.sh",
+    "scripts/macos-app-common.sh",
     "installer/windows/Install Codex Hybrid.cmd",
     "installer/windows/Codex Hybrid Diagnostics.cmd",
     "installer/windows/Restore Official Codex.cmd",
     "installer/windows/Install-CodexHybrid.ps1",
     "installer/windows/README.txt",
     "installer/windows/README.zh-CN.txt",
+    "installer/macos/Install Codex Hybrid.command",
+    "installer/macos/Start Codex Hybrid 2.0.command",
+    "installer/macos/Enable Codex Hybrid 2.0.command",
+    "installer/macos/Restore Codex 19030 Mode.command",
+    "installer/macos/Restore Official Codex.command",
     ".github/ISSUE_TEMPLATE/real_clean_machine_canary.yml",
 )
 
@@ -169,8 +189,8 @@ DOC_REQUIREMENTS = {
         "sessions/",
     ),
     "docs/windows-one-click-installer.md": (
-        "Codex-Hybrid-Windows-Netdisk-Setup-v2.17.5.zip",
-        "Codex-Hybrid-Windows-Full-Local-Setup-v2.17.5.zip",
+        f"Codex-Hybrid-Windows-Netdisk-Setup-v{PROJECT_VERSION}.zip",
+        f"Codex-Hybrid-Windows-Full-Local-Setup-v{PROJECT_VERSION}.zip",
         "Install Codex Hybrid.cmd",
         "Start Codex Hot Router.cmd",
         "Codex Hybrid Diagnostics.cmd",
@@ -205,6 +225,18 @@ DOC_REQUIREMENTS = {
         "state_5.sqlite",
         "sessions/",
         "-Apply",
+    ),
+    "docs/macos-full-local-pack.md": (
+        f"Codex-Hybrid-macOS-Full-Local-Setup-v{PROJECT_VERSION}.zip",
+        "Start Codex Hybrid 2.0.command",
+        "Enable Codex Hybrid 2.0.command",
+        "Restore Codex 19030 Mode.command",
+        "127.0.0.1:19032",
+        "local-gemma",
+        "MIGRATE",
+        "auth.json",
+        "models_cache.json",
+        "state_5.sqlite",
     ),
     "docs/final-check.md": (
         "final-check",

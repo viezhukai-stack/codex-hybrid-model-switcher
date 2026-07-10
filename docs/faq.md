@@ -12,10 +12,12 @@ writing when Codex appears to be running.
 
 ## Why does the bottom-right model selector show a different model?
 
-This project treats the external switcher and rendered `config.toml` as the
-source of truth. Codex Desktop may show a stale, generic, or cached label in its
-own model selector. Check the active provider config instead of relying only on
-that label.
+In 2.0 hot-router mode, the bottom-right selector is the normal model-switching
+interface and its catalog comes from the live cloud endpoint plus configured
+local models. If it looks stale, check `19032 /v1/health` and `/v1/models`.
+
+In maintenance/direct-switch mode, the rendered `config.toml` remains the source
+of truth and the selector can show a generic or cached label.
 
 ## Project conversations disappeared after switching. Are they deleted?
 
@@ -46,11 +48,11 @@ Common causes include:
 - the model path or mmproj path is wrong
 - the model does not support the multimodal input being tested
 
-## Can this project download models or llama.cpp for me?
+## Can this project provide models or llama.cpp for me?
 
-No. Users should install llama.cpp and download model files separately. The
-repository contains configuration and bridge tooling only, not model binaries or
-runtime archives.
+The public GitHub repository does not contain model binaries. Private full-local
+netdisk packages can bundle a licensed GGUF/mmproj payload and llama.cpp runtime,
+while source-only users provide those files themselves.
 
 ## How do I safely recover after a failed switch?
 

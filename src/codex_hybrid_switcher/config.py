@@ -25,6 +25,17 @@ class BridgeConfig:
 
 
 @dataclass(frozen=True)
+class HotRouterConfig:
+    host: str
+    port: int
+    default_cloud_provider_id: str | None
+    hidden_model_ids: tuple[str, ...]
+    visible_model_ids: tuple[str, ...]
+    model_aliases: dict[str, str]
+    catalog_cache_seconds: float
+
+
+@dataclass(frozen=True)
 class AppConfig:
     path: Path
     raw: dict[str, Any]
@@ -45,6 +56,39 @@ class AppConfig:
             port=int(data.get("port") or 19030),
             llama_port=int(data.get("llama_port") or 19031),
             idle_seconds=int(data.get("idle_seconds") or 600),
+        )
+
+    @property
+    def hot_router(self) -> HotRouterConfig:
+        data = self.raw.get("hot_router") or {}
+        if not isinstance(data, dict):
+            raise ValueError("hot_router must be an object")
+
+        def string_tuple(key: str) -> tuple[str, ...]:
+            values = data.get(key) or []
+            if not isinstance(values, list):
+                return ()
+            return tuple(value for value in values if isinstance(value, str) and value)
+
+        aliases = data.get("model_aliases") or {}
+        if not isinstance(aliases, dict):
+            aliases = {}
+        return HotRouterConfig(
+            host=str(data.get("host") or "127.0.0.1"),
+            port=int(data.get("port") or 19032),
+            default_cloud_provider_id=(
+                str(data["default_cloud_provider_id"])
+                if data.get("default_cloud_provider_id")
+                else None
+            ),
+            hidden_model_ids=string_tuple("hidden_model_ids"),
+            visible_model_ids=string_tuple("visible_model_ids"),
+            model_aliases={
+                str(key): str(value)
+                for key, value in aliases.items()
+                if isinstance(key, str) and key and isinstance(value, str) and value
+            },
+            catalog_cache_seconds=float(data.get("catalog_cache_seconds") or 15),
         )
 
     @property

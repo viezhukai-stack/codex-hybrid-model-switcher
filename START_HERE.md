@@ -1,5 +1,10 @@
 # Start Here: Hand This Repo to Codex
 
+The current 2.0 workflow uses a shared hot router on `127.0.0.1:19032` for
+normal model selection inside Codex. The guarded external switcher remains a
+maintenance and recovery tool. On macOS use `Start Codex Hybrid 2.0.command`;
+on Windows use `Start Codex Hot Router.cmd` after installation.
+
 This page is for a user who only has stock Codex Desktop and wants Codex itself
 to configure Codex Hybrid Model Switcher.
 

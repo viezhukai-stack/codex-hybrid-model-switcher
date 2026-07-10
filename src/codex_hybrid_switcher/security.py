@@ -26,7 +26,16 @@ ALLOWLIST_SUBSTRINGS = [
 ]
 
 
-SKIP_DIRS = {".git", ".venv", ".pytest_cache", ".package-cache", "__pycache__", "dist", "build"}
+SKIP_DIRS = {
+    ".git",
+    ".venv",
+    ".pytest_cache",
+    ".package-cache",
+    "__pycache__",
+    "dist",
+    "build",
+    "小白一键配置包codex混合配置2.0版",
+}
 
 
 def run_security_scan(root: str = ".") -> int:

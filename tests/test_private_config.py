@@ -95,6 +95,39 @@ def test_validate_config_reports_unknown_cloud_route(tmp_path):
     assert "cloud-main: route must be direct or bridge" in errors
 
 
+def test_validate_config_allows_official_provider_without_pinned_model(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps({"providers": [{"id": "openai-official", "kind": "official"}]}),
+        encoding="utf-8",
+    )
+
+    assert validate_config(load_config(str(config_path))) == []
+
+
+def test_validate_config_checks_hot_router_default_provider_and_shapes(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "hot_router": {
+                    "default_cloud_provider_id": "missing",
+                    "hidden_model_ids": "not-a-list",
+                    "model_aliases": ["not-an-object"],
+                },
+                "providers": [{"id": "openai-official", "kind": "official"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    errors = validate_config(load_config(str(config_path)))
+
+    assert "hot_router.default_cloud_provider_id must reference a cloud provider" in errors
+    assert "hot_router.hidden_model_ids must be an array of non-empty strings" in errors
+    assert "hot_router.model_aliases must map non-empty strings to non-empty strings" in errors
+
+
 def test_run_validate_config_redacts_private_endpoint_and_paths(tmp_path, capsys):
     host = "private-" + "endpoint.example"
     private_path = "/private/" + "models/model.gguf"

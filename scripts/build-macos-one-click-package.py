@@ -40,6 +40,7 @@ EXCLUDED_DIRS = {
     "dist",
     ".package-cache",
     "tests",
+    "小白一键配置包codex混合配置2.0版",
 }
 EXCLUDED_SUFFIXES = {
     ".pyc",
@@ -109,6 +110,9 @@ def project_payload_files() -> list[Path]:
         Path("scripts/macos-provider-switch.sh"),
         Path("scripts/macos-provider-menu.sh"),
         Path("scripts/macos-restore-official.sh"),
+        Path("scripts/macos-app-common.sh"),
+        Path("scripts/macos-hot-router-start.sh"),
+        Path("scripts/macos-hot-router-mode.sh"),
         Path("scripts/install-macos-launcher.sh"),
     }
     present = set(files)
@@ -289,6 +293,9 @@ def build(
         temp_output.unlink()
     files = (
         INSTALLER_ROOT / "Install Codex Hybrid.command",
+        INSTALLER_ROOT / "Start Codex Hybrid 2.0.command",
+        INSTALLER_ROOT / "Enable Codex Hybrid 2.0.command",
+        INSTALLER_ROOT / "Restore Codex 19030 Mode.command",
         INSTALLER_ROOT / "Codex Hybrid Diagnostics.command",
         INSTALLER_ROOT / "Restore Official Codex.command",
         INSTALLER_ROOT / "Install-CodexHybrid.sh",
@@ -302,6 +309,7 @@ def build(
         if not file.exists():
             raise SystemExit(f"missing installer file: {file}")
     with zipfile.ZipFile(temp_output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("VERSION.txt", version + "\n")
         for file in files:
             write_file(archive, file, Path(file.name))
         if not thin:

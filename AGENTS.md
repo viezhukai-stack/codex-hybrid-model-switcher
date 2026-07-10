@@ -192,6 +192,17 @@ available. On Windows, try `py -3` or `python`.
 
 12. Ask the user to reopen Codex Desktop and create a new test conversation.
 
+For the supported 2.0 daily mode, install the platform launchers after the
+guarded provider apply. The daily launcher must ensure the lightweight bridge
+on `19030`, start the shared hot router on `19032`, enable hot-router mode while
+Codex is closed, and then open ChatGPT/Codex. In this mode the Codex model
+selector is the normal model-switching interface. The external provider menu is
+maintenance-only.
+
+- macOS daily entry: `Start Codex Hybrid 2.0.command`
+- Windows daily entry: `Start Codex Hot Router.cmd`
+- rollback entry: restore the guarded pre-router `19030` configuration
+
 13. If Codex opens but the new conversation does not reply, run `bridge-health`
     again before changing any Codex files.
 

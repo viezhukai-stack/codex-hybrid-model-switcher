@@ -81,7 +81,7 @@ def validate_config(config: AppConfig, *, check_paths: bool = False) -> list[str
         seen.add(provider_id)
         if kind not in {"official", "cloud", "local"}:
             errors.append(f"{provider_id}: kind must be official, cloud, or local")
-        if not provider.get("model"):
+        if kind != "official" and not provider.get("model"):
             errors.append(f"{provider_id}: model is required")
         if kind == "cloud":
             route = str(provider.get("route") or "direct")
@@ -93,6 +93,40 @@ def validate_config(config: AppConfig, *, check_paths: bool = False) -> list[str
                 errors.append(f"{provider_id}: api_key_env is required")
         if kind == "local":
             has_local_provider = True
+
+    hot_router = config.raw.get("hot_router") or {}
+    if not isinstance(hot_router, dict):
+        errors.append("hot_router must be an object")
+    else:
+        try:
+            port = int(hot_router.get("port") or 19032)
+            if not 1 <= port <= 65535:
+                errors.append("hot_router.port must be between 1 and 65535")
+        except (TypeError, ValueError):
+            errors.append("hot_router.port must be an integer")
+        try:
+            if float(hot_router.get("catalog_cache_seconds") or 15) <= 0:
+                errors.append("hot_router.catalog_cache_seconds must be greater than zero")
+        except (TypeError, ValueError):
+            errors.append("hot_router.catalog_cache_seconds must be a number")
+        default_provider_id = hot_router.get("default_cloud_provider_id")
+        if default_provider_id:
+            default_provider = next((provider for provider in providers if provider.get("id") == default_provider_id), None)
+            if not default_provider or default_provider.get("kind") != "cloud":
+                errors.append("hot_router.default_cloud_provider_id must reference a cloud provider")
+        for key in ("hidden_model_ids", "visible_model_ids"):
+            values = hot_router.get(key) or []
+            if not isinstance(values, list) or any(not isinstance(value, str) or not value for value in values):
+                errors.append(f"hot_router.{key} must be an array of non-empty strings")
+        aliases = hot_router.get("model_aliases") or {}
+        if not isinstance(aliases, dict) or any(
+            not isinstance(key, str)
+            or not key
+            or not isinstance(value, str)
+            or not value
+            for key, value in aliases.items()
+        ):
+            errors.append("hot_router.model_aliases must map non-empty strings to non-empty strings")
 
     local = config.local_model
     if has_local_provider:
@@ -113,13 +147,20 @@ def print_validation(config: AppConfig, *, check_paths: bool = False) -> None:
     for provider in config.providers:
         provider_id = provider.get("id")
         kind = provider.get("kind")
-        model = provider.get("model") or "<missing>"
+        model = provider.get("model") or ("<recommended>" if kind == "official" else "<missing>")
         line = f"  - {provider_id} [{kind}] model={model}"
         if kind == "cloud":
             env_name = str(provider.get("api_key_env") or "<missing>")
             route = str(provider.get("route") or "direct")
             line += f" route={route} base_url={redact_url(provider.get('base_url'))} api_key_env={env_name}({env_status(env_name)})"
         print(line)
+    router = config.hot_router
+    print(
+        "hot_router: "
+        f"{router.host}:{router.port} "
+        f"default_cloud_provider_id={router.default_cloud_provider_id or '<auto>'} "
+        f"dynamic_catalog={'yes' if not router.visible_model_ids else 'filtered'}"
+    )
     if any(provider.get("kind") == "local" for provider in config.providers):
         print("local_model:")
         for key in ("llama_server_path", "model_path", "mmproj_path"):

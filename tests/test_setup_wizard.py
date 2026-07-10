@@ -25,6 +25,9 @@ def test_build_first_run_config_defaults_to_cloud_without_local_provider():
     assert data["providers"][1]["kind"] == "cloud"
     assert data["providers"][1]["api_key_env"] == "OPENAI_COMPATIBLE_API_KEY"
     assert data["providers"][1]["route"] == "bridge"
+    assert "model" not in data["providers"][0]
+    assert data["hot_router"]["default_cloud_provider_id"] == "cloud-gpt-main"
+    assert data["hot_router"]["port"] == 19032
     assert data["local_model"]["model_path"] == "~/path/to/model.gguf"
 
 
@@ -41,6 +44,7 @@ def test_build_first_run_config_can_skip_cloud_for_local_only():
 
     assert provider_ids == ["openai-official", "local-gemma"]
     assert data["providers"][1]["kind"] == "local"
+    assert data["hot_router"]["default_cloud_provider_id"] is None
     assert data["local_model"]["llama_server_path"] == "C:/llama/llama-server.exe"
 
 

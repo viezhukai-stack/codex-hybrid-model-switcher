@@ -18,6 +18,15 @@ def test_security_scan_skips_package_cache(tmp_path):
     assert run_security_scan(str(tmp_path)) == 0
 
 
+def test_security_scan_skips_private_netdisk_package_folder(tmp_path):
+    package_dir = tmp_path / "小白一键配置包codex混合配置2.0版"
+    package_dir.mkdir()
+    private_path = "C:" + "/Users/" + "Barney"
+    (package_dir / "package-note.txt").write_text(private_path, encoding="utf-8")
+
+    assert run_security_scan(str(tmp_path)) == 0
+
+
 def test_security_scan_rejects_private_lan_ip(tmp_path):
     private_ip = "10." + "0." + "0." + "177"
     (tmp_path / "notes.txt").write_text(f"private host {private_ip}\n", encoding="utf-8")

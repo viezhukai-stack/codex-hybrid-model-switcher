@@ -36,12 +36,12 @@ def main(argv: list[str] | None = None) -> int:
     ensure_bridge.add_argument("--config", dest="sub_config")
     hot_router = sub.add_parser("hot-router")
     hot_router.add_argument("--config", dest="sub_config")
-    hot_router.add_argument("--host", default="127.0.0.1")
-    hot_router.add_argument("--port", type=int, default=19032)
+    hot_router.add_argument("--host")
+    hot_router.add_argument("--port", type=int)
     hot_router_mode = sub.add_parser("hot-router-mode")
     hot_router_mode.add_argument("mode_command", choices=["enable", "restore", "status"])
     hot_router_mode.add_argument("--config", dest="sub_config")
-    hot_router_mode.add_argument("--router-url", default="http://127.0.0.1:19032/v1")
+    hot_router_mode.add_argument("--router-url")
     hot_router_mode.add_argument("--allow-codex-running", action="store_true")
     bridge_health = sub.add_parser("bridge-health")
     bridge_health.add_argument("--config", dest="sub_config")
@@ -58,6 +58,7 @@ def main(argv: list[str] | None = None) -> int:
     doctor = sub.add_parser("doctor")
     doctor.add_argument("--config", dest="sub_config")
     doctor.add_argument("--strict", action="store_true")
+    doctor.add_argument("--native-codex", action="store_true")
     add_config(sub.add_parser("smoke"))
     init_config_parser = sub.add_parser("init-config")
     init_config_parser.add_argument("--output")
@@ -158,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:
             request_timeout=args.request_timeout,
         )
     if args.command == "doctor":
-        return run_doctor(config_path, strict=args.strict)
+        return run_doctor(config_path, strict=args.strict, native_codex=args.native_codex)
     if args.command == "smoke":
         return run_smoke(config_path)
     if args.command == "init-config":

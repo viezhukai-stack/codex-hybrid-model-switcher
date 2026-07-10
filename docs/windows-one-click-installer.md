@@ -6,13 +6,13 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.17.5.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.18.0.zip
 ```
 
 For private netdisk sharing with a bundled local model, build and share:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.17.5.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.18.0.zip
 ```
 
 It contains:
@@ -39,6 +39,9 @@ The full local package also contains:
 
 - Checks that it is running on Windows.
 - Checks whether Codex Desktop appears installed and signed in.
+- Recognizes both current `ChatGPT.exe` and legacy Codex process names before
+  any guarded apply, and resolves the installed `OpenAI.Codex` AppID instead of
+  depending only on one hard-coded package family.
 - Opens the official Codex app page when Codex is missing or not signed in:
   `https://developers.openai.com/codex/app`
 - Uses bundled portable Python from `payload/python` and installs it under
@@ -83,7 +86,8 @@ The full local package also contains:
 - Installs the desktop `Start Codex Hot Router.cmd` launcher. This is the
   recommended daily Windows 2.0 entry: it checks/starts the lightweight bridge
   on `127.0.0.1:19030`, starts or reuses the hot router on `127.0.0.1:19032`,
-  then opens Codex Desktop.
+  enables hot-router mode while Codex is closed when needed, then opens Codex
+  Desktop.
 - Installs the desktop `Codex Model Switcher.cmd` launcher for guarded
   maintenance switches and legacy mode.
 - Installs the desktop `Enable Codex Hot Router Mode.cmd` and
@@ -118,7 +122,7 @@ The full local package also contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.17.5.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.0.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -139,10 +143,10 @@ The full local package also contains:
 11. Only after dry-run looks correct and Codex Desktop is fully closed, type
    `APPLY` when prompted if you want to perform the real guarded provider
    switch.
-12. For Windows 2.0 hot-router mode, quit Codex, start the router, run
-   `Enable Codex Hot Router Mode.cmd` once, then use `Start Codex Hot Router.cmd`
-   for normal daily launches and Codex's bottom-right model selector for model
-   switching.
+12. For Windows 2.0 hot-router mode, quit Codex and use
+   `Start Codex Hot Router.cmd`. It automatically enables `19032` mode when
+   needed, then opens Codex. Use Codex's bottom-right model selector for normal
+   model switching.
 13. Use the desktop `Codex Model Switcher.cmd` only for guarded maintenance
    switches or the older external-switcher mode.
 14. Use the desktop `Restore Official Codex.cmd` if you need to return to the
@@ -226,7 +230,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.17.5.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.0.zip
 ```
 
 Upload that zip to your netdisk.
@@ -250,7 +254,7 @@ one GGUF model and one mmproj GGUF file, then run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py `
-  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.17.5.zip `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.0.zip `
   --include-llama-dir D:\Tools\llama.cpp `
   --include-vcredist-file D:\Installers\vc_redist.x64.exe `
   --include-model-dir D:\Models\gemma-4-e4b

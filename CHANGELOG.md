@@ -5,6 +5,31 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.18.0
+
+- Added macOS compatibility for the upgraded ChatGPT desktop app that now hosts
+  Codex. macOS launchers, guarded switch checks, installer detection, and
+  diagnostics now recognize both `ChatGPT.app` and legacy `Codex.app`.
+- Aligned the current macOS 2.0 hot-router catalog behavior with Windows 2.0:
+  cloud models now come from the live provider catalog by default, so new models
+  such as `gpt-5.6-sol` are not blocked by a stale static visible allowlist.
+- Made the repository hot router the shared macOS and Windows 2.0 runtime. The
+  live cloud catalog is dynamic by default, while model aliases, hidden models,
+  and an optional default cloud provider are private-config settings.
+- Added a local-only hot-router catalog so the full local package can expose
+  `local/gemma` on `127.0.0.1:19032` without a cloud API key.
+- Added the macOS `Start Codex Hybrid 2.0.command`, enable, and `19030` restore
+  launchers. The legacy model switcher remains a maintenance entry.
+- Added bundle-id-first macOS app discovery, dynamic Windows AppID discovery,
+  and explicit `ChatGPT.exe` running-process protection.
+- Added backup-first official configuration baselines. When no baseline exists,
+  official restore no longer pins an old model and lets Codex choose its current
+  recommended model.
+- Added optional native Codex diagnostics through `doctor --native-codex` and
+  unified package versions through generated `VERSION.txt` files.
+
+## v2.17.5
+
 - Added a hot-router stream shim for `gemini-pro-agent` / `Gemini 3.1 Pro
   (High)` so malformed upstream streams that stop after
   `response.created` / `response.in_progress` can be retried upstream as
@@ -14,9 +39,6 @@ conservative release process because it edits Codex provider configuration.
   `threads_batch`, `flash_attn`, `op_offload`, `mmproj_offload`, `fit`,
   `cache_ram`, and `ctx_checkpoints`, while keeping `extra_args` available for
   advanced flags.
-
-## v2.17.5
-
 - Added a Windows 2.0 hot-router runtime and desktop launcher so the normal
   Windows flow can keep Codex pointed at `127.0.0.1:19032` and use Codex's
   bottom-right model selector while routing local models through the lightweight

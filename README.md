@@ -10,7 +10,8 @@ Cross-platform tooling for using Codex Desktop with:
 - official OpenAI/Codex account state preserved
 - OpenAI-compatible cloud providers configured by the user
 - local llama.cpp models, including multimodal GGUF + mmproj models
-- guarded external provider switching outside Codex's bottom-right model menu
+- a 2.0 hot router that uses Codex's model selector for normal cloud/local switching
+- a guarded external maintenance switcher and explicit rollback path
 
 The project is intentionally conservative. It does not edit `models_cache.json`
 or install KeepAlive services. It only rewrites Codex history when the user
@@ -104,7 +105,7 @@ cache, rewrite old conversations, or install always-on recovery services.
 ### Windows full local one-click setup
 
 For a beginner Windows computer, share
-`Codex-Hybrid-Windows-Full-Local-Setup-v2.17.5.zip`, extract the entire zip,
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.0.zip`, extract the entire zip,
 and double-click `Install Codex Hybrid.cmd`. This is the recommended netdisk
 package because it includes the local model path and does not require a cloud
 API key.
@@ -135,12 +136,20 @@ See [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md)
 ### macOS full local one-click setup
 
 For a beginner Mac computer, share
-`Codex-Hybrid-macOS-Full-Local-Setup-v2.17.4.zip`, extract the entire zip, and
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.0.zip`, extract the entire zip, and
 double-click `Install Codex Hybrid.command`. This is the recommended netdisk
 package because it includes both macOS x64 and arm64 llama.cpp runtimes plus
 `payload/models/local-gemma`, so a beginner can use the bundled local Gemma
 model without a cloud API key. The large model files are never committed to
 GitHub.
+Current macOS Codex builds may appear as `ChatGPT.app`; the macOS installer and
+launchers discover bundle id `com.openai.codex` first, then keep explicit
+`ChatGPT.app` and legacy `Codex.app` paths as fallbacks.
+After installation, normal daily use starts from
+`Start Codex Hybrid 2.0.command`. It checks the lightweight bridge, starts the
+hot router on `127.0.0.1:19032`, and then opens ChatGPT/Codex. The old
+`Codex Model Switcher.command` remains available only for maintenance and
+rollback work.
 If the user enables history unification, the installer backs up
 `state_5.sqlite` and matching `sessions/*.jsonl` files before moving existing
 `openai` project chats into the `custom` bucket and active model so they remain
@@ -151,6 +160,28 @@ Python by default, but the builder can include a tested runtime under
 See [`docs/macos-full-local-pack.md`](docs/macos-full-local-pack.md).
 The v2.17.3 full-local package has a real Mac UI canary recorded in
 [`docs/macos-full-local-pack-canary.md`](docs/macos-full-local-pack-canary.md).
+
+### 2.0 hot-router configuration
+
+Private configs may define the shared Mac/Windows hot router:
+
+```json
+{
+  "hot_router": {
+    "host": "127.0.0.1",
+    "port": 19032,
+    "default_cloud_provider_id": "cloud-gpt-main",
+    "hidden_model_ids": [],
+    "model_aliases": {},
+    "catalog_cache_seconds": 15
+  }
+}
+```
+
+The cloud catalog is dynamic unless an explicit private `visible_model_ids`
+allowlist is configured. Newly published models route through
+`default_cloud_provider_id`; model-specific provider entries still take
+precedence.
 
 If you want Codex itself to configure this project for you, open this repository
 in Codex and start with [`START_HERE.md`](START_HERE.md). The root `AGENTS.md`
@@ -342,6 +373,7 @@ python3 bootstrap.py --non-interactive --base-url https://YOUR-ENDPOINT.example/
 python -m codex_hybrid_switcher status
 python -m codex_hybrid_switcher doctor
 python -m codex_hybrid_switcher doctor --strict
+python -m codex_hybrid_switcher doctor --native-codex
 python -m codex_hybrid_switcher init-config --platform macos --output ~/.codex-hybrid-model-switcher/config.json
 python -m codex_hybrid_switcher setup
 python -m codex_hybrid_switcher setup --non-interactive --base-url https://YOUR-ENDPOINT.example/v1 --model provider-gpt-main --cloud-route bridge

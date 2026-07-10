@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-release_tag="v2.17.4"
+release_tag=""
 provider_id="cloud-gpt-main"
 provider_label="Cloud GPT Main"
 base_url=""
@@ -26,6 +26,22 @@ switch_model=""
 codex_download_url="https://developers.openai.com/codex/app"
 python_download_url="https://www.python.org/downloads/macos/"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+package_version="$(tr -d '\r\n' <"${script_dir}/VERSION.txt" 2>/dev/null || true)"
+if [[ -z "${package_version}" ]]; then
+  for project_file in \
+    "${script_dir}/payload/codex-hybrid-model-switcher/pyproject.toml" \
+    "${script_dir}/../../pyproject.toml"; do
+    if [[ -f "${project_file}" ]]; then
+      package_version="$(sed -n 's/^version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "${project_file}" | head -1)"
+      [[ -n "${package_version}" ]] && break
+    fi
+  done
+fi
+if [[ -z "${package_version}" ]]; then
+  echo "Package version could not be read from VERSION.txt or pyproject.toml." >&2
+  exit 2
+fi
+release_tag="v${package_version}"
 install_root="${HOME}/Library/Application Support/CodexHybridModelSwitcher"
 release_root="${install_root}/releases/${release_tag}"
 project_path="${release_root}/project"
@@ -288,8 +304,51 @@ PY
   echo "Provider preset loaded. API key value is never read from the preset."
 }
 
+codex_app_path() {
+  local app
+  if command -v mdfind >/dev/null 2>&1; then
+    while IFS= read -r app; do
+      if [[ -d "${app}" && "${app}" == *.app ]]; then
+        echo "${app}"
+        return 0
+      fi
+    done < <(mdfind "kMDItemCFBundleIdentifier == 'com.openai.codex'" 2>/dev/null)
+  fi
+  for app in \
+    "/Applications/ChatGPT.app" \
+    "${HOME}/Applications/ChatGPT.app" \
+    "/Applications/Codex.app" \
+    "${HOME}/Applications/Codex.app"; do
+    if [[ -d "${app}" ]]; then
+      echo "${app}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+codex_app_info_value() {
+  local key="$1"
+  local app_path
+  app_path="$(codex_app_path 2>/dev/null || true)"
+  if [[ -z "${app_path}" || ! -f "${app_path}/Contents/Info.plist" ]]; then
+    return 1
+  fi
+  /usr/libexec/PlistBuddy -c "Print :${key}" "${app_path}/Contents/Info.plist" 2>/dev/null
+}
+
+codex_app_name() {
+  local app_path
+  app_path="$(codex_app_path 2>/dev/null || true)"
+  if [[ -z "${app_path}" ]]; then
+    echo "Codex Desktop"
+    return
+  fi
+  basename "${app_path}" .app
+}
+
 codex_app_present() {
-  [[ -d "/Applications/Codex.app" || -d "${HOME}/Applications/Codex.app" ]]
+  codex_app_path >/dev/null 2>&1
 }
 
 codex_auth_present() {
@@ -297,7 +356,8 @@ codex_auth_present() {
 }
 
 codex_running() {
-  pgrep -f "Codex.app|codex app-server|codex-command-runner" >/dev/null 2>&1
+  ps -ww -axo args= 2>/dev/null \
+    | grep -q -E '/(ChatGPT|Codex)\.app/Contents/MacOS/(ChatGPT|Codex)$|/(ChatGPT|Codex)\.app/Contents/Resources/codex( .*)? app-server|/(ChatGPT|Codex)\.app/Contents/Resources/(codex-command-runner|codex-code-mode-host)'
 }
 
 ensure_codex_ready() {
@@ -306,22 +366,51 @@ ensure_codex_ready() {
   fi
   write_step "Checking Codex Desktop"
   if codex_app_present && codex_auth_present; then
-    echo "Codex Desktop app and sign-in state found."
+    echo "$(codex_app_name) app and Codex sign-in state found."
     return
   fi
-  echo "Codex Desktop is not installed, not opened yet, or not signed in."
+  echo "ChatGPT/Codex Desktop is not installed, not opened yet, or not signed in."
   echo "Opening the official Codex app page."
   open "${codex_download_url}" >/dev/null 2>&1 || true
   echo
-  echo "Install Codex Desktop, sign in, fully close Codex Desktop, then run this installer again."
+  echo "Install ChatGPT/Codex Desktop, sign in, fully close it, then run this installer again."
   exit 20
 }
 
 open_codex_desktop() {
+  local app_path cli_path cli_pid
   echo
   echo "Opening Codex Desktop..."
-  open -a Codex >/dev/null 2>&1 || open "${codex_download_url}" >/dev/null 2>&1 || true
-  echo "If Codex does not appear, open the Codex app manually from Applications."
+  app_path="$(codex_app_path 2>/dev/null || true)"
+  cli_path="${app_path}/Contents/Resources/codex"
+  if [[ -n "${app_path}" && -x "${cli_path}" ]]; then
+    "${cli_path}" app "${HOME}" >/dev/null 2>&1 &
+    cli_pid="$!"
+    sleep 1
+    if kill -0 "${cli_pid}" >/dev/null 2>&1; then
+      return
+    fi
+    if wait "${cli_pid}"; then
+      return
+    fi
+  fi
+  open -b com.openai.codex >/dev/null 2>&1 \
+    || open -a ChatGPT >/dev/null 2>&1 \
+    || open -a Codex >/dev/null 2>&1 \
+    || open "${codex_download_url}" >/dev/null 2>&1 \
+    || true
+  echo "If Codex does not appear, open ChatGPT or Codex manually from Applications."
+}
+
+open_hot_router_launcher() {
+  local launcher="${HOME}/Desktop/Start Codex Hybrid 2.0.command"
+  if [[ -x "${launcher}" ]]; then
+    echo
+    echo "Opening Codex Hybrid 2.0 launcher..."
+    open "${launcher}" >/dev/null 2>&1 || true
+    return
+  fi
+  open_codex_desktop
 }
 
 copy_project_payload() {
@@ -665,7 +754,7 @@ run_guarded_apply() {
   if [[ "${history_unify_requested}" == true ]]; then
     run_history_unify_apply
   fi
-  open_codex_desktop
+  open_hot_router_launcher
 }
 
 run_local_smoke() {
@@ -760,6 +849,11 @@ write_diagnostics_report() {
   local payload_llama_arm64="false"
   local payload_local_model="false"
   local bundled_python_present="false"
+  local codex_app_path_state="not-found"
+  local codex_app_name_state="not-found"
+  local codex_app_bundle_id_state="not-found"
+  local codex_app_version_state="not-found"
+  local codex_cli_version_state="not-found"
   local installed_llama="false"
   local installed_local_model="false"
   local local_provider_enabled="false"
@@ -778,6 +872,13 @@ PY
     fi
   fi
   codex_app_present && app_state="true"
+  codex_app_path_state="$(codex_app_path 2>/dev/null || echo "not-found")"
+  codex_app_name_state="$(codex_app_name)"
+  codex_app_bundle_id_state="$(codex_app_info_value CFBundleIdentifier 2>/dev/null || echo "not-found")"
+  codex_app_version_state="$(codex_app_info_value CFBundleShortVersionString 2>/dev/null || echo "not-found")"
+  if [[ "${codex_app_path_state}" != "not-found" && -x "${codex_app_path_state}/Contents/Resources/codex" ]]; then
+    codex_cli_version_state="$("${codex_app_path_state}/Contents/Resources/codex" --version 2>/dev/null || echo "not-found")"
+  fi
   codex_auth_present && auth_state="true"
   codex_running && running_state="true"
   [[ -f "${config_path}" ]] && config_state="true"
@@ -813,6 +914,11 @@ PY
     echo "python_install_help_url=${python_download_url}"
     echo "bundled_python_present=${bundled_python_present}"
     echo "codex_app_present=${app_state}"
+    echo "codex_app_name=${codex_app_name_state}"
+    echo "codex_app_path=${codex_app_path_state}"
+    echo "codex_app_bundle_id=${codex_app_bundle_id_state}"
+    echo "codex_app_version=${codex_app_version_state}"
+    echo "codex_cli_version=${codex_cli_version_state}"
     echo "codex_auth_present=${auth_state}"
     echo "codex_process_running=${running_state}"
     echo "private_config_present=${config_state}"

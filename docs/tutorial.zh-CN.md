@@ -342,8 +342,9 @@ codex-hybrid-switcher guarded-switch local-gemma --allow-local --config ~/.codex
 
 ### Codex 右下角模型显示不变，是不是没切成功？
 
-不一定。这个项目把外部 switcher 和 `config.toml` 作为真实来源。
-Codex 右下角模型标签可能是旧的、泛化的或不可完全代表当前 provider。
+先确认使用的是哪种模式。2.0 hot-router 模式下，右下角菜单就是日常模型切换入口，
+目录来自 `19032 /v1/models`；如果没有更新，先检查 19032 健康和实时模型目录。
+维护/直连模式下，则以外部 switcher 和 `config.toml` 为准。
 
 ### 可以直接改 `models_cache.json` 吗？
 

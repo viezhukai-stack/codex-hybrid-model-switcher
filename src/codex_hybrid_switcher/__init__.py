@@ -1,3 +1,3 @@
 """Codex hybrid model switcher."""
 
-__version__ = "2.17.5"
+__version__ = "2.18.0"
