@@ -7,6 +7,8 @@ $hotRouterLauncher = Join-Path $desktop "Start Codex Hot Router.cmd"
 $enableHotRouterLauncher = Join-Path $desktop "Enable Codex Hot Router Mode.cmd"
 $restoreHotRouterLauncher = Join-Path $desktop "Restore Codex 19030 Mode.cmd"
 $restoreLauncher = Join-Path $desktop "Restore Official Codex.cmd"
+$repairUpdateLauncher = Join-Path $desktop "Repair Codex Browser and CLI.cmd"
+$changeAccountLauncher = Join-Path $desktop "Change Codex Account.cmd"
 
 $body = @"
 @echo off
@@ -70,3 +72,27 @@ pause
 
 Set-Content -LiteralPath $restoreLauncher -Value $restoreBody -Encoding ASCII
 Write-Output "Installed: $restoreLauncher"
+
+$repairUpdateBody = @"
+@echo off
+cd /d "$repo"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows-update-repair.ps1 -Config "%USERPROFILE%\.codex-hybrid-model-switcher\config.json" -Apply
+echo.
+echo Press any key to close.
+pause >nul
+"@
+
+Set-Content -LiteralPath $repairUpdateLauncher -Value $repairUpdateBody -Encoding ASCII
+Write-Output "Installed: $repairUpdateLauncher"
+
+$changeAccountBody = @"
+@echo off
+cd /d "$repo"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows-change-account.ps1 -Config "%USERPROFILE%\.codex-hybrid-model-switcher\config.json" -Apply
+echo.
+echo Press any key to close.
+pause >nul
+"@
+
+Set-Content -LiteralPath $changeAccountLauncher -Value $changeAccountBody -Encoding ASCII
+Write-Output "Installed: $changeAccountLauncher"

@@ -18,6 +18,7 @@ def project_version() -> str:
 
 
 PROJECT_VERSION = project_version()
+MAC_PACKAGE_VERSION = "2.18.0"
 
 REQUIRED_FILES = (
     "HANDOFF_TO_CODEX.md",
@@ -33,6 +34,7 @@ REQUIRED_FILES = (
     "docs/windows-hyperv-clean-vm-canary.md",
     "docs/supervised-handoff-drill.md",
     "docs/windows-one-click-installer.md",
+    "docs/windows-codex-update-canary.md",
     "docs/macos-full-local-pack.md",
     "docs/final-check.md",
     "docs/stock-codex-handoff-validation.md",
@@ -51,6 +53,8 @@ REQUIRED_FILES = (
     "scripts/macos-app-common.sh",
     "installer/windows/Install Codex Hybrid.cmd",
     "installer/windows/Codex Hybrid Diagnostics.cmd",
+    "installer/windows/Repair Codex Browser and CLI.cmd",
+    "installer/windows/Change Codex Account.cmd",
     "installer/windows/Restore Official Codex.cmd",
     "installer/windows/Install-CodexHybrid.ps1",
     "installer/windows/README.txt",
@@ -194,6 +198,8 @@ DOC_REQUIREMENTS = {
         "Install Codex Hybrid.cmd",
         "Start Codex Hot Router.cmd",
         "Codex Hybrid Diagnostics.cmd",
+        "Repair Codex Browser and CLI.cmd",
+        "Change Codex Account.cmd",
         "Restore Official Codex.cmd",
         "Install-CodexHybrid.ps1",
         "provider-preset.example.json",
@@ -227,7 +233,7 @@ DOC_REQUIREMENTS = {
         "-Apply",
     ),
     "docs/macos-full-local-pack.md": (
-        f"Codex-Hybrid-macOS-Full-Local-Setup-v{PROJECT_VERSION}.zip",
+        f"Codex-Hybrid-macOS-Full-Local-Setup-v{MAC_PACKAGE_VERSION}.zip",
         "Start Codex Hybrid 2.0.command",
         "Enable Codex Hybrid 2.0.command",
         "Restore Codex 19030 Mode.command",
@@ -237,6 +243,17 @@ DOC_REQUIREMENTS = {
         "auth.json",
         "models_cache.json",
         "state_5.sqlite",
+    ),
+    "docs/windows-codex-update-canary.md": (
+        "windows-update-doctor",
+        "windows-update-ensure",
+        "windows-update-repair --apply",
+        "change-account",
+        "Start Codex Hot Router.cmd",
+        "auth.json",
+        "models_cache.json",
+        "state_5.sqlite",
+        "sessions",
     ),
     "docs/final-check.md": (
         "final-check",

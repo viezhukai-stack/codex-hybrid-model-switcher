@@ -15,6 +15,9 @@
     "model_aliases": {},
     "catalog_cache_seconds": 15
   },
+  "account_switch": {
+    "proxy_url": ""
+  },
   "providers": [
     {
       "id": "openai-official",

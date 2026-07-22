@@ -14,22 +14,38 @@ installer under `payload/vcredist/`.
 
 ## Current Status
 
-Status: Passed on the HL Hyper-V VM with `v2.15.5`.
+Status: Full-local install passed on the HL Hyper-V VM with `v2.15.5`;
+v2.18.1 package integrity and physical Windows update compatibility passed.
 
 Current private netdisk distribution uses
-`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.0.zip`. v2.18.0 keeps the same
-full-local runtime path and cleans the netdisk payload by excluding repository
-development files.
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.1.zip`. v2.18.1 keeps the proven
+full-local runtime path, adds the guarded Codex update/Browser CLI refresh and
+account-switch maintenance entries, and excludes repository development files.
 
-Current v2.18.0 package SHA256:
+Current v2.18.1 package SHA256:
 
 ```text
-cb057af4cd7adae07ddaa54b2dd35b333d63620aa1cb97de2765bfeca3f5e9a8
+47fd0c231372338d1cedde35d08a1d2d2b48f1d1df4c046c5b6d4d7f37a58232
 ```
 
-The rebuilt v2.18.0 package passed ZIP integrity checks and package structure
+The rebuilt v2.18.1 package passed ZIP integrity checks and package structure
 audits for bundled portable Python, llama.cpp, VC++ Runtime, local Gemma GGUF,
-mmproj, test image, model manifest, and redacted project payload.
+mmproj, test image, model manifest, the automatic update guard, both maintenance
+entries, and the redacted project payload.
+
+The 2026-07-22 physical Windows canary reproduced the Browser failure after a
+Codex AppX update changed the CLI version. The five-file managed CLI bundle was
+refreshed, the current-user `CODEX_CLI_PATH` survived the app regenerating its
+Browser config, Browser/Chrome matched the new bundled marketplace, and a real
+external DOM page loaded. A second AppX version change was detected before app
+launch and repaired through the same guarded function. The packaged
+`windows-update-ensure` wrapper adds the tested eligibility gate and invokes
+that same repair automatically only while Codex is closed.
+
+At the end of the physical canary, the task database returned `quick_check=ok`,
+all 100 tasks remained in the `custom` provider bucket, 47 were archived,
+`19030` and `19032` were healthy, and the heavy `19031` local runtime was not
+resident while idle. The repair reported protected Codex files unchanged.
 
 The v2.15.1 and v2.15.2 HL VM attempts found real setup gaps before final UI
 apply:

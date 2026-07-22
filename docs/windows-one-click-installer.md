@@ -6,13 +6,13 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.18.0.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.18.1.zip
 ```
 
 For private netdisk sharing with a bundled local model, build and share:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.18.0.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.18.1.zip
 ```
 
 It contains:
@@ -20,6 +20,8 @@ It contains:
 - `Install Codex Hybrid.cmd`
 - `Start Codex Hot Router.cmd`
 - `Codex Hybrid Diagnostics.cmd`
+- `Repair Codex Browser and CLI.cmd`
+- `Change Codex Account.cmd`
 - `Restore Official Codex.cmd`
 - `Install-CodexHybrid.ps1`
 - `README.txt`
@@ -96,6 +98,19 @@ The full local package also contains:
 - Installs the desktop `Restore Official Codex.cmd` launcher.
 - Writes a redacted diagnostics report when `Codex Hybrid Diagnostics.cmd` is
   double-clicked.
+- Checks the active Codex AppX CLI and Browser/Chrome plugin versions before
+  the daily hot-router launch. For a supported AppX version change while Codex
+  is closed, `windows-update-ensure` automatically copies and hash-checks
+  `codex.exe`, `rg.exe`,
+  `codex-windows-sandbox-setup.exe`, `codex-command-runner.exe`, and
+  `codex-code-mode-host.exe`, persists the versioned path in the current-user
+  `CODEX_CLI_PATH`, reruns the launch gate, and only then opens Codex.
+- Stops on any update condition outside that narrow automatic repair and points
+  to `Repair Codex Browser and CLI.cmd`; it never creates a service, scheduled
+  task, watchdog, restart loop, or background updater.
+- Installs `Change Codex Account.cmd` for an explicit, backup-first device-code
+  login. Account switching is separate from normal model routing and remains a
+  dry-run until the user types `SWITCH`.
 
 ## What It Does Not Do
 
@@ -109,6 +124,9 @@ The full local package also contains:
   is intact.
 - It does not write API keys into the repository or private config.
 - It does not edit `auth.json`, `models_cache.json`, or rollout logs.
+- The optional account-switch entry invokes the official Codex logout/login
+  commands after a local backup; normal install, repair, and routing commands
+  still do not edit `auth.json`.
 - It does not edit `state_5.sqlite` unless the user explicitly enables backed-up
   history unification.
 - It does not edit `sessions/*.jsonl` unless the user explicitly enables
@@ -122,7 +140,7 @@ The full local package also contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.0.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.1.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -144,9 +162,10 @@ The full local package also contains:
    `APPLY` when prompted if you want to perform the real guarded provider
    switch.
 12. For Windows 2.0 hot-router mode, quit Codex and use
-   `Start Codex Hot Router.cmd`. It automatically enables `19032` mode when
-   needed, then opens Codex. Use Codex's bottom-right model selector for normal
-   model switching.
+   `Start Codex Hot Router.cmd`. It automatically refreshes the guarded Browser
+   CLI bundle after a supported Codex update, enables `19032` mode when needed,
+   then opens Codex. Use Codex's bottom-right model selector for normal model
+   switching.
 13. Use the desktop `Codex Model Switcher.cmd` only for guarded maintenance
    switches or the older external-switcher mode.
 14. Use the desktop `Restore Official Codex.cmd` if you need to return to the
@@ -230,7 +249,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.0.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.1.zip
 ```
 
 Upload that zip to your netdisk.
@@ -254,7 +273,7 @@ one GGUF model and one mmproj GGUF file, then run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py `
-  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.0.zip `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.1.zip `
   --include-llama-dir D:\Tools\llama.cpp `
   --include-vcredist-file D:\Installers\vc_redist.x64.exe `
   --include-model-dir D:\Models\gemma-4-e4b

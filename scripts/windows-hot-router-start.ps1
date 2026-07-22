@@ -136,6 +136,13 @@ if (Test-Path -LiteralPath $Config) {
 if (-not $RouterHost) { $RouterHost = "127.0.0.1" }
 if (-not $Port) { $Port = 19032 }
 
+Write-Host "Checking Codex Browser/CLI update compatibility..."
+Invoke-Switcher -ArgsList @("windows-update-ensure", "--config", $Config) -AllowFailure
+$updateExit = $LASTEXITCODE
+if ($updateExit -ne 0) {
+    Fail "Automatic Codex Browser/CLI refresh stopped. Quit Codex and run 'Repair Codex Browser and CLI.cmd', then start this launcher again."
+}
+
 Write-Host "Checking local bridge on 127.0.0.1:19030..."
 Invoke-Switcher -ArgsList @("ensure-bridge", "--config", $Config) -AllowFailure
 if ($LASTEXITCODE -ne 0) {

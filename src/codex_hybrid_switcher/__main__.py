@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 
+from .account_switch import run_change_account
 from .bridge import run_bridge
 from .bridge_health import run_bridge_health
 from .canary_report import add_canary_report_args, evidence_from_args, run_canary_report
@@ -20,6 +21,11 @@ from .security import run_security_scan
 from .setup_wizard import run_setup_wizard
 from .smoke import run_smoke
 from .switcher import guarded_switch_provider, interactive_menu, run_ensure_bridge, switch_provider
+from .windows_update import (
+    run_windows_update_doctor,
+    run_windows_update_ensure,
+    run_windows_update_repair,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -59,6 +65,21 @@ def main(argv: list[str] | None = None) -> int:
     doctor.add_argument("--config", dest="sub_config")
     doctor.add_argument("--strict", action="store_true")
     doctor.add_argument("--native-codex", action="store_true")
+    windows_update_doctor = sub.add_parser("windows-update-doctor")
+    windows_update_doctor.add_argument("--config", dest="sub_config")
+    windows_update_doctor.add_argument("--json", action="store_true")
+    windows_update_doctor.add_argument("--launch-gate", action="store_true")
+    windows_update_doctor.add_argument("--skip-resource-check", action="store_true")
+    windows_update_repair = sub.add_parser("windows-update-repair")
+    windows_update_repair.add_argument("--config", dest="sub_config")
+    windows_update_repair.add_argument("--apply", action="store_true")
+    windows_update_ensure = sub.add_parser("windows-update-ensure")
+    windows_update_ensure.add_argument("--config", dest="sub_config")
+    change_account = sub.add_parser("change-account")
+    change_account.add_argument("--config", dest="sub_config")
+    change_account.add_argument("--apply", action="store_true")
+    change_account.add_argument("--recover-last", action="store_true")
+    change_account.add_argument("--proxy-url")
     add_config(sub.add_parser("smoke"))
     init_config_parser = sub.add_parser("init-config")
     init_config_parser.add_argument("--output")
@@ -160,6 +181,24 @@ def main(argv: list[str] | None = None) -> int:
         )
     if args.command == "doctor":
         return run_doctor(config_path, strict=args.strict, native_codex=args.native_codex)
+    if args.command == "windows-update-doctor":
+        return run_windows_update_doctor(
+            config_path,
+            json_output=args.json,
+            launch_gate=args.launch_gate,
+            include_resources=not args.skip_resource_check,
+        )
+    if args.command == "windows-update-repair":
+        return run_windows_update_repair(config_path, apply=args.apply)
+    if args.command == "windows-update-ensure":
+        return run_windows_update_ensure(config_path)
+    if args.command == "change-account":
+        return run_change_account(
+            config_path,
+            apply=args.apply,
+            recover_last=args.recover_last,
+            proxy_url=args.proxy_url,
+        )
     if args.command == "smoke":
         return run_smoke(config_path)
     if args.command == "init-config":

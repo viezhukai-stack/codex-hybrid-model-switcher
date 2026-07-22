@@ -5,6 +5,43 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.18.1
+
+- Added a Windows Codex update doctor that checks the current AppX version,
+  Browser/Chrome bundled and cached versions, the configured
+  `CODEX_CLI_PATH`, stale staging paths, and recent low-memory events without
+  reading conversation content or changing Codex state.
+- Added a guarded Windows CLI repair. It copies the current bundled Codex CLI
+  plus `rg.exe`, sandbox setup, command runner, and code-mode host into a
+  versioned project-owned cache and validates the complete bundle. It persists
+  `CODEX_CLI_PATH` in the current-user environment because the upgraded Windows
+  app can regenerate the Browser config block during startup; an existing TOML
+  key is updated in place but a missing key is not forced into `config.toml`.
+- Fixed the upgraded Windows Browser failure that presented every external URL
+  as blocked. The underlying error was `failed to start codex app-server:
+  program not found` after the app removed the old CLI path. Browser and Chrome
+  versions are now also detected from the official bundled marketplace layout
+  instead of only the legacy plugin cache.
+- Added an optional Windows device-code account switch with dry-run by default,
+  local backup and transaction recovery, optional private proxy configuration,
+  and checks that projects, plugins/MCP, model cache, database, and sessions do
+  not change during the switch. It also accepts the repaired current-user
+  `CODEX_CLI_PATH`.
+- Added `Repair Codex Browser and CLI.cmd` and `Change Codex Account.cmd` to the
+  Windows desktop and netdisk package. The normal Hot Router launcher now
+  detects a supported AppX CLI version change while Codex is closed, performs
+  the same guarded hash-verified repair automatically, reruns the launch gate,
+  and then opens Codex. Unsupported failures still stop and point to the manual
+  repair entry.
+- Expanded redacted Windows diagnostics with Codex app, CLI, plugin-version,
+  staging, and low-memory fields. No service, scheduled task, auto-restart loop,
+  or automatic process termination was added.
+- Validated the update path on a physical Windows Hybrid 2.0 canary across two
+  consecutive Codex AppX versions. The complete CLI bundle refreshed to the
+  new version, Browser/Chrome matched the new bundled marketplace, an external
+  DOM page loaded, all 100 local tasks remained in the `custom` provider bucket,
+  and the heavy local runtime stayed stopped while idle.
+
 ## v2.18.0
 
 - Added macOS compatibility for the upgraded ChatGPT desktop app that now hosts

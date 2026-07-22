@@ -60,11 +60,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-windows-laun
 ```
 
 This creates `Start Codex Hot Router.cmd`, `Codex Model Switcher.cmd`,
-`Enable Codex Hot Router Mode.cmd`, `Restore Codex 19030 Mode.cmd`, and
+`Enable Codex Hot Router Mode.cmd`, `Restore Codex 19030 Mode.cmd`,
+`Repair Codex Browser and CLI.cmd`, `Change Codex Account.cmd`, and
 `Restore Official Codex.cmd` on the desktop.
 
 `Start Codex Hot Router.cmd` always:
 
+- runs the Windows Codex update launch gate and automatically refreshes the
+  complete Browser CLI bundle only for a supported AppX version change while
+  Codex is closed
 - checks or starts the lightweight bridge on `127.0.0.1:19030`
 - starts or reuses the hot router on `127.0.0.1:19032`
 - enables `19032` hot-router mode while Codex is closed when needed
@@ -84,6 +88,19 @@ The launcher always:
 
 The maintenance switcher does not open Codex automatically. The hot-router
 launcher does open Codex automatically after health checks pass.
+
+After a Codex app update, the next daily launch normally refreshes the matching
+CLI bundle automatically before opening Codex. Run `Repair Codex Browser and
+CLI.cmd` only when the automatic refresh stops. To change the ChatGPT account,
+use `Change Codex Account.cmd`; it uses device-code login, keeps a local
+transaction backup, and does not move project conversations between provider
+buckets.
+
+The Browser/CLI repair copies the complete current AppX CLI bundle into a
+versioned project-owned directory and stores that path in the current-user
+`CODEX_CLI_PATH` environment value. This survives the Windows app regenerating
+its Browser configuration during startup. It does not create a service,
+scheduled task, watchdog, or restart loop.
 
 ## Apply
 
