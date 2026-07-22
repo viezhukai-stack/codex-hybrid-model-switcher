@@ -434,6 +434,69 @@ function Write-DiagnosticsReport {
     $installedLocalModel = $false
     $localProviderEnabled = $false
     $localOnlyConfig = $false
+    $codexPackage = Get-AppxPackage OpenAI.Codex -ErrorAction SilentlyContinue | Select-Object -First 1
+    $codexAppVersion = if ($codexPackage) { [string]$codexPackage.Version } else { "missing" }
+    $sourceCli = $null
+    if ($codexPackage) {
+        $sourceCliCandidate = Join-Path $codexPackage.InstallLocation "app\resources\codex.exe"
+        if (Test-Path $sourceCliCandidate) { $sourceCli = Get-Item -LiteralPath $sourceCliCandidate }
+    }
+    $configuredCliPresent = $false
+    $configuredCliExists = $false
+    $configuredCliSource = "missing"
+    $configuredCliValue = ""
+    if (Test-Path $configToml) {
+        $cliLine = Get-Content -LiteralPath $configToml -ErrorAction SilentlyContinue | Where-Object {
+            $_ -match '^\s*CODEX_CLI_PATH\s*='
+        } | Select-Object -First 1
+        if ($cliLine) {
+            $configuredCliPresent = $true
+            $configuredCliSource = "config"
+            if ($cliLine -match "=\s*'([^']+)'" -or $cliLine -match '=\s*"([^"]+)"') {
+                $configuredCliValue = $Matches[1] -replace '\\\\', '\'
+            }
+        }
+    }
+    if (-not $configuredCliValue) {
+        $configuredCliValue = [Environment]::GetEnvironmentVariable("CODEX_CLI_PATH", "User")
+        if ($configuredCliValue) {
+            $configuredCliPresent = $true
+            $configuredCliSource = "user-environment"
+        }
+    }
+    if ($configuredCliValue) { $configuredCliExists = Test-Path -LiteralPath $configuredCliValue }
+    function Read-PluginVersion([string]$Manifest) {
+        if (-not (Test-Path -LiteralPath $Manifest)) { return "missing" }
+        try { return [string]((Get-Content -LiteralPath $Manifest -Raw | ConvertFrom-Json).version) }
+        catch { return "invalid" }
+    }
+    $browserSourceVersion = "missing"
+    $chromeSourceVersion = "missing"
+    if ($codexPackage) {
+        $browserSourceVersion = Read-PluginVersion (Join-Path $codexPackage.InstallLocation "app\resources\plugins\openai-bundled\plugins\browser\.codex-plugin\plugin.json")
+        $chromeSourceVersion = Read-PluginVersion (Join-Path $codexPackage.InstallLocation "app\resources\plugins\openai-bundled\plugins\chrome\.codex-plugin\plugin.json")
+    }
+    $browserCacheVersion = "missing"
+    $chromeCacheVersion = "missing"
+    $pluginCacheRoot = Join-Path $codexHome "plugins\cache\openai-bundled"
+    $browserCache = Get-ChildItem (Join-Path $pluginCacheRoot "browser") -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
+    $chromeCache = Get-ChildItem (Join-Path $pluginCacheRoot "chrome") -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "latest" } | Sort-Object Name -Descending | Select-Object -First 1
+    if ($browserCache) { $browserCacheVersion = Read-PluginVersion (Join-Path $browserCache.FullName ".codex-plugin\plugin.json") }
+    if ($chromeCache) { $chromeCacheVersion = Read-PluginVersion (Join-Path $chromeCache.FullName ".codex-plugin\plugin.json") }
+    $bundledMarketplaceRoot = Join-Path $codexHome ".tmp\bundled-marketplaces\openai-bundled\plugins"
+    if ($browserCacheVersion -eq "missing") {
+        $browserCacheVersion = Read-PluginVersion (Join-Path $bundledMarketplaceRoot "browser\.codex-plugin\plugin.json")
+    }
+    if ($chromeCacheVersion -eq "missing") {
+        $chromeCacheVersion = Read-PluginVersion (Join-Path $bundledMarketplaceRoot "chrome\.codex-plugin\plugin.json")
+    }
+    $stagingCount = 0
+    foreach ($root in @((Join-Path $env:LOCALAPPDATA "OpenAI\Codex\bin"), $pluginCacheRoot)) {
+        if (Test-Path $root) {
+            $stagingCount += @(Get-ChildItem -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -like ".staging-*" }).Count
+        }
+    }
+    $lowMemoryEvents = @(Get-WinEvent -FilterHashtable @{LogName="System"; Id=2004; StartTime=(Get-Date).AddHours(-24)} -MaxEvents 50 -ErrorAction SilentlyContinue).Count
     $llamaPayloadRoot = Join-Path $PSScriptRoot "payload\llama.cpp"
     if (Test-Path $llamaPayloadRoot) {
         $payloadLlama = [bool](Get-ChildItem -LiteralPath $llamaPayloadRoot -Filter "llama-server.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1)
@@ -486,6 +549,17 @@ function Write-DiagnosticsReport {
         "models_cache_present=$(Test-Path $modelsCache)",
         "state_db_present=$(Test-Path $stateDb)",
         "codex_process_running=$(Test-CodexRunning)",
+        "codex_app_version=$codexAppVersion",
+        "codex_app_cli_present=$([bool]$sourceCli)",
+        "configured_codex_cli_key=$configuredCliPresent",
+        "configured_codex_cli_source=$configuredCliSource",
+        "configured_codex_cli_exists=$configuredCliExists",
+        "browser_bundled_version=$browserSourceVersion",
+        "browser_cache_version=$browserCacheVersion",
+        "chrome_bundled_version=$chromeSourceVersion",
+        "chrome_cache_version=$chromeCacheVersion",
+        "codex_staging_paths=$stagingCount",
+        "low_memory_events_24h=$lowMemoryEvents",
         "python_found=$($python.Count -gt 0)",
         "python_command=$pythonCommand",
         "winget_found=$([bool]$winget)",

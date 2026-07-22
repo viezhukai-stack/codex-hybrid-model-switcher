@@ -135,6 +135,15 @@ def validate_config(config: AppConfig, *, check_paths: bool = False) -> list[str
                 errors.append(f"local_model.{key} is required for local providers")
             elif check_paths and not expand_path(local[key]).exists():
                 errors.append(f"local_model.{key} path does not exist")
+    account_switch = config.raw.get("account_switch") or {}
+    if not isinstance(account_switch, dict):
+        errors.append("account_switch must be an object")
+    else:
+        proxy_url = str(account_switch.get("proxy_url") or "")
+        if proxy_url:
+            parsed = urlparse(proxy_url)
+            if parsed.scheme not in {"http", "https", "socks5"} or not parsed.hostname:
+                errors.append("account_switch.proxy_url must be an http, https, or socks5 URL")
     return errors
 
 
@@ -172,6 +181,8 @@ def print_validation(config: AppConfig, *, check_paths: bool = False) -> None:
                 print(f"  - {key}: {'exists' if expand_path(value).exists() else 'missing'}")
             else:
                 print(f"  - {key}: configured")
+    proxy = config.account_switch.get("proxy_url")
+    print(f"account_switch_proxy: {'configured' if proxy else 'system/default'}")
 
 
 def run_validate_config(config_path: str | None = None, *, check_paths: bool = False) -> int:

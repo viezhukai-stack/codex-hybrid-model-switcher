@@ -11,12 +11,16 @@ Codex Hybrid Model Switcher - Windows netdisk one-click setup
 9. For local models without a bundled model payload, choose your own GGUF model file and mmproj file.
 10. The installer uses bundled llama.cpp if payload\llama.cpp contains llama-server.exe; otherwise it downloads llama.cpp from the official ggml-org GitHub releases when local model files are selected.
 11. The default run stops at dry-run. After dry-run, you can type APPLY to apply only after Codex Desktop is fully closed.
-12. After setup, use Start Codex Hot Router.cmd on the Desktop for normal daily launches. It checks the lightweight local bridge on 127.0.0.1:19030, starts the hot router on 127.0.0.1:19032, then opens Codex.
+12. After setup, use Start Codex Hot Router.cmd on the Desktop for normal daily launches. It checks Browser/CLI update compatibility, automatically refreshes the complete matching CLI bundle after a supported Codex AppX version change while Codex is closed, then checks the lightweight local bridge on 127.0.0.1:19030, starts the hot router on 127.0.0.1:19032, and opens Codex.
 13. Use Codex Model Switcher.cmd only for guarded maintenance switches.
 14. To return to official Codex, double-click Restore Official Codex.cmd.
-15. If setup fails, double-click Codex Hybrid Diagnostics.cmd and send the generated diagnostics text file.
+15. If the daily launcher's automatic guarded CLI refresh stops after a Codex update, fully quit Codex and double-click Repair Codex Browser and CLI.cmd. It copies the complete matching CLI bundle and refreshes the current-user CODEX_CLI_PATH used by Browser.
+16. To change the ChatGPT account, fully quit Codex and double-click Change Codex Account.cmd. It uses device-code login and a local transaction backup.
+17. If setup fails, double-click Codex Hybrid Diagnostics.cmd and send the generated diagnostics text file.
 
 This package does not install CC Switch. It includes this project's own guarded external switcher.
 In hot-router mode, Codex's bottom-right model selector is the source of truth. In maintenance mode, Codex Model Switcher.cmd is the source of truth.
 
-Never upload or share auth.json, models_cache.json, state_5.sqlite, sessions, rollout logs, API keys, or screenshots containing secrets.
+Normal setup and routing never edit auth.json. The optional account switch uses the official Codex login command after an explicit confirmation and local backup.
+
+Never upload or share auth.json, account-switch backups, models_cache.json, state_5.sqlite, sessions, rollout logs, API keys, or screenshots containing secrets.

@@ -19,6 +19,8 @@ def test_installed_windows_launcher_uses_guarded_menu_script():
     assert "Start Codex Hot Router.cmd" in text
     assert "Enable Codex Hot Router Mode.cmd" in text
     assert "Restore Codex 19030 Mode.cmd" in text
+    assert "Repair Codex Browser and CLI.cmd" in text
+    assert "Change Codex Account.cmd" in text
     assert "codex-hybrid-switcher menu" not in text
 
 
@@ -60,6 +62,8 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     hot_router = (ROOT / "installer" / "windows" / "Start Codex Hot Router.cmd").read_text(encoding="utf-8")
     launcher = (ROOT / "installer" / "windows" / "Install Codex Hybrid.cmd").read_text(encoding="utf-8")
     diagnostics = (ROOT / "installer" / "windows" / "Codex Hybrid Diagnostics.cmd").read_text(encoding="utf-8")
+    repair = (ROOT / "installer" / "windows" / "Repair Codex Browser and CLI.cmd").read_text(encoding="utf-8")
+    account = (ROOT / "installer" / "windows" / "Change Codex Account.cmd").read_text(encoding="utf-8")
     restore = (ROOT / "installer" / "windows" / "Restore Official Codex.cmd").read_text(encoding="utf-8")
     readme = (ROOT / "installer" / "windows" / "README.txt").read_text(encoding="utf-8")
     readme_zh = (ROOT / "installer" / "windows" / "README.zh-CN.txt").read_text(encoding="utf-8")
@@ -75,6 +79,9 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "Using bundled project payload" in text
     assert "provider-preset.json" in text
     assert "Codex Hybrid Installer Diagnostics" in text
+    assert "configured_codex_cli_exists" in text
+    assert "browser_bundled_version" in text
+    assert "low_memory_events_24h" in text
     assert "codex-hybrid-installer-diagnostics.txt" in text
     assert "If Codex Desktop is fully closed and you want to apply now, type APPLY exactly." in text
     assert "archive/refs/tags/$ReleaseTag.zip" in text
@@ -129,12 +136,16 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "windows-hot-router-start.ps1" in hot_router
     assert "VERSION.txt" in hot_router
     assert "pyproject.toml" in hot_router
-    assert 'set "PACKAGE_VERSION=2.18.0"' not in hot_router
+    assert 'set "PACKAGE_VERSION=2.18.1"' not in hot_router
     assert "-DiagnosticsOnly" in diagnostics
     assert "windows-restore-official.ps1" in restore
     assert "VERSION.txt" in restore
     assert "pyproject.toml" in restore
-    assert 'set "PACKAGE_VERSION=2.18.0"' not in restore
+    assert 'set "PACKAGE_VERSION=2.18.1"' not in restore
+    assert "windows-update-repair.ps1" in repair
+    assert "-Apply" in repair
+    assert "windows-change-account.ps1" in account
+    assert "-Apply" in account
     assert "Full local model packages may include payload\\models\\local-gemma" in readme
     assert "does not install CC Switch" in readme
     assert "网盘一键安装包" in readme_zh
@@ -170,6 +181,8 @@ def test_windows_package_builder_defaults_to_portable_python_with_no_python_esca
     assert "Apache-2.0" in text
     assert "Start Codex Hot Router.cmd" in text
     assert "windows-hot-router-start.ps1" in text
+    assert "windows-update-repair.ps1" in text
+    assert "windows-change-account.ps1" in text
 
 
 def test_windows_hot_router_launcher_checks_bridge_before_router_and_opens_codex():
@@ -177,6 +190,8 @@ def test_windows_hot_router_launcher_checks_bridge_before_router_and_opens_codex
     cmd = (ROOT / "scripts" / "Start Codex Hot Router.cmd").read_text(encoding="utf-8")
 
     assert text.index("ensure-bridge") < text.index('@("hot-router"')
+    assert text.index("windows-update-ensure") < text.index("ensure-bridge")
+    assert "Repair Codex Browser and CLI.cmd" in text
     assert "127.0.0.1:19030" in text
     assert "$RouterHost`:$Port" in text
     assert "privateConfig.hot_router" in text
@@ -227,6 +242,8 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     assert "VERSION.txt" in names
     assert "Start Codex Hot Router.cmd" in names
     assert "Codex Hybrid Diagnostics.cmd" in names
+    assert "Repair Codex Browser and CLI.cmd" in names
+    assert "Change Codex Account.cmd" in names
     assert "Restore Official Codex.cmd" in names
     assert "Install-CodexHybrid.ps1" in names
     assert "README.txt" in names
@@ -237,11 +254,15 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/history.py" in names
     assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/hot_router.py" in names
     assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/hot_router_mode.py" in names
+    assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/windows_update.py" in names
+    assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/account_switch.py" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-hot-router-start.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-hot-router-mode.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/Start Codex Hot Router.cmd" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-provider-switch.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-restore-official.ps1" in names
+    assert "payload/codex-hybrid-model-switcher/scripts/windows-update-repair.ps1" in names
+    assert "payload/codex-hybrid-model-switcher/scripts/windows-change-account.ps1" in names
     assert not any(name.startswith(".git/") for name in names)
     assert not any(name.startswith(".venv/") for name in names)
     assert not any(name.startswith("dist/") for name in names)

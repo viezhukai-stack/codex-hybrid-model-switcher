@@ -17,13 +17,20 @@ Help a stock Codex Desktop user reach a working, recoverable hybrid setup:
 
 ## Non-negotiable Safety Rules
 
-Never edit, overwrite, delete, migrate, or synthesize these files:
+Normal setup, model routing, Browser/CLI repair, and diagnostics must never
+edit, overwrite, delete, migrate, or synthesize these files:
 
 - `auth.json`
 - `models_cache.json`
 - `state_5.sqlite`
 - `sessions/`
 - rollout logs
+
+The only exception is the explicit Windows `change-account --apply` maintenance
+command. It may invoke the official Codex logout/device-login commands after a
+local transaction backup and exact `SWITCH` confirmation. It must not modify
+model cache, history, sessions, plugins, MCP, or project configuration, and it
+must restore the previous `auth.json` when login fails.
 
 Never install LaunchAgents, KeepAlive jobs, scheduled tasks, recovery loops, or
 auto-restart scripts.

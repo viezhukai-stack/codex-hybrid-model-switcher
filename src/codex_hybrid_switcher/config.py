@@ -102,6 +102,13 @@ class AppConfig:
             raise ValueError("local_model must be an object")
         return model
 
+    @property
+    def account_switch(self) -> dict[str, Any]:
+        data = self.raw.get("account_switch") or {}
+        if not isinstance(data, dict):
+            raise ValueError("account_switch must be an object")
+        return data
+
     def provider(self, provider_id: str) -> dict[str, Any]:
         for provider in self.providers:
             if provider.get("id") == provider_id:
