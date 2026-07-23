@@ -1,18 +1,20 @@
 # Windows Codex Update Canary
 
-This canary validates the v2.18.1 Browser/CLI update guard and optional account
+This canary validates the v2.18.2 Browser/CLI update guard and optional account
 switch on a real Windows Codex Hybrid 2.0 installation.
 
 ## Safety boundary
 
-- Fully quit Codex/ChatGPT before any repair or account operation.
+- Fully quit Codex/ChatGPT before CLI-bundle repair or account operations. The
+  bounded Browser plugin check is the only repair phase that intentionally runs
+  after Codex starts and finishes feature initialization.
 - Back up `config.toml`, `auth.json`, `models_cache.json`, `state_5.sqlite`,
   `sessions`, launchers, and the private switcher config before the app update.
 - Record protected-file hashes and thread/provider counts.
 - Do not edit official Browser/Chrome plugin caches, Codex databases, session
   JSONL, rollout logs, Windows proxy settings, services, or scheduled tasks.
 - A Codex Store/AppX update may not have a reliable version rollback. Run all
-  v2.18.1 dry-runs against the old app before updating it.
+  v2.18.2 dry-runs against the old app before updating it.
 
 ## Candidate flow
 
@@ -29,13 +31,17 @@ switch on a real Windows Codex Hybrid 2.0 installation.
    `CODEX_CLI_PATH` environment value, and return a healthy launch gate.
    If automatic eligibility is intentionally rejected, verify the manual
    fallback with `windows-update-repair --apply` and type `REPAIR` instead.
-6. Start `Start Codex Hot Router.cmd` twice. Confirm the second restart does not
-   revert the Browser plugin or CLI path.
-7. Confirm account UI, projects, plugins, MCP, model catalog, one cloud model,
+6. Start `Start Codex Hot Router.cmd`. Confirm its one-shot post-start helper
+   invokes `windows-browser-ensure`, waits for Codex feature initialization,
+   reports Browser healthy or installs it through the official CLI, then exits
+   without restarting Codex.
+7. Restart Codex twice through the same daily entry. Confirm neither restart
+   reverts the Browser plugin or CLI path.
+8. Confirm account UI, projects, plugins, MCP, model catalog, one cloud model,
    local Gemma, and any machine-private second local model still work.
-8. Confirm only one llama.cpp model runs at a time and the local runtime exits
+9. Confirm only one llama.cpp model runs at a time and the local runtime exits
    under the configured idle policy.
-9. Keep the real account unchanged for the release canary. Run only the
+10. Keep the real account unchanged for the release canary. Run only the
    `change-account` dry-run on the real profile; exercise success/failure and
    interrupted recovery against an isolated temporary Codex home and fake CLI.
 
@@ -56,6 +62,8 @@ switch on a real Windows Codex Hybrid 2.0 installation.
   nothing.
 - No service, scheduled task, background watchdog, recovery loop, or automatic
   process termination is introduced.
+- The post-start Browser helper is bounded, deduplicated, and exits after one
+  check. It does not close or reopen Codex.
 
 ## Physical canary result — 2026-07-22
 
@@ -72,6 +80,11 @@ switch on a real Windows Codex Hybrid 2.0 installation.
 - The local task database reported `quick_check=ok`, 100 tasks in the `custom`
   provider bucket, and 47 archived tasks. `19030` and `19032` were healthy;
   the heavy `19031` local runtime was not resident while idle.
+- The effective Browser recovery sequence was verified after the desktop had
+  completed feature initialization: the official CLI installed
+  `browser@openai-bundled`, Browser and Chrome both reported installed/enabled/
+  `AVAILABLE`, and both remained present after two controlled restarts. This
+  sequence is the bounded post-start phase added in v2.18.2.
 
 ## Evidence template
 

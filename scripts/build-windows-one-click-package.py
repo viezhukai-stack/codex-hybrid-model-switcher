@@ -104,6 +104,7 @@ def project_payload_files() -> list[Path]:
         Path("src/codex_hybrid_switcher/hot_router_mode.py"),
         Path("scripts/windows-hot-router-start.ps1"),
         Path("scripts/windows-hot-router-mode.ps1"),
+        Path("scripts/windows-browser-post-start.ps1"),
         Path("scripts/Start Codex Hot Router.cmd"),
         Path("scripts/windows-provider-switch.ps1"),
         Path("scripts/windows-restore-official.ps1"),
@@ -113,11 +114,15 @@ def project_payload_files() -> list[Path]:
         Path("scripts/Change Codex Account.cmd"),
         Path("scripts/install-windows-launcher.ps1"),
     }
+    files = sorted(
+        set(files)
+        | {path for path in required if (ROOT / path).is_file()}
+    )
     present = set(files)
     missing = sorted(str(path) for path in required if path not in present)
     if missing:
         raise SystemExit(f"project payload is missing required files: {', '.join(missing)}")
-    return sorted(files)
+    return files
 
 
 def add_project_payload(archive: zipfile.ZipFile) -> None:

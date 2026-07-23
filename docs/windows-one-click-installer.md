@@ -6,13 +6,13 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.18.1.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.18.2.zip
 ```
 
 For private netdisk sharing with a bundled local model, build and share:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.18.1.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.18.2.zip
 ```
 
 It contains:
@@ -108,6 +108,12 @@ The full local package also contains:
 - Stops on any update condition outside that narrow automatic repair and points
   to `Repair Codex Browser and CLI.cmd`; it never creates a service, scheduled
   task, watchdog, restart loop, or background updater.
+- After opening Codex, starts one hidden, bounded post-start check. It waits for
+  Codex feature initialization, verifies the official Browser plugin state, and
+  runs `windows-browser-ensure`, which calls
+  `plugin add browser@openai-bundled --json` through the current official CLI
+  only when Browser is available but missing or stale. It never restarts Codex
+  and exits after writing a small local diagnostic log.
 - Installs `Change Codex Account.cmd` for an explicit, backup-first device-code
   login. Account switching is separate from normal model routing and remains a
   dry-run until the user types `SWITCH`.
@@ -140,7 +146,7 @@ The full local package also contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.1.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.2.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -249,7 +255,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.1.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.2.zip
 ```
 
 Upload that zip to your netdisk.
@@ -273,7 +279,7 @@ one GGUF model and one mmproj GGUF file, then run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py `
-  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.1.zip `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.2.zip `
   --include-llama-dir D:\Tools\llama.cpp `
   --include-vcredist-file D:\Installers\vc_redist.x64.exe `
   --include-model-dir D:\Models\gemma-4-e4b

@@ -36,6 +36,8 @@ MANAGED_CLI_BUNDLE_FILES = (
     "codex-code-mode-host.exe",
 )
 MANAGED_CLI_COMPANION_FILES = MANAGED_CLI_BUNDLE_FILES[1:]
+BROWSER_PLUGIN_ID = "browser@openai-bundled"
+BROWSER_POST_START_LOCK_SECONDS = 300
 
 
 @dataclass
@@ -58,6 +60,25 @@ class PluginProbe:
     version_matches: bool = False
     installed: bool = False
     install_source: str = "missing"
+
+
+@dataclass
+class CliPluginState:
+    plugin_id: str
+    found: bool = False
+    installed: bool = False
+    enabled: bool = False
+    install_policy: str = "missing"
+    version: str = "missing"
+    bucket: str = "missing"
+
+    @property
+    def available(self) -> bool:
+        return self.install_policy.upper() == "AVAILABLE"
+
+    @property
+    def healthy(self) -> bool:
+        return self.found and self.installed and self.enabled and self.available
 
 
 @dataclass
@@ -482,6 +503,153 @@ def plugin_probe(
         installed=installed,
         install_source=install_source,
     )
+
+
+def parse_cli_plugin_catalog(payload: dict[str, Any]) -> dict[str, CliPluginState]:
+    states: dict[str, CliPluginState] = {}
+    for bucket in ("installed", "available"):
+        items = payload.get(bucket) or []
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            plugin_id = str(item.get("pluginId") or "").strip()
+            if not plugin_id:
+                continue
+            states[plugin_id] = CliPluginState(
+                plugin_id=plugin_id,
+                found=True,
+                installed=bool(item.get("installed", bucket == "installed")),
+                enabled=bool(item.get("enabled", False)),
+                install_policy=str(item.get("installPolicy") or "missing"),
+                version=str(item.get("version") or "missing"),
+                bucket=bucket,
+            )
+    return states
+
+
+def _json_object_from_output(output: str) -> dict[str, Any] | None:
+    start = output.find("{")
+    end = output.rfind("}")
+    if start < 0 or end < start:
+        return None
+    try:
+        payload = json.loads(output[start : end + 1])
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _run_codex_plugin_command(
+    cli_path: Path,
+    arguments: list[str],
+    *,
+    timeout: float = 60,
+) -> subprocess.CompletedProcess[str]:
+    creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if is_windows() else 0
+    return subprocess.run(
+        [str(cli_path), "plugin", *arguments],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=timeout,
+        check=False,
+        creationflags=creationflags,
+    )
+
+
+def query_codex_plugin_catalog(
+    cli_path: Path,
+) -> tuple[dict[str, CliPluginState], str | None]:
+    try:
+        proc = _run_codex_plugin_command(cli_path, ["list", "--json"])
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {}, type(exc).__name__
+    if proc.returncode != 0:
+        return {}, f"plugin list exited with code {proc.returncode}"
+    payload = _json_object_from_output(proc.stdout)
+    if payload is None:
+        return {}, "plugin list did not return valid JSON"
+    return parse_cli_plugin_catalog(payload), None
+
+
+def current_codex_cli_for_plugins(
+    config: AppConfig,
+    app_info: dict[str, str],
+) -> Path | None:
+    source = source_cli_path(app_info)
+    source_hashes = cli_bundle_hashes(source)
+    try:
+        config_text, _ = read_utf8_text_preserving_bom(config.codex_home / "config.toml")
+    except OSError:
+        config_text = ""
+    config_value, _ = find_toml_section_key(
+        config_text,
+        "[mcp_servers.node_repl.env]",
+        "CODEX_CLI_PATH",
+    )
+    environment_value = user_environment_value("CODEX_CLI_PATH")
+    configured = Path(config_value or environment_value) if (config_value or environment_value) else None
+    candidates = (managed_cli_path(app_info), configured, source)
+    seen: set[str] = set()
+    for candidate in candidates:
+        if not candidate:
+            continue
+        key = str(candidate).lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        probe = probe_cli(
+            candidate,
+            classify_cli_path(candidate),
+            execute=False,
+            required_siblings=MANAGED_CLI_COMPANION_FILES,
+        )
+        if not probe.exists or not probe.bundle_complete:
+            continue
+        candidate_hashes = cli_bundle_hashes(candidate)
+        if source_hashes is not None and candidate_hashes != source_hashes:
+            continue
+        return candidate
+    return None
+
+
+def _browser_config_ready(
+    config: AppConfig,
+    app_info: dict[str, str],
+) -> bool:
+    try:
+        config_text, _ = read_utf8_text_preserving_bom(config.codex_home / "config.toml")
+    except OSError:
+        return False
+    probe = plugin_probe("browser", app_info, config.codex_home, config_text)
+    return probe.installed and probe.version_matches
+
+
+def _acquire_browser_post_start_lock(path: Path) -> int | None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        if path.exists() and time.time() - path.stat().st_mtime > BROWSER_POST_START_LOCK_SECONDS:
+            path.unlink()
+    except OSError:
+        return None
+    try:
+        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        return None
+    os.write(descriptor, f"pid={os.getpid()}\ntime={int(time.time())}\n".encode("ascii"))
+    return descriptor
+
+
+def _release_browser_post_start_lock(path: Path, descriptor: int) -> None:
+    try:
+        os.close(descriptor)
+    finally:
+        try:
+            path.unlink()
+        except OSError:
+            pass
 
 
 def count_staging_paths(codex_home: Path) -> int:
@@ -987,3 +1155,98 @@ def run_windows_update_ensure(config_path: str | None = None) -> int:
         return 20
     print("Automatic CLI refresh complete. Protected Codex files were unchanged.")
     return 0
+
+
+def run_windows_browser_ensure(
+    config_path: str | None = None,
+    *,
+    wait_seconds: float = 90,
+    settle_seconds: float = 15,
+    poll_seconds: float = 3,
+    verify_seconds: float = 30,
+) -> int:
+    """Install Browser once, after the desktop feature gates have settled."""
+
+    if not is_windows():
+        print("Windows Browser post-start repair is available only on Windows.")
+        return 20
+    config = load_config(config_path)
+    lock_path = config.path.parent / ".windows-browser-post-start.lock"
+    lock_descriptor = _acquire_browser_post_start_lock(lock_path)
+    if lock_descriptor is None:
+        print("A Browser post-start check is already running; this duplicate check will exit.")
+        return 0
+    try:
+        app = windows_codex_app_info()
+        if not app:
+            print("OpenAI.Codex AppX package was not found.")
+            return 20
+        cli_path = current_codex_cli_for_plugins(config, app)
+        if cli_path is None:
+            print("The current hash-matched Codex CLI bundle was not found.")
+            print("Run 'Repair Codex Browser and CLI.cmd' while Codex is fully closed.")
+            return 20
+
+        wait_seconds = max(0.0, float(wait_seconds))
+        settle_seconds = max(0.0, float(settle_seconds))
+        poll_seconds = max(0.1, float(poll_seconds))
+        verify_seconds = max(0.0, float(verify_seconds))
+        start_deadline = time.monotonic() + wait_seconds
+        while not codex_is_running():
+            if time.monotonic() >= start_deadline:
+                print("Codex did not start before the Browser post-start timeout.")
+                return 20
+            time.sleep(min(poll_seconds, max(0.0, start_deadline - time.monotonic())))
+
+        if settle_seconds:
+            time.sleep(settle_seconds)
+        if not codex_is_running():
+            print("Codex closed before the Browser post-start check could finish.")
+            return 20
+
+        print("Checking Browser after Codex feature initialization...")
+        last_error: str | None = None
+        feature_deadline = time.monotonic() + wait_seconds
+        while True:
+            states, last_error = query_codex_plugin_catalog(cli_path)
+            browser = states.get(BROWSER_PLUGIN_ID)
+            if browser and browser.healthy and _browser_config_ready(config, app):
+                print(f"Browser is installed, enabled, and available (version {browser.version}).")
+                return 0
+            if browser and browser.available:
+                break
+            if time.monotonic() >= feature_deadline:
+                detail = f" Last check: {last_error}." if last_error else ""
+                print("Browser did not become available after Codex feature initialization." + detail)
+                return 20
+            time.sleep(min(poll_seconds, max(0.0, feature_deadline - time.monotonic())))
+
+        print("Browser is available but missing or stale. Installing it through the official Codex CLI...")
+        try:
+            install = _run_codex_plugin_command(
+                cli_path,
+                ["add", BROWSER_PLUGIN_ID, "--json"],
+                timeout=max(60.0, verify_seconds),
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            print(f"Browser installation failed: {type(exc).__name__}.")
+            return 20
+        if install.returncode != 0:
+            print(f"Browser installation exited with code {install.returncode}.")
+            return 20
+
+        verify_deadline = time.monotonic() + verify_seconds
+        while True:
+            states, last_error = query_codex_plugin_catalog(cli_path)
+            browser = states.get(BROWSER_PLUGIN_ID)
+            if browser and browser.healthy and _browser_config_ready(config, app):
+                print(f"Browser repair complete (version {browser.version}).")
+                print("No Codex restart was requested by the repair.")
+                return 0
+            if time.monotonic() >= verify_deadline:
+                detail = f" Last check: {last_error}." if last_error else ""
+                print("Browser installation did not reach a stable enabled state." + detail)
+                return 20
+            time.sleep(min(poll_seconds, max(0.0, verify_deadline - time.monotonic())))
+    finally:
+        _release_browser_post_start_lock(lock_path, lock_descriptor)

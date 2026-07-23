@@ -5,6 +5,31 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.18.2
+
+- Split Windows Codex update handling into two bounded phases. The existing
+  pre-start phase still repairs only a hash-matched CLI bundle while Codex is
+  closed; the new post-start phase waits for Codex feature initialization and
+  then checks the official plugin catalog.
+- Added `windows-browser-ensure` and a one-shot
+  `windows-browser-post-start.ps1` helper. When Browser is already installed,
+  enabled, available, and version-aligned, it performs no write. When Browser
+  is available but missing or stale, it invokes the current official Codex CLI
+  with `plugin add browser@openai-bundled --json` and verifies the final state.
+- Updated `Start Codex Hot Router.cmd` to launch the bounded Browser check after
+  opening Codex. The check uses a short-lived lock and one local diagnostic log;
+  it does not close or restart Codex and does not create a service, scheduled
+  task, watchdog, KeepAlive job, or recovery loop.
+- Preserved the existing Hybrid 2.0 safety boundary: normal update and Browser
+  repair code does not edit `auth.json`, `models_cache.json`, `state_5.sqlite`,
+  sessions, rollout logs, provider routing, plugins/MCP other than the explicit
+  Browser install, or project conversations.
+- Revalidated the fix on the HL physical Windows canary after the Codex
+  `26.715.10079.0` update. Browser and Chrome remained installed and enabled
+  across two controlled restarts, `19030` and `19032` stayed healthy, all 100
+  tasks remained in the `custom` bucket, and the task database returned
+  `quick_check=ok`.
+
 ## v2.18.1
 
 - Added a Windows Codex update doctor that checks the current AppX version,

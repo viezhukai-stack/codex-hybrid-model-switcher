@@ -105,7 +105,7 @@ cache, rewrite old conversations, or install always-on recovery services.
 ### Windows full local one-click setup
 
 For a beginner Windows computer, share
-`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.1.zip`, extract the entire zip,
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.2.zip`, extract the entire zip,
 and double-click `Install Codex Hybrid.cmd`. This is the recommended netdisk
 package because it includes the local model path and does not require a cloud
 API key.
@@ -119,7 +119,7 @@ Windows hot router, and stop at guarded dry-run before asking for an explicit
 `APPLY` confirmation. It does not redistribute Codex Desktop, install CC
 Switch, or apply a real switch without explicit confirmation.
 
-Windows v2.18.1 also installs two explicit maintenance entries. `Repair Codex
+Windows v2.18.2 also installs two explicit maintenance entries. `Repair Codex
 Browser and CLI.cmd` copies the matching complete CLI companion set and repairs
 the current-user `CODEX_CLI_PATH` after a Codex app update, including the case
 where the app regenerates its Browser config block. `Change Codex Account.cmd`
@@ -131,6 +131,13 @@ automatically when the only detected problem is a supported Codex AppX version
 change and Codex is fully closed. It validates all five companion files and
 protected Codex state before opening the app. Other update failures stop and
 leave the manual repair entry available.
+
+After Codex opens, the same daily entry runs one bounded Browser check in the
+background. It waits for Codex's feature initialization, does nothing when the
+official Browser plugin is already healthy, and uses the current official CLI
+to install Browser only when the plugin catalog reports it available but
+missing or stale. It never restarts Codex and does not install a service,
+scheduled task, watchdog, or recovery loop.
 
 The full local package can include `payload/models/local-gemma`,
 `payload/llama.cpp`, and `payload/vcredist/vc_redist.x64.exe` so a beginner can

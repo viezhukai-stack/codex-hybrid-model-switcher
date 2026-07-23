@@ -47,6 +47,7 @@ REQUIRED_FILES = (
     "scripts/validate-install.py",
     "scripts/bootstrap-windows.ps1",
     "scripts/build-windows-one-click-package.py",
+    "scripts/windows-browser-post-start.ps1",
     "scripts/build-macos-one-click-package.py",
     "scripts/macos-hot-router-start.sh",
     "scripts/macos-hot-router-mode.sh",
@@ -247,6 +248,8 @@ DOC_REQUIREMENTS = {
     "docs/windows-codex-update-canary.md": (
         "windows-update-doctor",
         "windows-update-ensure",
+        "windows-browser-ensure",
+        "browser@openai-bundled",
         "windows-update-repair --apply",
         "change-account",
         "Start Codex Hot Router.cmd",

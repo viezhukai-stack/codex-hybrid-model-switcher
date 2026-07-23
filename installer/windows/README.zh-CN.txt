@@ -14,7 +14,7 @@ Codex Hybrid Model Switcher - Windows 网盘一键安装包
 10. 如果 payload\llama.cpp 里已经带有 llama-server.exe，安装器会优先使用它；否则会在需要本地模型时尝试从 ggml-org 官方 GitHub Releases 下载 llama.cpp。
 11. 默认运行只做到 dry-run 检查，不会真正切换 Codex。
 12. 只有你确认 dry-run 没问题，并且已经完全退出 Codex 后，才可以输入 APPLY 执行真实切换。
-13. 安装成功后，日常使用优先双击 Start Codex Hot Router.cmd。它会先检查 Codex 更新后的 Browser/CLI 兼容性；如果只是受支持的 AppX 版本变化且 Codex 已退出，会自动复制并校验完整新版 CLI 套件，然后检查 127.0.0.1:19030 轻量 bridge，启动 127.0.0.1:19032 hot router，最后自动打开 Codex。
+13. 安装成功后，日常使用优先双击 Start Codex Hot Router.cmd。它会先检查 Codex 更新后的 Browser/CLI 兼容性；如果只是受支持的 AppX 版本变化且 Codex 已退出，会自动复制并校验完整新版 CLI 套件，然后检查 127.0.0.1:19030 轻量 bridge，启动 127.0.0.1:19032 hot router，最后自动打开 Codex。Codex 完成功能初始化后，还会执行一次有时限的 Browser 检查；只在官方 Browser 插件可用但缺失或版本过旧时恢复插件，全程不会重启 Codex。
 14. Codex Model Switcher.cmd 只作为维护/旧模式切换工具保留。
 15. 如果想恢复官方 Codex，双击 Restore Official Codex.cmd。
 16. Codex 更新后，如果日常入口的自动安全刷新停止，请完全退出 Codex，再双击 Repair Codex Browser and CLI.cmd。它会复制与新版 App 匹配的完整 CLI 套件，并刷新 Browser 使用的当前用户 CODEX_CLI_PATH。

@@ -210,6 +210,14 @@ maintenance-only.
 - Windows daily entry: `Start Codex Hot Router.cmd`
 - rollback entry: restore the guarded pre-router `19030` configuration
 
+On Windows, app updates use two strictly separated phases. While Codex is
+closed, `windows-update-ensure` may refresh only the current hash-matched CLI
+bundle. After Codex opens and finishes feature initialization,
+`windows-browser-ensure` performs one bounded plugin-catalog check and may use
+the official CLI to add `browser@openai-bundled` when it is available but
+missing or stale. The post-start phase must never restart Codex or become a
+service, scheduled task, watchdog, or recovery loop.
+
 13. If Codex opens but the new conversation does not reply, run `bridge-health`
     again before changing any Codex files.
 

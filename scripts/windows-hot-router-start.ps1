@@ -82,6 +82,16 @@ function Open-CodexDesktop() {
     Start-Process "shell:AppsFolder\$appId"
 }
 
+function Start-BrowserPostStartCheck() {
+    $postStartScript = Join-Path $PSScriptRoot "windows-browser-post-start.ps1"
+    if (!(Test-Path -LiteralPath $postStartScript)) {
+        Write-Host "WARNING: Browser post-start helper was not found: $postStartScript"
+        return
+    }
+    $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$postStartScript`" -Config `"$Config`""
+    Start-Process -FilePath "powershell.exe" -WindowStyle Hidden -ArgumentList $arguments | Out-Null
+}
+
 function Test-CodexRunning() {
     $running = Get-Process -ErrorAction SilentlyContinue | Where-Object {
         $_.ProcessName -like "Codex*" -or $_.ProcessName -like "ChatGPT*" -or $_.ProcessName -eq "codex"
@@ -155,6 +165,7 @@ if (Test-HotRouter) {
     Enable-HotRouterMode
     Write-Host "Opening Codex..."
     Open-CodexDesktop
+    Start-BrowserPostStartCheck
     exit 0
 }
 
@@ -192,4 +203,5 @@ for (`$i = 0; `$i -lt 30; `$i++) {
 "@
 
 Start-Process powershell -WindowStyle Hidden -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $watcher)
+Start-BrowserPostStartCheck
 Invoke-Switcher -ArgsList @("hot-router", "--config", $Config, "--host", $RouterHost, "--port", "$Port")

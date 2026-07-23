@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 
 from codex_hybrid_switcher.config import load_config
 from codex_hybrid_switcher import windows_update
@@ -46,6 +47,52 @@ def add_plugin_cache(codex_home: Path, version: str = "26.715.9000") -> None:
         manifest = codex_home / "plugins" / "cache" / "openai-bundled" / plugin / version / ".codex-plugin" / "plugin.json"
         manifest.parent.mkdir(parents=True)
         manifest.write_text(json.dumps({"name": plugin, "version": version}), encoding="utf-8")
+
+
+def cli_plugin_state(
+    *,
+    installed: bool,
+    enabled: bool,
+    policy: str = "AVAILABLE",
+) -> windows_update.CliPluginState:
+    return windows_update.CliPluginState(
+        plugin_id=windows_update.BROWSER_PLUGIN_ID,
+        found=True,
+        installed=installed,
+        enabled=enabled,
+        install_policy=policy,
+        version="26.715.9000",
+        bucket="installed" if installed else "available",
+    )
+
+
+def test_parse_cli_plugin_catalog_distinguishes_installed_and_available():
+    states = windows_update.parse_cli_plugin_catalog(
+        {
+            "installed": [
+                {
+                    "pluginId": "browser@openai-bundled",
+                    "version": "26.715.9000",
+                    "installed": True,
+                    "enabled": True,
+                    "installPolicy": "AVAILABLE",
+                }
+            ],
+            "available": [
+                {
+                    "pluginId": "chrome@openai-bundled",
+                    "version": "26.715.9000",
+                    "installed": False,
+                    "enabled": False,
+                    "installPolicy": "AVAILABLE",
+                }
+            ],
+        }
+    )
+
+    assert states["browser@openai-bundled"].healthy is True
+    assert states["chrome@openai-bundled"].available is True
+    assert states["chrome@openai-bundled"].installed is False
 
 
 def test_plugin_probe_accepts_new_bundled_marketplace_layout(tmp_path):
@@ -482,3 +529,127 @@ def test_update_ensure_stops_when_codex_is_running(tmp_path, monkeypatch):
     monkeypatch.setattr(windows_update, "codex_is_running", lambda: True)
 
     assert windows_update.run_windows_update_ensure(str(config_path)) == 20
+
+
+def test_browser_ensure_is_zero_write_when_browser_is_already_healthy(tmp_path, monkeypatch):
+    config_path, codex_home = write_config(tmp_path)
+    app, _source = app_fixture(tmp_path)
+    cli_path = tmp_path / "managed" / "codex.exe"
+    cli_path.parent.mkdir(parents=True)
+    cli_path.write_bytes(b"cli")
+    (codex_home / "config.toml").write_text(
+        '[plugins."browser@openai-bundled"]\nenabled = true\n',
+        encoding="utf-8",
+    )
+    before = {name: (codex_home / name).read_bytes() for name in ("auth.json", "models_cache.json", "state_5.sqlite")}
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(windows_update, "windows_codex_app_info", lambda: app)
+    monkeypatch.setattr(windows_update, "current_codex_cli_for_plugins", lambda *_args: cli_path)
+    monkeypatch.setattr(windows_update, "codex_is_running", lambda: True)
+    monkeypatch.setattr(
+        windows_update,
+        "query_codex_plugin_catalog",
+        lambda _path: ({windows_update.BROWSER_PLUGIN_ID: cli_plugin_state(installed=True, enabled=True)}, None),
+    )
+    monkeypatch.setattr(windows_update, "_browser_config_ready", lambda *_args: True)
+    monkeypatch.setattr(
+        windows_update,
+        "_run_codex_plugin_command",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("plugin add should not run")),
+    )
+
+    assert windows_update.run_windows_browser_ensure(
+        str(config_path),
+        wait_seconds=0,
+        settle_seconds=0,
+        poll_seconds=0.1,
+        verify_seconds=0,
+    ) == 0
+    assert {name: (codex_home / name).read_bytes() for name in before} == before
+    assert not (config_path.parent / ".windows-browser-post-start.lock").exists()
+
+
+def test_browser_ensure_installs_only_after_plugin_becomes_available(tmp_path, monkeypatch):
+    config_path, codex_home = write_config(tmp_path)
+    app, _source = app_fixture(tmp_path)
+    cli_path = tmp_path / "managed" / "codex.exe"
+    cli_path.parent.mkdir(parents=True)
+    cli_path.write_bytes(b"cli")
+    (codex_home / "config.toml").write_text("model_provider = 'custom'\n", encoding="utf-8")
+    before = {name: (codex_home / name).read_bytes() for name in ("auth.json", "models_cache.json", "state_5.sqlite")}
+    installed = {"value": False}
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(windows_update, "windows_codex_app_info", lambda: app)
+    monkeypatch.setattr(windows_update, "current_codex_cli_for_plugins", lambda *_args: cli_path)
+    monkeypatch.setattr(windows_update, "codex_is_running", lambda: True)
+
+    def fake_catalog(_path):
+        return (
+            {
+                windows_update.BROWSER_PLUGIN_ID: cli_plugin_state(
+                    installed=installed["value"],
+                    enabled=installed["value"],
+                )
+            },
+            None,
+        )
+
+    def fake_command(_path, arguments, **_kwargs):
+        assert arguments == ["add", windows_update.BROWSER_PLUGIN_ID, "--json"]
+        installed["value"] = True
+        return subprocess.CompletedProcess([str(_path), *arguments], 0, "{}", "")
+
+    monkeypatch.setattr(windows_update, "query_codex_plugin_catalog", fake_catalog)
+    monkeypatch.setattr(windows_update, "_run_codex_plugin_command", fake_command)
+    monkeypatch.setattr(windows_update, "_browser_config_ready", lambda *_args: installed["value"])
+
+    assert windows_update.run_windows_browser_ensure(
+        str(config_path),
+        wait_seconds=0,
+        settle_seconds=0,
+        poll_seconds=0.1,
+        verify_seconds=0,
+    ) == 0
+    assert installed["value"] is True
+    assert {name: (codex_home / name).read_bytes() for name in before} == before
+
+
+def test_browser_ensure_does_not_install_before_feature_gate_is_available(tmp_path, monkeypatch):
+    config_path, _codex_home = write_config(tmp_path)
+    app, _source = app_fixture(tmp_path)
+    cli_path = tmp_path / "managed" / "codex.exe"
+    cli_path.parent.mkdir(parents=True)
+    cli_path.write_bytes(b"cli")
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(windows_update, "windows_codex_app_info", lambda: app)
+    monkeypatch.setattr(windows_update, "current_codex_cli_for_plugins", lambda *_args: cli_path)
+    monkeypatch.setattr(windows_update, "codex_is_running", lambda: True)
+    monkeypatch.setattr(windows_update, "query_codex_plugin_catalog", lambda _path: ({}, None))
+    monkeypatch.setattr(
+        windows_update,
+        "_run_codex_plugin_command",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("plugin add should not run")),
+    )
+
+    assert windows_update.run_windows_browser_ensure(
+        str(config_path),
+        wait_seconds=0,
+        settle_seconds=0,
+        poll_seconds=0.1,
+        verify_seconds=0,
+    ) == 20
+
+
+def test_browser_ensure_deduplicates_concurrent_launcher_checks(tmp_path, monkeypatch):
+    config_path, _codex_home = write_config(tmp_path)
+    lock = config_path.parent / ".windows-browser-post-start.lock"
+    lock.write_text("active", encoding="utf-8")
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(
+        windows_update,
+        "windows_codex_app_info",
+        lambda: (_ for _ in ()).throw(AssertionError("duplicate should exit before probing")),
+    )
+
+    assert windows_update.run_windows_browser_ensure(str(config_path)) == 0
+    assert lock.exists()
