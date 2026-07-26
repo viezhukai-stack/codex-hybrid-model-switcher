@@ -18,7 +18,7 @@ def project_version() -> str:
 
 
 PROJECT_VERSION = project_version()
-MAC_PACKAGE_VERSION = "2.18.0"
+MAC_PACKAGE_VERSION = PROJECT_VERSION
 
 REQUIRED_FILES = (
     "HANDOFF_TO_CODEX.md",
@@ -48,6 +48,7 @@ REQUIRED_FILES = (
     "scripts/bootstrap-windows.ps1",
     "scripts/build-windows-one-click-package.py",
     "scripts/windows-browser-post-start.ps1",
+    "scripts/windows-portable-python-path.ps1",
     "scripts/build-macos-one-click-package.py",
     "scripts/macos-hot-router-start.sh",
     "scripts/macos-hot-router-mode.sh",
@@ -248,6 +249,8 @@ DOC_REQUIREMENTS = {
     "docs/windows-codex-update-canary.md": (
         "windows-update-doctor",
         "windows-update-ensure",
+        "pending_registration",
+        "highest_staged_version",
         "windows-browser-ensure",
         "browser@openai-bundled",
         "windows-update-repair --apply",

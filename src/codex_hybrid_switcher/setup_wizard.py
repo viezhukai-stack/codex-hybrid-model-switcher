@@ -140,6 +140,8 @@ def build_first_run_config(
             "hidden_model_ids": [],
             "model_aliases": {},
             "catalog_cache_seconds": 15,
+            "max_429_retries": 2,
+            "max_retry_after_seconds": 30,
         },
         "providers": providers,
         "local_model": local_model,

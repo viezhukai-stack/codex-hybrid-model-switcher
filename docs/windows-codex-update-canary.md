@@ -1,6 +1,6 @@
 # Windows Codex Update Canary
 
-This canary validates the v2.18.2 Browser/CLI update guard and optional account
+This canary validates the v2.18.3 Browser/CLI update guard and optional account
 switch on a real Windows Codex Hybrid 2.0 installation.
 
 ## Safety boundary
@@ -14,7 +14,7 @@ switch on a real Windows Codex Hybrid 2.0 installation.
 - Do not edit official Browser/Chrome plugin caches, Codex databases, session
   JSONL, rollout logs, Windows proxy settings, services, or scheduled tasks.
 - A Codex Store/AppX update may not have a reliable version rollback. Run all
-  v2.18.2 dry-runs against the old app before updating it.
+  v2.18.3 dry-runs against the old app before updating it.
 
 ## Candidate flow
 
@@ -31,6 +31,9 @@ switch on a real Windows Codex Hybrid 2.0 installation.
    `CODEX_CLI_PATH` environment value, and return a healthy launch gate.
    If automatic eligibility is intentionally rejected, verify the manual
    fallback with `windows-update-repair --apply` and type `REPAIR` instead.
+   Confirm the report also contains `highest_staged_version` and
+   `pending_registration`. If a newer AppX is only staged, the launch gate must
+   stop before opening the old version; complete official registration first.
 6. Start `Start Codex Hot Router.cmd`. Confirm its one-shot post-start helper
    invokes `windows-browser-ensure`, waits for Codex feature initialization,
    reports Browser healthy or installs it through the official CLI, then exits
@@ -62,6 +65,8 @@ switch on a real Windows Codex Hybrid 2.0 installation.
   nothing.
 - No service, scheduled task, background watchdog, recovery loop, or automatic
   process termination is introduced.
+- Portable Python's `python312._pth` points to the current release `src`, and a
+  simulated old release path is replaced atomically before the switcher starts.
 - The post-start Browser helper is bounded, deduplicated, and exits after one
   check. It does not close or reopen Codex.
 
@@ -107,3 +112,27 @@ Account-switch dry-run:
 Protected-file comparison:
 Verdict:
 ```
+
+## v2.18.3 guarded canary — 2026-07-26
+
+- Windows canary A was already registered to Codex `26.721.4979.0`.
+  The v2.18.3 candidate doctor reported `healthy`, `launch_safe=true`, no newer
+  staged package, a complete configured CLI bundle, and matching Browser
+  bundled/cache version `26.721.41059`.
+- Windows canary B was still registered to `26.715.10079.0` while
+  `26.721.4979.0` existed for SYSTEM in `Staged` state. The candidate reported
+  `highest_staged_version=26.721.4979.0`, `pending_registration=true`, and
+  `launch_safe=false`, proving the daily gate stops before reopening the older
+  app during registration.
+- Both machines passed an isolated portable-Python test: a fake
+  `python312._pth` containing a v2.18.2 release path was atomically rewritten to
+  the v2.18.3 candidate `src`, the old path disappeared, and `import site` was
+  enabled. The real portable runtime file was not used for this canary.
+- Canary B protected hashes stayed unchanged. Canary A was actively using Codex, so the
+  SQLite file was intermittently locked during the first aggregate comparison;
+  a follow-up three-second check confirmed `config.toml`, `auth.json`, and
+  `models_cache.json` unchanged while `state_5.sqlite` remained locked by the
+  running app.
+- The candidate used temporary source and fake-runtime directories only. It did
+  not switch providers, restart Codex, register AppX, edit plugin caches, or
+  install a service/scheduled task. All temporary canary files were removed.

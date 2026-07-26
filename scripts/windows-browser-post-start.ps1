@@ -4,6 +4,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
 Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
@@ -11,6 +12,17 @@ $logRoot = Join-Path $env:LOCALAPPDATA "CodexHybridModelSwitcher\logs"
 $logPath = Join-Path $logRoot "browser-post-start.log"
 New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
 Set-Content -LiteralPath $logPath -Value ("[{0}] Browser post-start check" -f (Get-Date -Format "s")) -Encoding UTF8
+
+$pathHelper = Join-Path $PSScriptRoot "windows-portable-python-path.ps1"
+if (-not (Test-Path -LiteralPath $pathHelper)) {
+    Add-Content -LiteralPath $logPath -Value "Portable Python path helper is missing."
+    exit 20
+}
+& powershell -NoProfile -ExecutionPolicy Bypass -File $pathHelper -ProjectRoot $repoRoot -Quiet
+if ($LASTEXITCODE -ne 0) {
+    Add-Content -LiteralPath $logPath -Value "Portable Python path repair failed."
+    exit 20
+}
 
 $portablePython = Join-Path $env:LOCALAPPDATA "CodexHybridModelSwitcher\python\python.exe"
 $portablePythonNested = Join-Path $env:LOCALAPPDATA "CodexHybridModelSwitcher\python\python\python.exe"

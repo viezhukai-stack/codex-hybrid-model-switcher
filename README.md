@@ -105,7 +105,7 @@ cache, rewrite old conversations, or install always-on recovery services.
 ### Windows full local one-click setup
 
 For a beginner Windows computer, share
-`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.2.zip`, extract the entire zip,
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.3.zip`, extract the entire zip,
 and double-click `Install Codex Hybrid.cmd`. This is the recommended netdisk
 package because it includes the local model path and does not require a cloud
 API key.
@@ -119,7 +119,7 @@ Windows hot router, and stop at guarded dry-run before asking for an explicit
 `APPLY` confirmation. It does not redistribute Codex Desktop, install CC
 Switch, or apply a real switch without explicit confirmation.
 
-Windows v2.18.2 also installs two explicit maintenance entries. `Repair Codex
+Windows v2.18.3 also installs two explicit maintenance entries. `Repair Codex
 Browser and CLI.cmd` copies the matching complete CLI companion set and repairs
 the current-user `CODEX_CLI_PATH` after a Codex app update, including the case
 where the app regenerates its Browser config block. `Change Codex Account.cmd`
@@ -131,6 +131,12 @@ automatically when the only detected problem is a supported Codex AppX version
 change and Codex is fully closed. It validates all five companion files and
 protected Codex state before opening the app. Other update failures stop and
 leave the manual repair entry available.
+
+Before that repair runs, the launcher also checks whether Windows has staged a
+newer Codex AppX package for registration. When a newer staged version exists,
+it leaves the old app closed instead of reopening it mid-update. Every packaged
+Windows entry self-heals portable Python's `python312._pth` file so it imports
+the current release instead of a surviving older release directory.
 
 After Codex opens, the same daily entry runs one bounded Browser check in the
 background. It waits for Codex's feature initialization, does nothing when the
@@ -156,7 +162,7 @@ See [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md)
 ### macOS full local one-click setup
 
 For a beginner Mac computer, share
-`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.0.zip`, extract the entire zip, and
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.3.zip`, extract the entire zip, and
 double-click `Install Codex Hybrid.command`. This is the recommended netdisk
 package because it includes both macOS x64 and arm64 llama.cpp runtimes plus
 `payload/models/local-gemma`, so a beginner can use the bundled local Gemma
@@ -178,10 +184,10 @@ Python by default, but the builder can include a tested runtime under
 `payload/python`.
 
 See [`docs/macos-full-local-pack.md`](docs/macos-full-local-pack.md).
-The v2.17.3 full-local flow has a real Mac UI canary recorded in
+The v2.17.3 full-local flow and v2.18.0 upgrade path have real Mac UI canaries recorded in
 [`docs/macos-full-local-pack-canary.md`](docs/macos-full-local-pack-canary.md);
-the current v2.18.0 package has been rebuilt and audited for the upgraded
-ChatGPT/Codex app path, with a fresh UI canary tracked separately.
+the current v2.18.3 package carries the same app-discovery path plus the shared
+Responses/tool-call preservation fix.
 
 ### 2.0 hot-router configuration
 
@@ -195,7 +201,9 @@ Private configs may define the shared Mac/Windows hot router:
     "default_cloud_provider_id": "cloud-gpt-main",
     "hidden_model_ids": [],
     "model_aliases": {},
-    "catalog_cache_seconds": 15
+    "catalog_cache_seconds": 15,
+    "max_429_retries": 2,
+    "max_retry_after_seconds": 30
   }
 }
 ```
@@ -204,6 +212,13 @@ The cloud catalog is dynamic unless an explicit private `visible_model_ids`
 allowlist is configured. Newly published models route through
 `default_cloud_provider_id`; model-specific provider entries still take
 precedence.
+
+The bounded 429 settings apply to cloud and local response forwarding. The
+Gemini High compatibility path requests one non-streaming upstream response and
+reconstructs a complete Responses event stream while preserving message,
+reasoning, function-call, usage, and terminal-status items. Because that
+upstream can occasionally return HTTP 200 with an empty `output`, this one shim
+also retries an empty successful response at most twice before returning it.
 
 If you want Codex itself to configure this project for you, open this repository
 in Codex and start with [`START_HERE.md`](START_HERE.md). The root `AGENTS.md`

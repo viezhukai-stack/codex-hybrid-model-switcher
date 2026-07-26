@@ -6,7 +6,20 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
 Set-StrictMode -Version Latest
+$repoRoot = Split-Path -Parent $PSScriptRoot
+
+function Initialize-PortablePythonPath {
+    $helper = Join-Path $PSScriptRoot "windows-portable-python-path.ps1"
+    if (-not (Test-Path -LiteralPath $helper)) {
+        Fail "Portable Python path helper is missing: $helper"
+    }
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $helper -ProjectRoot $repoRoot -Quiet
+    if ($LASTEXITCODE -ne 0) {
+        Fail "Portable Python path repair failed."
+    }
+}
 
 function Fail($Message) {
     Write-Error $Message
@@ -14,7 +27,6 @@ function Fail($Message) {
 }
 
 function Invoke-Switcher($ArgsList) {
-    $repoRoot = Split-Path -Parent $PSScriptRoot
     $oldPythonPath = $env:PYTHONPATH
     $env:PYTHONPATH = "$repoRoot\src"
     try {
@@ -47,6 +59,8 @@ function Invoke-Switcher($ArgsList) {
 if ($env:OS -ne "Windows_NT") {
     Fail "This helper is for Windows only."
 }
+
+Initialize-PortablePythonPath
 
 $argsList = @("hot-router-mode", $Action, "--config", $Config)
 if ($Action -eq "enable" -and $RouterUrl) {

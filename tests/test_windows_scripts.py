@@ -123,7 +123,7 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "history-status" in text
     assert "unify-history" in text
     assert "MIGRATE" in text
-    assert "codexhybridmodelswitcher*/project/src" in text
+    assert "windows-portable-python-path.ps1" in text
     assert "-Apply" in text
     assert "install-windows-launcher.ps1" in text
     assert "INSTALLER DRY-RUN COMPLETE" in text
@@ -136,12 +136,12 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "windows-hot-router-start.ps1" in hot_router
     assert "VERSION.txt" in hot_router
     assert "pyproject.toml" in hot_router
-    assert 'set "PACKAGE_VERSION=2.18.2"' not in hot_router
+    assert 'set "PACKAGE_VERSION=2.18.3"' not in hot_router
     assert "-DiagnosticsOnly" in diagnostics
     assert "windows-restore-official.ps1" in restore
     assert "VERSION.txt" in restore
     assert "pyproject.toml" in restore
-    assert 'set "PACKAGE_VERSION=2.18.2"' not in restore
+    assert 'set "PACKAGE_VERSION=2.18.3"' not in restore
     assert "windows-update-repair.ps1" in repair
     assert "-Apply" in repair
     assert "windows-change-account.ps1" in account
@@ -184,6 +184,7 @@ def test_windows_package_builder_defaults_to_portable_python_with_no_python_esca
     assert "windows-update-repair.ps1" in text
     assert "windows-browser-post-start.ps1" in text
     assert "windows-change-account.ps1" in text
+    assert "windows-portable-python-path.ps1" in text
 
 
 def test_windows_hot_router_launcher_checks_bridge_before_router_and_opens_codex():
@@ -192,6 +193,9 @@ def test_windows_hot_router_launcher_checks_bridge_before_router_and_opens_codex
 
     assert text.index("ensure-bridge") < text.index('@("hot-router"')
     assert text.index("windows-update-ensure") < text.index("ensure-bridge")
+    assert text.index("Repair-PortablePythonPath") < text.index("windows-update-ensure")
+    assert '$ProgressPreference = "SilentlyContinue"' in text
+    assert "windows-portable-python-path.ps1" in text
     assert "Repair Codex Browser and CLI.cmd" in text
     assert "Start-BrowserPostStartCheck" in text
     assert "windows-browser-post-start.ps1" in text
@@ -218,10 +222,35 @@ def test_windows_browser_post_start_helper_is_bounded_and_one_shot():
     assert "windows-browser-ensure" in text
     assert "--wait-seconds" in text
     assert "browser-post-start.log" in text
+    assert "windows-portable-python-path.ps1" in text
     assert "Register-ScheduledTask" not in text
     assert "New-Service" not in text
     assert "Restart-Computer" not in text
     assert "Stop-Process" not in text
+
+
+def test_windows_download_scripts_disable_progress_rendering():
+    paths = (
+        ROOT / "scripts" / "windows-hot-router-start.ps1",
+        ROOT / "scripts" / "bootstrap-windows.ps1",
+        ROOT / "installer" / "windows" / "Install-CodexHybrid.ps1",
+    )
+
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        assert "Invoke-WebRequest" in text
+        assert '$ProgressPreference = "SilentlyContinue"' in text
+
+
+def test_windows_portable_python_path_helper_replaces_old_release_src_atomically():
+    helper = (ROOT / "scripts" / "windows-portable-python-path.ps1").read_text(encoding="utf-8")
+
+    assert "python*._pth" in helper
+    assert "codexhybridmodelswitcher/releases/*/project/src" in helper
+    assert '$updated.Add($src)' in helper
+    assert "Move-Item -LiteralPath $temporary" in helper
+    assert "Register-ScheduledTask" not in helper
+    assert "New-Service" not in helper
 
 
 def test_windows_hot_router_mode_launcher_only_delegates_base_url_toggle():
@@ -276,6 +305,7 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     assert "payload/codex-hybrid-model-switcher/scripts/windows-hot-router-start.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-browser-post-start.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-hot-router-mode.ps1" in names
+    assert "payload/codex-hybrid-model-switcher/scripts/windows-portable-python-path.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/Start Codex Hot Router.cmd" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-provider-switch.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-restore-official.ps1" in names

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import io
 import ssl
 import threading
 import urllib.request
@@ -10,18 +11,36 @@ from codex_hybrid_switcher import hot_router
 from codex_hybrid_switcher.config import AppConfig
 from codex_hybrid_switcher.hot_router import (
     cloud_provider_for_model,
+    cloud_response_stream_shim_empty_retries,
     filter_catalog_models,
     local_catalog_entry,
     local_model_ids,
     merge_local_models,
     primary_cloud_provider,
     read_upstream,
+    read_upstream_with_429_retry,
     resolve_model_alias,
+    response_json_from_upstream,
+    response_has_meaningful_output,
     responses_sse_body,
+    responses_sse_body_from_json,
     should_route_local,
     should_shim_cloud_responses_stream,
     stream_shim_payload,
 )
+
+
+def parse_sse_events(body: bytes):
+    events = []
+    for block in body.decode("utf-8").split("\n\n"):
+        if not block or block == "data: [DONE]":
+            continue
+        lines = block.splitlines()
+        event = next((line.split(":", 1)[1].strip() for line in lines if line.startswith("event:")), None)
+        data = next((line.split(":", 1)[1].strip() for line in lines if line.startswith("data:")), None)
+        if event and data:
+            events.append((event, json.loads(data)))
+    return events
 
 
 def config_for_hot_router(tmp_path):
@@ -306,6 +325,14 @@ def test_cloud_stream_shim_can_be_disabled_per_provider():
     assert not should_shim_cloud_responses_stream(provider, "gemini-pro-agent", "/v1/responses", True)
 
 
+def test_cloud_stream_shim_empty_response_retry_is_bounded_and_configurable():
+    assert cloud_response_stream_shim_empty_retries({}) == 2
+    assert cloud_response_stream_shim_empty_retries({"response_stream_shim_empty_retries": 0}) == 0
+    assert cloud_response_stream_shim_empty_retries({"response_stream_shim_empty_retries": 99}) == 2
+    assert response_has_meaningful_output({"output": []}) is False
+    assert response_has_meaningful_output({"output": [{"type": "function_call"}]}) is True
+
+
 def test_stream_shim_payload_forces_non_streaming_upstream_request():
     raw = json.dumps({"model": "gemini-pro-agent", "input": "hi", "stream": True}).encode("utf-8")
 
@@ -325,3 +352,210 @@ def test_responses_sse_body_has_codex_completion_events():
     assert "data: [DONE]" in body
     assert '"model": "gemini-pro-agent"' in body
     assert '"delta": "ok"' in body
+
+
+def test_responses_json_to_sse_preserves_reasoning_function_calls_usage_and_status():
+    upstream = {
+        "id": "resp_upstream",
+        "object": "response",
+        "created_at": 123,
+        "status": "completed",
+        "model": "gemini-pro-agent",
+        "output": [
+            {
+                "id": "rs_1",
+                "type": "reasoning",
+                "status": "completed",
+                "summary": [{"type": "summary_text", "text": "plan"}],
+                "encrypted_content": "opaque-value",
+            },
+            {
+                "id": "fc_1",
+                "type": "function_call",
+                "status": "completed",
+                "call_id": "call_1",
+                "name": "read_file",
+                "arguments": "{\"path\":\"README.md\"}",
+            },
+            {
+                "id": "msg_1",
+                "type": "message",
+                "status": "completed",
+                "role": "assistant",
+                "content": [{"type": "output_text", "text": "done", "annotations": []}],
+            },
+        ],
+        "usage": {"input_tokens": 17, "output_tokens": 9, "total_tokens": 26},
+    }
+
+    events = parse_sse_events(responses_sse_body_from_json(upstream, "fallback"))
+    names = [name for name, _payload in events]
+    completed = next(payload["response"] for name, payload in events if name == "response.completed")
+
+    assert "response.reasoning_summary_text.delta" in names
+    assert "response.function_call_arguments.delta" in names
+    assert "response.output_text.delta" in names
+    assert [item["type"] for item in completed["output"]] == ["reasoning", "function_call", "message"]
+    assert completed["output"][0]["encrypted_content"] == "opaque-value"
+    assert completed["output"][1]["call_id"] == "call_1"
+    assert completed["usage"] == upstream["usage"]
+    assert completed["status"] == "completed"
+
+
+def test_chat_completion_tool_calls_are_converted_to_responses_items():
+    upstream = {
+        "id": "chatcmpl_1",
+        "object": "chat.completion",
+        "created": 456,
+        "model": "gemini-pro-agent",
+        "choices": [
+            {
+                "finish_reason": "tool_calls",
+                "message": {
+                    "role": "assistant",
+                    "reasoning_content": "inspect first",
+                    "content": "I will inspect it.",
+                    "tool_calls": [
+                        {
+                            "id": "call_abc",
+                            "type": "function",
+                            "function": {"name": "shell", "arguments": {"cmd": "pwd"}},
+                        }
+                    ],
+                },
+            }
+        ],
+        "usage": {"prompt_tokens": 11, "completion_tokens": 7, "total_tokens": 18},
+    }
+
+    response = response_json_from_upstream(upstream, "fallback")
+    events = parse_sse_events(responses_sse_body_from_json(upstream, "fallback"))
+    names = [name for name, _payload in events]
+
+    assert [item["type"] for item in response["output"]] == ["reasoning", "function_call", "message"]
+    assert response["output"][1]["call_id"] == "call_abc"
+    assert response["output"][1]["arguments"] == '{"cmd":"pwd"}'
+    assert response["usage"]["input_tokens"] == 11
+    assert response["usage"]["output_tokens"] == 7
+    assert "response.function_call_arguments.done" in names
+    assert "response.reasoning_summary_part.done" in names
+
+
+def test_chat_completion_length_finish_reason_preserves_incomplete_status():
+    upstream = {
+        "model": "gemini-pro-agent",
+        "choices": [{"finish_reason": "length", "message": {"role": "assistant", "content": "partial"}}],
+    }
+
+    events = parse_sse_events(responses_sse_body_from_json(upstream, "fallback"))
+    terminal = next(payload for name, payload in events if name == "response.incomplete")
+
+    assert terminal["response"]["status"] == "incomplete"
+    assert terminal["response"]["output_text"] == "partial"
+
+
+def test_429_retry_honors_retry_after_and_is_finite(monkeypatch):
+    calls = []
+    results = iter(
+        [
+            (429, {"Retry-After": "0.25"}, b'{"error":"busy"}'),
+            (200, {"Content-Type": "application/json"}, b'{"ok":true}'),
+        ]
+    )
+
+    def fake_read(*_args, **_kwargs):
+        calls.append(1)
+        return next(results)
+
+    waited = []
+    monkeypatch.setattr(hot_router, "read_upstream", fake_read)
+
+    status, _headers, body, meta = read_upstream_with_429_retry(
+        "https://example.test/v1/responses",
+        "POST",
+        {},
+        data=b"{}",
+        max_retries=2,
+        max_retry_after_seconds=1,
+        sleep=waited.append,
+    )
+
+    assert status == 200
+    assert body == b'{"ok":true}'
+    assert len(calls) == 2
+    assert waited == [0.25]
+    assert meta == {
+        "upstream_retries": 1,
+        "retry_wait_seconds": 0.25,
+        "retry_after": ["0.25"],
+    }
+
+
+def test_stream_shim_retries_one_empty_200_and_preserves_followup_function_call(tmp_path, monkeypatch):
+    config = config_for_hot_router(tmp_path)
+    router = hot_router.HotRouter(config)
+    handler = object.__new__(hot_router.HotRouterHandler)
+    handler.router = router
+    handler.path = "/v1/responses"
+    handler.wfile = io.BytesIO()
+    observed = {"statuses": [], "headers": []}
+    handler.send_response = observed["statuses"].append
+    handler.send_header = lambda name, value: observed["headers"].append((name, value))
+    handler.end_headers = lambda: None
+    responses = iter(
+        [
+            (
+                200,
+                {"Content-Type": "application/json"},
+                json.dumps({"object": "response", "status": "completed", "output": []}).encode(),
+                {"upstream_retries": 0, "retry_wait_seconds": 0.0, "retry_after": []},
+            ),
+            (
+                200,
+                {"Content-Type": "application/json"},
+                json.dumps(
+                    {
+                        "object": "response",
+                        "status": "completed",
+                        "output": [
+                            {
+                                "type": "function_call",
+                                "call_id": "call_1",
+                                "name": "read_file",
+                                "arguments": "{\"path\":\"README.md\"}",
+                            }
+                        ],
+                    }
+                ).encode(),
+                {"upstream_retries": 0, "retry_wait_seconds": 0.0, "retry_after": []},
+            ),
+        ]
+    )
+    calls = []
+    logs = []
+
+    def fake_read(*_args, **_kwargs):
+        calls.append(1)
+        return next(responses)
+
+    monkeypatch.setattr(hot_router, "read_upstream_with_429_retry", fake_read)
+    monkeypatch.setattr(hot_router.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(hot_router, "log_event", lambda event, **fields: logs.append((event, fields)))
+
+    handler.proxy_responses_stream_shim(
+        "request-1",
+        json.dumps({"model": "gemini-pro-agent", "stream": True}).encode(),
+        "gemini-pro-agent",
+        "https://example.test/v1",
+        "cloud",
+        {"id": "cloud", "response_stream_shim_empty_retries": 1},
+        {"cloud_stream_shim": True},
+    )
+
+    body = handler.wfile.getvalue().decode("utf-8")
+    assert len(calls) == 2
+    assert observed["statuses"] == [200]
+    assert "response.function_call_arguments.done" in body
+    assert '"name": "read_file"' in body
+    assert logs[-1][1]["empty_output_retries"] == 1
+    assert logs[-1][1]["converted_output_items"] == 1

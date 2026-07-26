@@ -7,7 +7,20 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
 Set-StrictMode -Version Latest
+$repoRoot = Split-Path -Parent $PSScriptRoot
+
+function Initialize-PortablePythonPath {
+    $helper = Join-Path $PSScriptRoot "windows-portable-python-path.ps1"
+    if (-not (Test-Path -LiteralPath $helper)) {
+        Fail "Portable Python path helper is missing: $helper"
+    }
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $helper -ProjectRoot $repoRoot -Quiet
+    if ($LASTEXITCODE -ne 0) {
+        Fail "Portable Python path repair failed."
+    }
+}
 
 function Fail($Message) {
     Write-Error $Message
@@ -15,7 +28,6 @@ function Fail($Message) {
 }
 
 function Invoke-Switcher($ArgsList) {
-    $repoRoot = Split-Path -Parent $PSScriptRoot
     $oldPythonPath = $env:PYTHONPATH
     $env:PYTHONPATH = "$repoRoot\src"
     try {
@@ -75,6 +87,8 @@ function Get-ProviderKind($ConfigPath, $Id) {
 if ($env:OS -ne "Windows_NT") {
     Fail "This provider switch script is for Windows only."
 }
+
+Initialize-PortablePythonPath
 
 $resolvedConfig = Expand-PrivatePath $Config
 $kind = Get-ProviderKind $resolvedConfig $ProviderId

@@ -104,6 +104,7 @@ def project_payload_files() -> list[Path]:
         Path("src/codex_hybrid_switcher/hot_router_mode.py"),
         Path("scripts/windows-hot-router-start.ps1"),
         Path("scripts/windows-hot-router-mode.ps1"),
+        Path("scripts/windows-portable-python-path.ps1"),
         Path("scripts/windows-browser-post-start.ps1"),
         Path("scripts/Start Codex Hot Router.cmd"),
         Path("scripts/windows-provider-switch.ps1"),

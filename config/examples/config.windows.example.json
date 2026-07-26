@@ -13,7 +13,9 @@
     "default_cloud_provider_id": "cloud-gpt-main",
     "hidden_model_ids": [],
     "model_aliases": {},
-    "catalog_cache_seconds": 15
+    "catalog_cache_seconds": 15,
+    "max_429_retries": 2,
+    "max_retry_after_seconds": 30
   },
   "account_switch": {
     "proxy_url": ""

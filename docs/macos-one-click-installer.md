@@ -1,8 +1,12 @@
 # macOS Full One-Click Beginner Installer
 
-`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.0.zip` is the supported macOS
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.3.zip` is the supported macOS
 beginner distribution. It includes the local model path and can also configure
 an optional OpenAI-compatible cloud provider.
+
+The v2.18.3 shared router preserves message, reasoning, function-call, usage,
+and terminal-status objects when a cloud model needs the non-streaming
+Responses compatibility path.
 
 Current macOS Codex builds may be installed as `ChatGPT.app`. The installer
 discovers bundle id `com.openai.codex` first, then falls back to explicit
@@ -62,7 +66,7 @@ python scripts/build-macos-one-click-package.py --full-local
 ```
 
 The package is written to
-`dist/Codex-Hybrid-macOS-Full-Local-Setup-v2.18.0.zip`.
+`dist/Codex-Hybrid-macOS-Full-Local-Setup-v2.18.3.zip`.
 
 ## Validation
 

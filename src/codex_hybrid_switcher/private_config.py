@@ -109,6 +109,18 @@ def validate_config(config: AppConfig, *, check_paths: bool = False) -> list[str
                 errors.append("hot_router.catalog_cache_seconds must be greater than zero")
         except (TypeError, ValueError):
             errors.append("hot_router.catalog_cache_seconds must be a number")
+        try:
+            retry_count = int(hot_router.get("max_429_retries", 2))
+            if not 0 <= retry_count <= 5:
+                errors.append("hot_router.max_429_retries must be between 0 and 5")
+        except (TypeError, ValueError):
+            errors.append("hot_router.max_429_retries must be an integer")
+        try:
+            retry_wait = float(hot_router.get("max_retry_after_seconds", 30))
+            if not 0 <= retry_wait <= 120:
+                errors.append("hot_router.max_retry_after_seconds must be between 0 and 120")
+        except (TypeError, ValueError):
+            errors.append("hot_router.max_retry_after_seconds must be a number")
         default_provider_id = hot_router.get("default_cloud_provider_id")
         if default_provider_id:
             default_provider = next((provider for provider in providers if provider.get("id") == default_provider_id), None)

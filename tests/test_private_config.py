@@ -114,6 +114,8 @@ def test_validate_config_checks_hot_router_default_provider_and_shapes(tmp_path)
                     "default_cloud_provider_id": "missing",
                     "hidden_model_ids": "not-a-list",
                     "model_aliases": ["not-an-object"],
+                    "max_429_retries": 9,
+                    "max_retry_after_seconds": 999,
                 },
                 "providers": [{"id": "openai-official", "kind": "official"}],
             }
@@ -126,6 +128,8 @@ def test_validate_config_checks_hot_router_default_provider_and_shapes(tmp_path)
     assert "hot_router.default_cloud_provider_id must reference a cloud provider" in errors
     assert "hot_router.hidden_model_ids must be an array of non-empty strings" in errors
     assert "hot_router.model_aliases must map non-empty strings to non-empty strings" in errors
+    assert "hot_router.max_429_retries must be between 0 and 5" in errors
+    assert "hot_router.max_retry_after_seconds must be between 0 and 120" in errors
 
 
 def test_run_validate_config_redacts_private_endpoint_and_paths(tmp_path, capsys):

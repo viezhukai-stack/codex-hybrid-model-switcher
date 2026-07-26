@@ -8,6 +8,23 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_clean_handoff_copy_ignores_private_distribution_archives():
+    import importlib.util
+
+    script = ROOT / "scripts" / "validate-stock-codex-handoff.py"
+    spec = importlib.util.spec_from_file_location("handoff_validation", script)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    ignored = module.ignore_repo_entries(
+        str(ROOT),
+        ["dist", ".package-cache", "小白一键配置包codex混合配置2.0版", "README.md"],
+    )
+
+    assert ignored == {"dist", ".package-cache", "小白一键配置包codex混合配置2.0版"}
+
+
 def test_stock_codex_flow_validation_script(tmp_path):
     proc = subprocess.run(
         [

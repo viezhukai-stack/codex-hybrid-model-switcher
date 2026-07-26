@@ -87,6 +87,8 @@ class WindowsUpdateReport:
     launch_safe: bool
     app_version: str = "missing"
     app_family: str = "missing"
+    highest_staged_version: str = "missing"
+    pending_registration: bool = False
     node_repl_registered: bool = False
     node_repl_mode: str = "missing"
     node_repl_runtime_exists: bool = False
@@ -137,6 +139,71 @@ def windows_codex_app_info() -> dict[str, str] | None:
     if not isinstance(data, dict):
         return None
     return {str(key): str(value) for key, value in data.items() if value is not None}
+
+
+def windows_codex_all_user_packages() -> list[dict[str, Any]]:
+    if not is_windows():
+        return []
+    script = (
+        "$items=@(Get-AppxPackage -AllUsers -Name OpenAI.Codex -ErrorAction SilentlyContinue | ForEach-Object {"
+        "$states=@($_.PackageUserInformation | ForEach-Object {"
+        "[pscustomobject]@{user=[string]$_.UserSecurityId;state=[string]$_.InstallState}"
+        "});"
+        "[pscustomobject]@{Name=[string]$_.Name;Version=[string]$_.Version;"
+        "PackageFullName=[string]$_.PackageFullName;PackageFamilyName=[string]$_.PackageFamilyName;"
+        "InstallLocation=[string]$_.InstallLocation;Status=[string]$_.Status;UserInstallStates=$states}"
+        "});"
+        "$items|ConvertTo-Json -Compress -Depth 6"
+    )
+    try:
+        proc = _run_powershell(script, timeout=30)
+        data = json.loads(proc.stdout.strip() or "[]")
+    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
+        return []
+    if isinstance(data, dict):
+        data = [data]
+    if not isinstance(data, list):
+        return []
+    return [item for item in data if isinstance(item, dict)]
+
+
+def windows_version_key(value: str | None) -> tuple[int, ...]:
+    numbers = [int(part) for part in re.findall(r"\d+", value or "")]
+    return tuple((numbers + [0, 0, 0, 0])[:4])
+
+
+def package_is_staged(package: dict[str, Any]) -> bool:
+    candidates: list[str] = [
+        str(package.get("Status") or ""),
+        str(package.get("InstallState") or ""),
+    ]
+    states = package.get("UserInstallStates") or package.get("PackageUserInformation")
+    if isinstance(states, list):
+        for state in states:
+            if isinstance(state, dict):
+                candidates.append(str(state.get("state") or state.get("InstallState") or ""))
+            else:
+                candidates.append(str(state))
+    elif states is not None:
+        candidates.append(str(states))
+    return any("staged" in value.lower() for value in candidates)
+
+
+def pending_codex_registration(
+    app_info: dict[str, str],
+    packages: list[dict[str, Any]] | None = None,
+) -> tuple[str, bool]:
+    packages = windows_codex_all_user_packages() if packages is None else packages
+    staged_versions = [
+        str(package.get("Version") or "")
+        for package in packages
+        if package_is_staged(package) and package.get("Version")
+    ]
+    if not staged_versions:
+        return "missing", False
+    highest = max(staged_versions, key=windows_version_key)
+    current = str(app_info.get("Version") or "")
+    return highest, windows_version_key(highest) > windows_version_key(current)
 
 
 def sha256_file(path: Path) -> str:
@@ -709,6 +776,7 @@ def inspect_windows_update(
     execute_cli: bool = True,
     include_resources: bool = True,
     app_info: dict[str, str] | None = None,
+    all_user_packages: list[dict[str, Any]] | None = None,
 ) -> WindowsUpdateReport:
     if not is_windows() and app_info is None:
         return WindowsUpdateReport(
@@ -723,6 +791,12 @@ def inspect_windows_update(
             launch_safe=False,
             errors=["OpenAI.Codex AppX package was not found."],
         )
+    if all_user_packages is None:
+        all_user_packages = windows_codex_all_user_packages() if is_windows() else []
+    highest_staged_version, pending_registration = pending_codex_registration(
+        app,
+        all_user_packages,
+    )
     config_path = config.codex_home / "config.toml"
     try:
         text, _ = read_utf8_text_preserving_bom(config_path)
@@ -811,6 +885,14 @@ def inspect_windows_update(
             )
     if staging_count:
         warnings.append(f"Found {staging_count} Codex staging path(s); official cache files were not modified.")
+    if pending_registration:
+        launch_safe = False
+        status = STATUS_MANUAL_ACTION
+        errors.append(
+            "A newer Codex AppX package "
+            f"{highest_staged_version} is staged, but the current user is still registered to "
+            f"{app.get('Version') or 'missing'}. Complete the Codex update registration before launching."
+        )
     if events:
         warnings.append(f"Windows recorded {events} low-memory event(s) in the last 24 hours.")
     return WindowsUpdateReport(
@@ -818,6 +900,8 @@ def inspect_windows_update(
         launch_safe=launch_safe,
         app_version=str(app.get("Version") or "missing"),
         app_family=str(app.get("PackageFamilyName") or "missing"),
+        highest_staged_version=highest_staged_version,
+        pending_registration=pending_registration,
         node_repl_registered=registered,
         node_repl_mode=node_repl_mode,
         node_repl_runtime_exists=runtime_exists,
@@ -840,6 +924,8 @@ def _print_report(report: WindowsUpdateReport) -> None:
     print(f"status: {report.status}")
     print(f"launch_safe: {'yes' if report.launch_safe else 'no'}")
     print(f"codex_app_version: {report.app_version}")
+    print(f"highest_staged_version: {report.highest_staged_version}")
+    print(f"pending_registration: {'yes' if report.pending_registration else 'no'}")
     print(
         "node_repl: "
         f"mode={report.node_repl_mode} "
@@ -932,6 +1018,14 @@ def run_windows_update_repair(
     app = windows_codex_app_info()
     if not app:
         print("OpenAI.Codex AppX package was not found.")
+        return 20
+    highest_staged_version, pending_registration = pending_codex_registration(app)
+    if pending_registration:
+        print(
+            "A newer Codex AppX package is waiting for registration: "
+            f"current={app.get('Version') or 'missing'} staged={highest_staged_version}."
+        )
+        print("Finish the Codex app update first; the old CLI bundle was left unchanged.")
         return 20
     codex_config = config.codex_home / "config.toml"
     try:
@@ -1103,6 +1197,7 @@ def auto_repair_eligible(report: WindowsUpdateReport) -> bool:
     return bool(
         report.status == STATUS_REPAIR_REQUIRED
         and not report.launch_safe
+        and not report.pending_registration
         and report.node_repl_registered
         and report.source_cli.exists
         and report.source_cli.bundle_complete
@@ -1123,6 +1218,13 @@ def run_windows_update_ensure(config_path: str | None = None) -> int:
     if report.launch_safe:
         print("Codex Browser/CLI compatibility is current.")
         return 0
+    if report.pending_registration:
+        _print_report(report)
+        print(
+            "Codex has downloaded a newer app version but Windows has not registered it for this user yet. "
+            "Keep Codex closed, finish the app update, then run this launcher again."
+        )
+        return 20
     if not auto_repair_eligible(report):
         _print_report(report)
         print("Automatic CLI refresh stopped because this is not a supported version-only repair.")

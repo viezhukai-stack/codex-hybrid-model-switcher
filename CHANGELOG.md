@@ -5,6 +5,37 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.18.3
+
+- Replaced the Gemini `gemini-pro-agent` text-only non-streaming shim with a
+  complete Responses JSON-to-SSE conversion. Message content, reasoning
+  summaries, function calls, Chat Completions `tool_calls`, terminal status,
+  and usage now survive the compatibility path instead of collapsing into an
+  empty fixed-size stream when the upstream answer is tool-oriented. The same
+  shim retries an HTTP 200 terminal response with empty `output` at most twice;
+  a live Gemini function-call canary required one such retry and then preserved
+  the complete tool call.
+- Added bounded HTTP 429 retries to the hot router. The router follows
+  `Retry-After`, caps both retry count and wait duration, and records only
+  retry/status/byte-count metadata; prompts, response text, API keys, and
+  tokens remain outside router logs.
+- Added an AppX registration launch gate on Windows. The update doctor now
+  compares the current-user Codex version with `Get-AppxPackage -AllUsers`
+  staged packages, reports `highest_staged_version` and
+  `pending_registration`, and prevents the daily launcher from reopening an
+  older app while a newer package is waiting to finish registration.
+- Disabled PowerShell download progress rendering in the Windows installer,
+  bootstrap, and daily Hot Router watcher to avoid the `Write-Progress`
+  console failure seen with `Invoke-WebRequest` on some hosts.
+- Added a reusable portable-Python path self-heal. Windows entry points now
+  atomically replace stale release `src` paths in `python312._pth` before
+  loading the switcher, so a new package cannot silently run an older router
+  module merely because the portable runtime survived an upgrade.
+- Kept the Hybrid 2.0 safety boundary unchanged: no service, scheduled task,
+  KeepAlive job, recovery loop, automatic Codex restart, or normal-path write
+  to `auth.json`, `models_cache.json`, `state_5.sqlite`, sessions, rollout
+  logs, plugins/MCP, or project conversations.
+
 ## v2.18.2
 
 - Split Windows Codex update handling into two bounded phases. The existing
