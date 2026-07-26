@@ -5,6 +5,62 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.18.3
+
+- Replaced the Gemini `gemini-pro-agent` text-only non-streaming shim with a
+  complete Responses JSON-to-SSE conversion. Message content, reasoning
+  summaries, function calls, Chat Completions `tool_calls`, terminal status,
+  and usage now survive the compatibility path instead of collapsing into an
+  empty fixed-size stream when the upstream answer is tool-oriented. The same
+  shim retries an HTTP 200 terminal response with empty `output` at most twice;
+  a live Gemini function-call canary required one such retry and then preserved
+  the complete tool call.
+- Added bounded HTTP 429 retries to the hot router. The router follows
+  `Retry-After`, caps both retry count and wait duration, and records only
+  retry/status/byte-count metadata; prompts, response text, API keys, and
+  tokens remain outside router logs.
+- Added an AppX registration launch gate on Windows. The update doctor now
+  compares the current-user Codex version with `Get-AppxPackage -AllUsers`
+  staged packages, reports `highest_staged_version` and
+  `pending_registration`, and prevents the daily launcher from reopening an
+  older app while a newer package is waiting to finish registration.
+- Disabled PowerShell download progress rendering in the Windows installer,
+  bootstrap, and daily Hot Router watcher to avoid the `Write-Progress`
+  console failure seen with `Invoke-WebRequest` on some hosts.
+- Added a reusable portable-Python path self-heal. Windows entry points now
+  atomically replace stale release `src` paths in `python312._pth` before
+  loading the switcher, so a new package cannot silently run an older router
+  module merely because the portable runtime survived an upgrade.
+- Kept the Hybrid 2.0 safety boundary unchanged: no service, scheduled task,
+  KeepAlive job, recovery loop, automatic Codex restart, or normal-path write
+  to `auth.json`, `models_cache.json`, `state_5.sqlite`, sessions, rollout
+  logs, plugins/MCP, or project conversations.
+
+## v2.18.2
+
+- Split Windows Codex update handling into two bounded phases. The existing
+  pre-start phase still repairs only a hash-matched CLI bundle while Codex is
+  closed; the new post-start phase waits for Codex feature initialization and
+  then checks the official plugin catalog.
+- Added `windows-browser-ensure` and a one-shot
+  `windows-browser-post-start.ps1` helper. When Browser is already installed,
+  enabled, available, and version-aligned, it performs no write. When Browser
+  is available but missing or stale, it invokes the current official Codex CLI
+  with `plugin add browser@openai-bundled --json` and verifies the final state.
+- Updated `Start Codex Hot Router.cmd` to launch the bounded Browser check after
+  opening Codex. The check uses a short-lived lock and one local diagnostic log;
+  it does not close or restart Codex and does not create a service, scheduled
+  task, watchdog, KeepAlive job, or recovery loop.
+- Preserved the existing Hybrid 2.0 safety boundary: normal update and Browser
+  repair code does not edit `auth.json`, `models_cache.json`, `state_5.sqlite`,
+  sessions, rollout logs, provider routing, plugins/MCP other than the explicit
+  Browser install, or project conversations.
+- Revalidated the fix on the HL physical Windows canary after the Codex
+  `26.715.10079.0` update. Browser and Chrome remained installed and enabled
+  across two controlled restarts, `19030` and `19032` stayed healthy, all 100
+  tasks remained in the `custom` bucket, and the task database returned
+  `quick_check=ok`.
+
 ## v2.18.1
 
 - Added a Windows Codex update doctor that checks the current AppX version,

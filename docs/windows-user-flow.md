@@ -73,6 +73,9 @@ This creates `Start Codex Hot Router.cmd`, `Codex Model Switcher.cmd`,
 - starts or reuses the hot router on `127.0.0.1:19032`
 - enables `19032` hot-router mode while Codex is closed when needed
 - opens Codex Desktop after the router is healthy
+- runs one bounded post-start Browser check after Codex feature initialization;
+  it is a no-op when Browser is healthy and uses the official Codex CLI only
+  when Browser is available but missing or stale
 - keeps the router in the foreground window instead of installing a service
 
 `Codex Model Switcher.cmd` runs `scripts\windows-provider-menu.ps1`, not the raw
@@ -101,6 +104,14 @@ versioned project-owned directory and stores that path in the current-user
 `CODEX_CLI_PATH` environment value. This survives the Windows app regenerating
 its Browser configuration during startup. It does not create a service,
 scheduled task, watchdog, or restart loop.
+
+Browser plugin repair is intentionally separate from the closed-app CLI repair.
+`windows-browser-post-start.ps1` waits for the running app to finish loading its
+feature gates, then invokes `windows-browser-ensure`. The command checks the
+official plugin catalog and, only when needed, runs the current official CLI's
+`plugin add browser@openai-bundled --json`. It writes a single diagnostic log at
+`%LOCALAPPDATA%\CodexHybridModelSwitcher\logs\browser-post-start.log`, exits
+after the bounded check, and never closes or reopens Codex.
 
 ## Apply
 

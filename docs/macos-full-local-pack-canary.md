@@ -25,14 +25,35 @@ Passed.
 Current private netdisk distribution uses:
 
 ```text
-Codex-Hybrid-macOS-Full-Local-Setup-v2.18.0.zip
-sha256: 1636f56cf27b1008967d34f4f10f84ee76fcd61a69c46c990676cca7cfa49334
+Codex-Hybrid-macOS-Full-Local-Setup-v2.18.3.zip
+sha256: 305606d0c282112f4ecbd7d71676e309721532955a00e7c4763821d5b7897c0e
 ```
 
-v2.18.0 keeps the same full-local runtime path and adds compatibility for the
-upgraded ChatGPT/Codex app path, the shared 2.0 hot router, dynamic cloud
-catalogs, and rebuilt package payloads that exclude repository development
+v2.18.3 keeps the same full-local runtime and upgraded ChatGPT/Codex app path,
+then adds complete Gemini Responses conversion, bounded 429/empty-output
+retries, and rebuilt package payloads that exclude repository development
 files.
+
+## v2.18.3 isolated Router canary
+
+Date: 2026-07-26
+
+Result: Passed without changing the active Codex profile.
+
+- The candidate ran on isolated `127.0.0.1:19132`; the normal `19032` route and
+  Codex `config.toml` were not replaced.
+- `/health` returned the v2.18.3 hot router and the live catalog returned 59
+  models including `gemini-pro-agent`.
+- A Gemini High text request completed with `[DONE]`, preserved both reasoning
+  and message output, retained usage, and reported terminal status
+  `completed`.
+- A required function-call request reproduced one upstream HTTP 200 response
+  with an empty `output`. The bounded retry then returned reasoning plus
+  `function_call`; the SSE contained both function-argument events, the final
+  function name/arguments, usage, and `[DONE]`.
+- The temporary router used a separate HOME/runtime-state directory and was
+  stopped after verification. No Codex account, cache, database, session,
+  plugin/MCP, launcher, or project-conversation file was edited.
 
 ## v2.18.0 UI Canary
 
@@ -109,9 +130,10 @@ new-thread/runtime state from the restored main session.
 - This canary proves the v2.17.3 macOS full-local package can be installed and
   used in Codex Desktop without breaking account, plugin, project conversation,
   or reply behavior on the tested Mac.
-- The v2.18.0 package has passed package integrity, model manifest, runtime,
-  redaction audits, isolated router checks, and the controlled upgraded-app UI
-  canary on the tested Mac.
+- The v2.18.3 package has passed package integrity, model manifest, runtime,
+  redaction audits, and isolated Router/Gemini tool-call checks. The prior
+  controlled v2.18.0 upgraded-app UI canary remains the profile-preservation
+  baseline on the tested Mac.
 - It does not prove performance on every Mac. Local model speed remains
   hardware-dependent.
 - Lightweight macOS cloud packages are no longer the distribution priority; the

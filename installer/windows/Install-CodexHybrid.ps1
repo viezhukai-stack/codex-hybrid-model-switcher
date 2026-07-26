@@ -29,6 +29,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
 Set-StrictMode -Version Latest
 
 if (-not $ReleaseTag) {
@@ -279,32 +280,14 @@ function Configure-PortablePythonPath {
     if (-not ($pythonExe -like "$InstalledPythonRoot*")) {
         return
     }
-    $pythonDir = Split-Path -Parent $pythonExe
-    $pth = Get-ChildItem -LiteralPath $pythonDir -Filter "python*._pth" -ErrorAction SilentlyContinue | Select-Object -First 1
-    if (-not $pth) {
-        return
+    $helper = Join-Path $ProjectRoot "scripts\windows-portable-python-path.ps1"
+    if (-not (Test-Path -LiteralPath $helper)) {
+        Fail "Portable Python path helper is missing from the release payload." 2
     }
-    $src = Join-Path $ProjectRoot "src"
-    if (-not (Test-Path $src)) {
-        return
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $helper -ProjectRoot $ProjectRoot -PythonExe $pythonExe
+    if ($LASTEXITCODE -ne 0) {
+        Fail "Portable Python path repair failed." 2
     }
-    $lines = @(Get-Content -LiteralPath $pth.FullName)
-    $filtered = @()
-    foreach ($line in $lines) {
-        $normalizedLine = $line.Replace("\", "/").ToLowerInvariant()
-        if ($normalizedLine -like "*codex-hybrid-model-switcher*src*" -or $normalizedLine -like "*codexhybridmodelswitcher*/project/src*") {
-            continue
-        }
-        if ($line.Trim() -eq "#import site") {
-            $filtered += "import site"
-            continue
-        }
-        $filtered += $line
-    }
-    if (-not ($filtered -contains $src)) {
-        $filtered += $src
-    }
-    Set-Content -LiteralPath $pth.FullName -Value $filtered -Encoding ASCII
     Write-Host "Configured portable Python module path for the installed switcher."
 }
 

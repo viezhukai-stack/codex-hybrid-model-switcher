@@ -6,13 +6,13 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.18.1.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.18.3.zip
 ```
 
 For private netdisk sharing with a bundled local model, build and share:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.18.1.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.18.3.zip
 ```
 
 It contains:
@@ -49,6 +49,9 @@ The full local package also contains:
 - Uses bundled portable Python from `payload/python` and installs it under
   `%LOCALAPPDATA%\CodexHybridModelSwitcher\python` for later desktop switcher
   runs.
+- Before every packaged maintenance or daily entry imports the switcher, it
+  atomically repairs portable Python's `python312._pth` so the only managed
+  project path points to the current release `src` directory.
 - Installs Python 3.12 with `winget` only if bundled portable Python and system
   Python are both missing.
 - Uses the bundled project payload from
@@ -90,6 +93,9 @@ The full local package also contains:
   on `127.0.0.1:19030`, starts or reuses the hot router on `127.0.0.1:19032`,
   enables hot-router mode while Codex is closed when needed, then opens Codex
   Desktop.
+- Preserves complete Responses output when Gemini High uses its non-streaming
+  compatibility path, including reasoning summaries and function calls, and
+  performs only bounded `Retry-After`-aware 429 retries.
 - Installs the desktop `Codex Model Switcher.cmd` launcher for guarded
   maintenance switches and legacy mode.
 - Installs the desktop `Enable Codex Hot Router Mode.cmd` and
@@ -105,9 +111,21 @@ The full local package also contains:
   `codex-windows-sandbox-setup.exe`, `codex-command-runner.exe`, and
   `codex-code-mode-host.exe`, persists the versioned path in the current-user
   `CODEX_CLI_PATH`, reruns the launch gate, and only then opens Codex.
+- Compares the current-user AppX registration with all-user staged Codex
+  packages. If `highest_staged_version` is newer, the doctor sets
+  `pending_registration`, the daily launch gate leaves Codex closed, and the
+  user finishes the official app registration before trying again.
+- Disables PowerShell progress rendering around `Invoke-WebRequest`, avoiding
+  the console `Write-Progress` failure while preserving normal download errors.
 - Stops on any update condition outside that narrow automatic repair and points
   to `Repair Codex Browser and CLI.cmd`; it never creates a service, scheduled
   task, watchdog, restart loop, or background updater.
+- After opening Codex, starts one hidden, bounded post-start check. It waits for
+  Codex feature initialization, verifies the official Browser plugin state, and
+  runs `windows-browser-ensure`, which calls
+  `plugin add browser@openai-bundled --json` through the current official CLI
+  only when Browser is available but missing or stale. It never restarts Codex
+  and exits after writing a small local diagnostic log.
 - Installs `Change Codex Account.cmd` for an explicit, backup-first device-code
   login. Account switching is separate from normal model routing and remains a
   dry-run until the user types `SWITCH`.
@@ -140,7 +158,7 @@ The full local package also contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.1.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.3.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -249,7 +267,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.1.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.3.zip
 ```
 
 Upload that zip to your netdisk.
@@ -273,7 +291,7 @@ one GGUF model and one mmproj GGUF file, then run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py `
-  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.1.zip `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.3.zip `
   --include-llama-dir D:\Tools\llama.cpp `
   --include-vcredist-file D:\Installers\vc_redist.x64.exe `
   --include-model-dir D:\Models\gemma-4-e4b

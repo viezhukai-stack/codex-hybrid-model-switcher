@@ -22,6 +22,7 @@ from .setup_wizard import run_setup_wizard
 from .smoke import run_smoke
 from .switcher import guarded_switch_provider, interactive_menu, run_ensure_bridge, switch_provider
 from .windows_update import (
+    run_windows_browser_ensure,
     run_windows_update_doctor,
     run_windows_update_ensure,
     run_windows_update_repair,
@@ -75,6 +76,11 @@ def main(argv: list[str] | None = None) -> int:
     windows_update_repair.add_argument("--apply", action="store_true")
     windows_update_ensure = sub.add_parser("windows-update-ensure")
     windows_update_ensure.add_argument("--config", dest="sub_config")
+    windows_browser_ensure = sub.add_parser("windows-browser-ensure")
+    windows_browser_ensure.add_argument("--config", dest="sub_config")
+    windows_browser_ensure.add_argument("--wait-seconds", type=float, default=90)
+    windows_browser_ensure.add_argument("--settle-seconds", type=float, default=15)
+    windows_browser_ensure.add_argument("--poll-seconds", type=float, default=3)
     change_account = sub.add_parser("change-account")
     change_account.add_argument("--config", dest="sub_config")
     change_account.add_argument("--apply", action="store_true")
@@ -192,6 +198,13 @@ def main(argv: list[str] | None = None) -> int:
         return run_windows_update_repair(config_path, apply=args.apply)
     if args.command == "windows-update-ensure":
         return run_windows_update_ensure(config_path)
+    if args.command == "windows-browser-ensure":
+        return run_windows_browser_ensure(
+            config_path,
+            wait_seconds=args.wait_seconds,
+            settle_seconds=args.settle_seconds,
+            poll_seconds=args.poll_seconds,
+        )
     if args.command == "change-account":
         return run_change_account(
             config_path,

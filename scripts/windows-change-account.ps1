@@ -6,10 +6,22 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
 Set-StrictMode -Version Latest
+$repoRoot = Split-Path -Parent $PSScriptRoot
+
+function Initialize-PortablePythonPath {
+    $helper = Join-Path $PSScriptRoot "windows-portable-python-path.ps1"
+    if (-not (Test-Path -LiteralPath $helper)) {
+        throw "Portable Python path helper is missing: $helper"
+    }
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $helper -ProjectRoot $repoRoot -Quiet
+    if ($LASTEXITCODE -ne 0) {
+        throw "Portable Python path repair failed."
+    }
+}
 
 function Invoke-Switcher($ArgsList) {
-    $repoRoot = Split-Path -Parent $PSScriptRoot
     $oldPythonPath = $env:PYTHONPATH
     $env:PYTHONPATH = "$repoRoot\src"
     try {
@@ -40,6 +52,8 @@ function Invoke-Switcher($ArgsList) {
 if ($env:OS -ne "Windows_NT") {
     throw "This account entry is for Windows only."
 }
+
+Initialize-PortablePythonPath
 
 $arguments = @("change-account", "--config", $Config)
 if ($Apply) { $arguments += "--apply" }

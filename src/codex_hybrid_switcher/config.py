@@ -33,6 +33,8 @@ class HotRouterConfig:
     visible_model_ids: tuple[str, ...]
     model_aliases: dict[str, str]
     catalog_cache_seconds: float
+    max_429_retries: int
+    max_retry_after_seconds: float
 
 
 @dataclass(frozen=True)
@@ -89,6 +91,24 @@ class AppConfig:
                 if isinstance(key, str) and key and isinstance(value, str) and value
             },
             catalog_cache_seconds=float(data.get("catalog_cache_seconds") or 15),
+            max_429_retries=max(
+                0,
+                min(
+                    int(2 if data.get("max_429_retries") is None else data["max_429_retries"]),
+                    5,
+                ),
+            ),
+            max_retry_after_seconds=max(
+                0.0,
+                min(
+                    float(
+                        30
+                        if data.get("max_retry_after_seconds") is None
+                        else data["max_retry_after_seconds"]
+                    ),
+                    120.0,
+                ),
+            ),
         )
 
     @property

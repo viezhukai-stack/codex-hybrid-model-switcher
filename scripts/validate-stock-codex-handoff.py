@@ -33,6 +33,7 @@ REPO_IGNORE_DIRS = {
     ".package-cache",
     "build",
     "dist",
+    "小白一键配置包codex混合配置2.0版",
 }
 
 

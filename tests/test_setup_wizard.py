@@ -28,6 +28,8 @@ def test_build_first_run_config_defaults_to_cloud_without_local_provider():
     assert "model" not in data["providers"][0]
     assert data["hot_router"]["default_cloud_provider_id"] == "cloud-gpt-main"
     assert data["hot_router"]["port"] == 19032
+    assert data["hot_router"]["max_429_retries"] == 2
+    assert data["hot_router"]["max_retry_after_seconds"] == 30
     assert data["local_model"]["model_path"] == "~/path/to/model.gguf"
 
 

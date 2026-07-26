@@ -32,6 +32,8 @@ Edit only your local private config:
   providers known to work with Codex Desktop direct auth)
 - `hot_router.default_cloud_provider_id` for newly published cloud model IDs
 - optional private `hot_router.hidden_model_ids` and `hot_router.model_aliases`
+- optional bounded `hot_router.max_429_retries` and
+  `hot_router.max_retry_after_seconds`
 - local `llama_server_path`
 - local `model_path`
 - local `mmproj_path`

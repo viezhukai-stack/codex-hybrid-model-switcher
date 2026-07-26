@@ -15,23 +15,33 @@ installer under `payload/vcredist/`.
 ## Current Status
 
 Status: Full-local install passed on the HL Hyper-V VM with `v2.15.5`;
-v2.18.1 package integrity and physical Windows update compatibility passed.
+v2.18.3 package integrity and guarded physical Windows canaries passed.
 
 Current private netdisk distribution uses
-`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.1.zip`. v2.18.1 keeps the proven
-full-local runtime path, adds the guarded Codex update/Browser CLI refresh and
-account-switch maintenance entries, and excludes repository development files.
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.3.zip`. v2.18.3 keeps the proven
+full-local runtime path, the guarded Codex update/Browser CLI refresh and
+account-switch maintenance entries, and adds a bounded Browser post-start
+repair after Codex feature initialization. It also preserves complete Gemini
+Responses tool/reasoning items, blocks launch while a newer AppX is staged, and
+self-heals stale portable-Python release paths.
 
-Current v2.18.1 package SHA256:
+Current v2.18.3 package SHA256:
 
 ```text
-47fd0c231372338d1cedde35d08a1d2d2b48f1d1df4c046c5b6d4d7f37a58232
+14c75b47c4bbe8018258fc4e7323e0263c6ea2c9454d50b6b81ec42561ac1c96
 ```
 
-The rebuilt v2.18.1 package passed ZIP integrity checks and package structure
+The rebuilt v2.18.3 package passed ZIP integrity checks and package structure
 audits for bundled portable Python, llama.cpp, VC++ Runtime, local Gemma GGUF,
 mmproj, test image, model manifest, the automatic update guard, both maintenance
-entries, and the redacted project payload.
+entries, the complete Responses converter, the portable-Python helper, and the
+redacted project payload.
+
+The package also contains `windows-browser-ensure` and
+`windows-browser-post-start.ps1`. The daily launcher runs the existing
+closed-app CLI update guard first, opens Codex only after router health checks,
+then performs one bounded Browser status check. It does not create a service,
+scheduled task, watchdog, or restart loop.
 
 The 2026-07-22 physical Windows canary reproduced the Browser failure after a
 Codex AppX update changed the CLI version. The five-file managed CLI bundle was

@@ -22,6 +22,8 @@ def test_load_config_and_expand_paths(tmp_path, monkeypatch):
                     "hidden_model_ids": ["hidden-model"],
                     "model_aliases": {"old-model": "new-model"},
                     "catalog_cache_seconds": 9,
+                    "max_429_retries": 3,
+                    "max_retry_after_seconds": 12,
                 },
                 "providers": [
                     {"id": "cloud", "kind": "cloud", "model": "provider-model"},
@@ -46,6 +48,8 @@ def test_load_config_and_expand_paths(tmp_path, monkeypatch):
     assert config.hot_router.hidden_model_ids == ("hidden-model",)
     assert config.hot_router.model_aliases == {"old-model": "new-model"}
     assert config.hot_router.catalog_cache_seconds == 9
+    assert config.hot_router.max_429_retries == 3
+    assert config.hot_router.max_retry_after_seconds == 12
     assert config.provider("cloud")["model"] == "provider-model"
     assert config.provider_for_model("local/test")["kind"] == "local"
 
@@ -135,3 +139,5 @@ def test_hot_router_defaults_are_dynamic_and_local_only_safe(tmp_path):
     assert router.default_cloud_provider_id is None
     assert router.visible_model_ids == ()
     assert router.hidden_model_ids == ()
+    assert router.max_429_retries == 2
+    assert router.max_retry_after_seconds == 30

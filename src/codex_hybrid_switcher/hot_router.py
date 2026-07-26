@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import email.utils
 import json
 import os
 import socket
@@ -10,9 +11,10 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+from datetime import timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from .config import AppConfig, load_config
 
@@ -239,6 +241,74 @@ def read_upstream(url: str, method: str, headers: dict[str, str], *, data: bytes
         return exc.code, dict(exc.headers.items()), exc.read()
 
 
+def header_value(headers: dict[str, str], name: str) -> str | None:
+    wanted = name.lower()
+    for key, value in headers.items():
+        if key.lower() == wanted:
+            return value
+    return None
+
+
+def retry_after_seconds(value: str | None, *, now: float | None = None) -> float | None:
+    if not value:
+        return None
+    text = value.strip()
+    try:
+        return max(0.0, float(text))
+    except ValueError:
+        pass
+    try:
+        parsed = email.utils.parsedate_to_datetime(text)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if parsed is None:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    current = time.time() if now is None else now
+    return max(0.0, parsed.timestamp() - current)
+
+
+def read_upstream_with_429_retry(
+    url: str,
+    method: str,
+    headers: dict[str, str],
+    *,
+    data: bytes | None = None,
+    timeout: float = 30,
+    max_retries: int = 2,
+    max_retry_after_seconds: float = 30,
+    sleep: Callable[[float], None] = time.sleep,
+) -> tuple[int, dict[str, str], bytes, dict[str, Any]]:
+    retries = 0
+    waited = 0.0
+    retry_after_values: list[str] = []
+    while True:
+        status, response_headers, body = read_upstream(
+            url,
+            method,
+            headers,
+            data=data,
+            timeout=timeout,
+        )
+        if status != 429 or retries >= max(0, max_retries):
+            return status, response_headers, body, {
+                "upstream_retries": retries,
+                "retry_wait_seconds": round(waited, 3),
+                "retry_after": retry_after_values,
+            }
+        raw_retry_after = header_value(response_headers, "Retry-After")
+        parsed_delay = retry_after_seconds(raw_retry_after)
+        if parsed_delay is None:
+            parsed_delay = float(2**retries)
+        delay = min(max(0.0, parsed_delay), max(0.0, max_retry_after_seconds))
+        retry_after_values.append(raw_retry_after or "fallback")
+        if delay:
+            sleep(delay)
+            waited += delay
+        retries += 1
+
+
 def port_open(host: str, port: int, *, timeout: float = 0.2) -> bool:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(timeout)
@@ -444,59 +514,515 @@ def response_json(model: str, text: str) -> dict[str, Any]:
     }
 
 
+def _text_from_value(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return "".join(_text_from_value(item) for item in value)
+    if isinstance(value, dict):
+        for key in ("text", "content", "value"):
+            if key in value:
+                text = _text_from_value(value.get(key))
+                if text:
+                    return text
+    return ""
+
+
+def _arguments_text(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    if value is None:
+        return ""
+    try:
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _normalize_message_content(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, str):
+        return [{"type": "output_text", "text": value, "annotations": []}]
+    if not isinstance(value, list):
+        return []
+    parts: list[dict[str, Any]] = []
+    for raw_part in value:
+        if isinstance(raw_part, str):
+            parts.append({"type": "output_text", "text": raw_part, "annotations": []})
+            continue
+        if not isinstance(raw_part, dict):
+            continue
+        part = dict(raw_part)
+        part_type = str(part.get("type") or "")
+        if part_type in {"text", "output_text"} or (not part_type and isinstance(part.get("text"), str)):
+            part["type"] = "output_text"
+            part["text"] = _text_from_value(part.get("text"))
+            if not isinstance(part.get("annotations"), list):
+                part["annotations"] = []
+        elif part_type == "refusal":
+            part["refusal"] = _text_from_value(part.get("refusal") or part.get("text"))
+        parts.append(part)
+    return parts
+
+
+def _normalize_reasoning_parts(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, str):
+        return [{"type": "summary_text", "text": value}]
+    if not isinstance(value, list):
+        return []
+    parts: list[dict[str, Any]] = []
+    for raw_part in value:
+        if isinstance(raw_part, str):
+            parts.append({"type": "summary_text", "text": raw_part})
+        elif isinstance(raw_part, dict):
+            part = dict(raw_part)
+            part.setdefault("type", "summary_text")
+            if "text" in part:
+                part["text"] = _text_from_value(part.get("text"))
+            parts.append(part)
+    return parts
+
+
+def _normalize_output_item(raw_item: dict[str, Any]) -> dict[str, Any]:
+    item = dict(raw_item)
+    item_type = str(item.get("type") or "")
+    nested_function = item.get("function")
+    if item_type in {"function", "tool_call"} and isinstance(nested_function, dict):
+        item_type = "function_call"
+        item["type"] = item_type
+    if item_type == "message":
+        item.setdefault("id", "msg_" + uuid.uuid4().hex)
+        item.setdefault("status", "completed")
+        item.setdefault("role", "assistant")
+        item["content"] = _normalize_message_content(item.get("content"))
+    elif item_type == "function_call":
+        function = nested_function if isinstance(nested_function, dict) else {}
+        call_id = item.get("call_id") or item.get("tool_call_id") or item.get("id")
+        item.setdefault("id", "fc_" + uuid.uuid4().hex)
+        item["call_id"] = str(call_id or ("call_" + uuid.uuid4().hex))
+        item["name"] = str(item.get("name") or function.get("name") or "")
+        item["arguments"] = _arguments_text(item.get("arguments", function.get("arguments")))
+        item.setdefault("status", "completed")
+        item.pop("function", None)
+    elif item_type == "reasoning":
+        item.setdefault("id", "rs_" + uuid.uuid4().hex)
+        item.setdefault("status", "completed")
+        item["summary"] = _normalize_reasoning_parts(item.get("summary"))
+        if isinstance(item.get("content"), list):
+            item["content"] = _normalize_reasoning_parts(item.get("content"))
+    else:
+        item.setdefault("id", "item_" + uuid.uuid4().hex)
+        if item_type:
+            item.setdefault("status", "completed")
+    return item
+
+
+def _chat_completion_output(data: dict[str, Any]) -> tuple[list[dict[str, Any]], str]:
+    output: list[dict[str, Any]] = []
+    final_status = "completed"
+    choices = data.get("choices")
+    if not isinstance(choices, list):
+        return output, final_status
+    for choice in choices:
+        if not isinstance(choice, dict):
+            continue
+        finish_reason = str(choice.get("finish_reason") or "")
+        if finish_reason == "length":
+            final_status = "incomplete"
+        message = choice.get("message")
+        if not isinstance(message, dict):
+            text = _text_from_value(choice.get("text"))
+            if text:
+                output.append(
+                    _normalize_output_item(
+                        {
+                            "type": "message",
+                            "role": "assistant",
+                            "content": text,
+                        }
+                    )
+                )
+            continue
+
+        reasoning = _text_from_value(
+            message.get("reasoning_content")
+            or message.get("reasoning")
+            or choice.get("reasoning_content")
+            or choice.get("reasoning")
+        )
+        if reasoning:
+            output.append(
+                _normalize_output_item(
+                    {
+                        "type": "reasoning",
+                        "summary": [{"type": "summary_text", "text": reasoning}],
+                    }
+                )
+            )
+
+        tool_calls = message.get("tool_calls")
+        if isinstance(tool_calls, list):
+            for tool_call in tool_calls:
+                if not isinstance(tool_call, dict):
+                    continue
+                function = tool_call.get("function")
+                if not isinstance(function, dict):
+                    function = {}
+                output.append(
+                    _normalize_output_item(
+                        {
+                            "type": "function_call",
+                            "call_id": tool_call.get("id"),
+                            "name": function.get("name") or tool_call.get("name"),
+                            "arguments": function.get("arguments", tool_call.get("arguments")),
+                        }
+                    )
+                )
+        legacy_function = message.get("function_call")
+        if isinstance(legacy_function, dict):
+            output.append(
+                _normalize_output_item(
+                    {
+                        "type": "function_call",
+                        "name": legacy_function.get("name"),
+                        "arguments": legacy_function.get("arguments"),
+                    }
+                )
+            )
+
+        content = _normalize_message_content(message.get("content"))
+        refusal = _text_from_value(message.get("refusal"))
+        if refusal:
+            content.append({"type": "refusal", "refusal": refusal})
+        if content:
+            output.append(
+                _normalize_output_item(
+                    {
+                        "type": "message",
+                        "role": message.get("role") or "assistant",
+                        "content": content,
+                    }
+                )
+            )
+    return output, final_status
+
+
+def _normalize_usage(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+    usage = dict(value)
+    if "input_tokens" not in usage and "prompt_tokens" in usage:
+        usage["input_tokens"] = usage.get("prompt_tokens")
+    if "output_tokens" not in usage and "completion_tokens" in usage:
+        usage["output_tokens"] = usage.get("completion_tokens")
+    input_tokens = int(usage.get("input_tokens") or 0)
+    output_tokens = int(usage.get("output_tokens") or 0)
+    usage["input_tokens"] = input_tokens
+    usage["output_tokens"] = output_tokens
+    usage["total_tokens"] = int(usage.get("total_tokens") or (input_tokens + output_tokens))
+    return usage
+
+
+def response_json_from_upstream(data: dict[str, Any], fallback_model: str) -> dict[str, Any]:
+    native_output = data.get("output")
+    is_native = data.get("object") == "response" or isinstance(native_output, list)
+    response: dict[str, Any] = dict(data) if is_native else {}
+    if isinstance(native_output, list) and native_output:
+        output = [_normalize_output_item(item) for item in native_output if isinstance(item, dict)]
+        status = str(data.get("status") or "completed")
+    else:
+        output, status = _chat_completion_output(data)
+        if not output:
+            text = response_text_from_json(data)
+            if text:
+                output = [
+                    _normalize_output_item(
+                        {"type": "message", "role": "assistant", "content": text}
+                    )
+                ]
+        if is_native and isinstance(data.get("status"), str):
+            status = str(data["status"])
+    if data.get("error") and status == "completed":
+        status = "failed"
+    response["id"] = str(data.get("id") or ("resp_" + uuid.uuid4().hex))
+    response["object"] = "response"
+    response["created_at"] = int(data.get("created_at") or data.get("created") or time.time())
+    response["status"] = status
+    response["model"] = str(data.get("model") or fallback_model)
+    response["output"] = output
+    response["usage"] = _normalize_usage(data.get("usage"))
+    text_chunks: list[str] = []
+    for item in output:
+        if item.get("type") != "message":
+            continue
+        for part in item.get("content") or []:
+            if isinstance(part, dict) and part.get("type") == "output_text":
+                text_chunks.append(_text_from_value(part.get("text")))
+    response["output_text"] = (
+        data["output_text"]
+        if isinstance(data.get("output_text"), str)
+        else "".join(text_chunks)
+    )
+    response.pop("choices", None)
+    return response
+
+
 def sse_payload(event: str, data: dict[str, Any]) -> bytes:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n".encode("utf-8")
 
 
-def responses_sse_body(model: str, text: str) -> bytes:
-    response = response_json(model, text)
-    response_id = str(response["id"])
-    item = response["output"][0]
-    item_id = str(item["id"])
-    content_part = item["content"][0]
-    created_at = int(response["created_at"])
-    in_progress_item = {"id": item_id, "type": "message", "status": "in_progress", "role": "assistant", "content": []}
-    chunks = [
-        sse_payload(
-            "response.created",
-            {
-                "type": "response.created",
-                "response": {
-                    "id": response_id,
-                    "object": "response",
-                    "created_at": created_at,
-                    "status": "in_progress",
-                    "model": model,
-                    "output": [],
+def responses_sse_body_from_json(data: dict[str, Any], fallback_model: str) -> bytes:
+    response = response_json_from_upstream(data, fallback_model)
+    chunks: list[bytes] = []
+    sequence_number = 0
+
+    def add(event: str, payload: dict[str, Any]) -> None:
+        nonlocal sequence_number
+        enriched = dict(payload)
+        enriched.setdefault("type", event)
+        enriched.setdefault("sequence_number", sequence_number)
+        sequence_number += 1
+        chunks.append(sse_payload(event, enriched))
+
+    opening = dict(response)
+    opening["status"] = "in_progress"
+    opening["output"] = []
+    opening.pop("output_text", None)
+    opening["usage"] = None
+    add("response.created", {"response": opening})
+    add("response.in_progress", {"response": opening})
+
+    for output_index, final_item in enumerate(response.get("output") or []):
+        if not isinstance(final_item, dict):
+            continue
+        item = dict(final_item)
+        item_type = str(item.get("type") or "")
+        item_id = str(item.get("id") or ("item_" + uuid.uuid4().hex))
+        item["id"] = item_id
+        added_item = dict(item)
+        if "status" in added_item:
+            added_item["status"] = "in_progress"
+        if item_type == "message":
+            added_item["content"] = []
+        elif item_type == "function_call":
+            added_item["arguments"] = ""
+        elif item_type == "reasoning":
+            added_item["summary"] = []
+            if "content" in added_item:
+                added_item["content"] = []
+        add(
+            "response.output_item.added",
+            {"output_index": output_index, "item": added_item},
+        )
+
+        if item_type == "message":
+            for content_index, part in enumerate(item.get("content") or []):
+                if not isinstance(part, dict):
+                    continue
+                part_type = str(part.get("type") or "")
+                if part_type == "output_text":
+                    text = _text_from_value(part.get("text"))
+                    empty_part = dict(part)
+                    empty_part["text"] = ""
+                    add(
+                        "response.content_part.added",
+                        {
+                            "item_id": item_id,
+                            "output_index": output_index,
+                            "content_index": content_index,
+                            "part": empty_part,
+                        },
+                    )
+                    if text:
+                        add(
+                            "response.output_text.delta",
+                            {
+                                "item_id": item_id,
+                                "output_index": output_index,
+                                "content_index": content_index,
+                                "delta": text,
+                            },
+                        )
+                    add(
+                        "response.output_text.done",
+                        {
+                            "item_id": item_id,
+                            "output_index": output_index,
+                            "content_index": content_index,
+                            "text": text,
+                        },
+                    )
+                    add(
+                        "response.content_part.done",
+                        {
+                            "item_id": item_id,
+                            "output_index": output_index,
+                            "content_index": content_index,
+                            "part": part,
+                        },
+                    )
+                elif part_type == "refusal":
+                    refusal = _text_from_value(part.get("refusal"))
+                    add(
+                        "response.content_part.added",
+                        {
+                            "item_id": item_id,
+                            "output_index": output_index,
+                            "content_index": content_index,
+                            "part": {"type": "refusal", "refusal": ""},
+                        },
+                    )
+                    if refusal:
+                        add(
+                            "response.refusal.delta",
+                            {
+                                "item_id": item_id,
+                                "output_index": output_index,
+                                "content_index": content_index,
+                                "delta": refusal,
+                            },
+                        )
+                    add(
+                        "response.refusal.done",
+                        {
+                            "item_id": item_id,
+                            "output_index": output_index,
+                            "content_index": content_index,
+                            "refusal": refusal,
+                        },
+                    )
+                    add(
+                        "response.content_part.done",
+                        {
+                            "item_id": item_id,
+                            "output_index": output_index,
+                            "content_index": content_index,
+                            "part": part,
+                        },
+                    )
+                else:
+                    add(
+                        "response.content_part.added",
+                        {
+                            "item_id": item_id,
+                            "output_index": output_index,
+                            "content_index": content_index,
+                            "part": part,
+                        },
+                    )
+                    add(
+                        "response.content_part.done",
+                        {
+                            "item_id": item_id,
+                            "output_index": output_index,
+                            "content_index": content_index,
+                            "part": part,
+                        },
+                    )
+        elif item_type == "function_call":
+            arguments = _arguments_text(item.get("arguments"))
+            if arguments:
+                add(
+                    "response.function_call_arguments.delta",
+                    {
+                        "item_id": item_id,
+                        "output_index": output_index,
+                        "delta": arguments,
+                    },
+                )
+            add(
+                "response.function_call_arguments.done",
+                {
+                    "item_id": item_id,
+                    "output_index": output_index,
+                    "arguments": arguments,
                 },
-            },
-        ),
-        sse_payload(
-            "response.in_progress",
-            {
-                "type": "response.in_progress",
-                "response": {
-                    "id": response_id,
-                    "object": "response",
-                    "created_at": created_at,
-                    "status": "in_progress",
-                    "model": model,
-                },
-            },
-        ),
-        sse_payload("response.output_item.added", {"type": "response.output_item.added", "output_index": 0, "item": in_progress_item}),
-        sse_payload(
-            "response.content_part.added",
-            {"type": "response.content_part.added", "item_id": item_id, "output_index": 0, "content_index": 0, "part": {"type": "output_text", "text": "", "annotations": []}},
-        ),
-        sse_payload("response.output_text.delta", {"type": "response.output_text.delta", "item_id": item_id, "output_index": 0, "content_index": 0, "delta": text}),
-        sse_payload("response.output_text.done", {"type": "response.output_text.done", "item_id": item_id, "output_index": 0, "content_index": 0, "text": text}),
-        sse_payload("response.content_part.done", {"type": "response.content_part.done", "item_id": item_id, "output_index": 0, "content_index": 0, "part": content_part}),
-        sse_payload("response.output_item.done", {"type": "response.output_item.done", "output_index": 0, "item": item}),
-        sse_payload("response.completed", {"type": "response.completed", "response": response}),
-        b"data: [DONE]\n\n",
-    ]
+            )
+        elif item_type == "reasoning":
+            for summary_index, part in enumerate(item.get("summary") or []):
+                if not isinstance(part, dict):
+                    continue
+                text = _text_from_value(part.get("text"))
+                empty_part = dict(part)
+                empty_part["text"] = ""
+                add(
+                    "response.reasoning_summary_part.added",
+                    {
+                        "item_id": item_id,
+                        "output_index": output_index,
+                        "summary_index": summary_index,
+                        "part": empty_part,
+                    },
+                )
+                if text:
+                    add(
+                        "response.reasoning_summary_text.delta",
+                        {
+                            "item_id": item_id,
+                            "output_index": output_index,
+                            "summary_index": summary_index,
+                            "delta": text,
+                        },
+                    )
+                add(
+                    "response.reasoning_summary_text.done",
+                    {
+                        "item_id": item_id,
+                        "output_index": output_index,
+                        "summary_index": summary_index,
+                        "text": text,
+                    },
+                )
+                add(
+                    "response.reasoning_summary_part.done",
+                    {
+                        "item_id": item_id,
+                        "output_index": output_index,
+                        "summary_index": summary_index,
+                        "part": part,
+                    },
+                )
+            for content_index, part in enumerate(item.get("content") or []):
+                if not isinstance(part, dict):
+                    continue
+                text = _text_from_value(part.get("text"))
+                if text:
+                    add(
+                        "response.reasoning_text.delta",
+                        {
+                            "item_id": item_id,
+                            "output_index": output_index,
+                            "content_index": content_index,
+                            "delta": text,
+                        },
+                    )
+                add(
+                    "response.reasoning_text.done",
+                    {
+                        "item_id": item_id,
+                        "output_index": output_index,
+                        "content_index": content_index,
+                        "text": text,
+                    },
+                )
+
+        add(
+            "response.output_item.done",
+            {"output_index": output_index, "item": item},
+        )
+
+    status = str(response.get("status") or "completed")
+    terminal_event = {
+        "failed": "response.failed",
+        "incomplete": "response.incomplete",
+        "cancelled": "response.failed",
+    }.get(status, "response.completed")
+    add(terminal_event, {"response": response})
+    chunks.append(b"data: [DONE]\n\n")
     return b"".join(chunks)
+
+
+def responses_sse_body(model: str, text: str) -> bytes:
+    return responses_sse_body_from_json(response_json(model, text), model)
 
 
 def stream_shim_payload(raw: bytes) -> bytes:
@@ -514,6 +1040,23 @@ def cloud_response_stream_shim_models(provider: dict[str, Any]) -> set[str]:
     if isinstance(configured, list):
         return {item for item in configured if isinstance(item, str) and item}
     return set()
+
+
+def cloud_response_stream_shim_empty_retries(provider: dict[str, Any] | None) -> int:
+    if provider is None:
+        return 0
+    value = provider.get("response_stream_shim_empty_retries", 2)
+    try:
+        return max(0, min(int(value), 2))
+    except (TypeError, ValueError):
+        return 2
+
+
+def response_has_meaningful_output(response: dict[str, Any]) -> bool:
+    output = response.get("output")
+    if isinstance(output, list) and any(isinstance(item, dict) for item in output):
+        return True
+    return bool(_text_from_value(response.get("output_text")))
 
 
 def should_shim_cloud_responses_stream(provider: dict[str, Any] | None, model: str | None, endpoint: str, stream: bool | None) -> bool:
@@ -813,15 +1356,24 @@ class HotRouterHandler(BaseHTTPRequestHandler):
         if provider:
             apply_provider_auth(headers, provider)
         try:
-            status, response_headers, response_body = read_upstream(
+            status, response_headers, response_body, retry_meta = read_upstream_with_429_retry(
                 target_url(upstream, self.path),
                 self.command,
                 headers,
                 data=upstream_raw if self.command in {"POST", "PUT", "PATCH"} else None,
                 timeout=600,
+                max_retries=self.router.config.hot_router.max_429_retries,
+                max_retry_after_seconds=self.router.config.hot_router.max_retry_after_seconds,
             )
             self.send_upstream(status, response_headers, response_body)
-            log_event("response", request_id=request_id, status=status, route=route, response_bytes=len(response_body))
+            log_event(
+                "response",
+                request_id=request_id,
+                status=status,
+                route=route,
+                response_bytes=len(response_body),
+                **retry_meta,
+            )
         except Exception as exc:
             payload = {"error": f"{type(exc).__name__}: {exc}"}
             self.write_json(502, payload)
@@ -842,27 +1394,87 @@ class HotRouterHandler(BaseHTTPRequestHandler):
             headers = {"Content-Type": "application/json", "Content-Length": str(len(upstream_raw))}
             if provider:
                 apply_provider_auth(headers, provider)
-            status, response_headers, response_body = read_upstream(
-                target_url(upstream, self.path),
-                "POST",
-                headers,
-                data=upstream_raw,
-                timeout=600,
-            )
-            if not (200 <= status < 300):
-                self.send_upstream(status, response_headers, response_body)
-                log_event("response", request_id=request_id, status=status, route=route, response_bytes=len(response_body), **log_fields)
-                return
-            parsed = json.loads(response_body.decode("utf-8-sig") or "{}")
-            text = response_text_from_json(parsed if isinstance(parsed, dict) else {})
-            body = responses_sse_body(model, text)
+            empty_output_retries = 0
+            empty_retry_wait = 0.0
+            retry_meta: dict[str, Any] = {
+                "upstream_retries": 0,
+                "retry_wait_seconds": 0.0,
+                "retry_after": [],
+            }
+            max_empty_retries = cloud_response_stream_shim_empty_retries(provider)
+            while True:
+                remaining_429_retries = max(
+                    0,
+                    self.router.config.hot_router.max_429_retries
+                    - int(retry_meta.get("upstream_retries") or 0),
+                )
+                status, response_headers, response_body, attempt_retry_meta = read_upstream_with_429_retry(
+                    target_url(upstream, self.path),
+                    "POST",
+                    headers,
+                    data=upstream_raw,
+                    timeout=600,
+                    max_retries=remaining_429_retries,
+                    max_retry_after_seconds=self.router.config.hot_router.max_retry_after_seconds,
+                )
+                retry_meta["upstream_retries"] += int(attempt_retry_meta.get("upstream_retries") or 0)
+                retry_meta["retry_wait_seconds"] = round(
+                    float(retry_meta.get("retry_wait_seconds") or 0)
+                    + float(attempt_retry_meta.get("retry_wait_seconds") or 0),
+                    3,
+                )
+                retry_meta["retry_after"].extend(attempt_retry_meta.get("retry_after") or [])
+                if not (200 <= status < 300):
+                    self.send_upstream(status, response_headers, response_body)
+                    log_event(
+                        "response",
+                        request_id=request_id,
+                        status=status,
+                        route=route,
+                        response_bytes=len(response_body),
+                        empty_output_retries=empty_output_retries,
+                        **retry_meta,
+                        **log_fields,
+                    )
+                    return
+                parsed = json.loads(response_body.decode("utf-8-sig") or "{}")
+                converted = response_json_from_upstream(
+                    parsed if isinstance(parsed, dict) else {},
+                    model,
+                )
+                should_retry_empty = (
+                    str(converted.get("status") or "completed") == "completed"
+                    and not response_has_meaningful_output(converted)
+                    and empty_output_retries < max_empty_retries
+                )
+                if not should_retry_empty:
+                    break
+                empty_output_retries += 1
+                delay = min(0.25, self.router.config.hot_router.max_retry_after_seconds)
+                if delay:
+                    time.sleep(delay)
+                    empty_retry_wait += delay
+            body = responses_sse_body_from_json(converted, model)
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
             self.send_header("Cache-Control", "no-cache")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
-            log_event("response", request_id=request_id, status=200, route=route, response_bytes=len(body), **log_fields)
+            log_event(
+                "response",
+                request_id=request_id,
+                status=200,
+                route=route,
+                upstream_response_bytes=len(response_body),
+                response_bytes=len(body),
+                converted_output_items=len(converted.get("output") or []),
+                converted_status=converted.get("status"),
+                empty_output_retries=empty_output_retries,
+                empty_retry_wait_seconds=round(empty_retry_wait, 3),
+                **retry_meta,
+                **log_fields,
+            )
         except Exception as exc:
             payload = {"error": f"{type(exc).__name__}: {exc}"}
             self.write_json(502, payload)

@@ -5,7 +5,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
 Set-StrictMode -Version Latest
+$repoRoot = Split-Path -Parent $PSScriptRoot
 
 function Fail($Message) {
     Write-Error $Message
@@ -13,7 +15,6 @@ function Fail($Message) {
 }
 
 function Invoke-Switcher($ArgsList, [switch]$AllowFailure) {
-    $repoRoot = Split-Path -Parent $PSScriptRoot
     $oldPythonPath = $env:PYTHONPATH
     $env:PYTHONPATH = "$repoRoot\src"
     try {
@@ -40,6 +41,17 @@ function Invoke-Switcher($ArgsList, [switch]$AllowFailure) {
     }
     finally {
         $env:PYTHONPATH = $oldPythonPath
+    }
+}
+
+function Repair-PortablePythonPath {
+    $helper = Join-Path $PSScriptRoot "windows-portable-python-path.ps1"
+    if (-not (Test-Path -LiteralPath $helper)) {
+        Fail "Portable Python path helper was not found: $helper"
+    }
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $helper -ProjectRoot $repoRoot -Quiet
+    if ($LASTEXITCODE -ne 0) {
+        Fail "Portable Python still points to an older release. Run the installer again."
     }
 }
 
@@ -82,6 +94,16 @@ function Open-CodexDesktop() {
     Start-Process "shell:AppsFolder\$appId"
 }
 
+function Start-BrowserPostStartCheck() {
+    $postStartScript = Join-Path $PSScriptRoot "windows-browser-post-start.ps1"
+    if (!(Test-Path -LiteralPath $postStartScript)) {
+        Write-Host "WARNING: Browser post-start helper was not found: $postStartScript"
+        return
+    }
+    $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$postStartScript`" -Config `"$Config`""
+    Start-Process -FilePath "powershell.exe" -WindowStyle Hidden -ArgumentList $arguments | Out-Null
+}
+
 function Test-CodexRunning() {
     $running = Get-Process -ErrorAction SilentlyContinue | Where-Object {
         $_.ProcessName -like "Codex*" -or $_.ProcessName -like "ChatGPT*" -or $_.ProcessName -eq "codex"
@@ -119,6 +141,8 @@ if ($env:OS -ne "Windows_NT") {
     Fail "This launcher is for Windows only."
 }
 
+Repair-PortablePythonPath
+
 if (Test-Path -LiteralPath $Config) {
     try {
         $privateConfig = Get-Content -LiteralPath $Config -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -155,6 +179,7 @@ if (Test-HotRouter) {
     Enable-HotRouterMode
     Write-Host "Opening Codex..."
     Open-CodexDesktop
+    Start-BrowserPostStartCheck
     exit 0
 }
 
@@ -168,6 +193,7 @@ $modeScript = Join-Path $PSScriptRoot "windows-hot-router-mode.ps1"
 $routerUrl = "http://$RouterHost`:$Port/v1"
 $codexConfigToml = Join-Path $env:USERPROFILE ".codex\config.toml"
 $watcher = @"
+`$ProgressPreference = 'SilentlyContinue'
 `$url = 'http://$RouterHost`:$Port/health'
 for (`$i = 0; `$i -lt 30; `$i++) {
     try {
@@ -192,4 +218,5 @@ for (`$i = 0; `$i -lt 30; `$i++) {
 "@
 
 Start-Process powershell -WindowStyle Hidden -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $watcher)
+Start-BrowserPostStartCheck
 Invoke-Switcher -ArgsList @("hot-router", "--config", $Config, "--host", $RouterHost, "--port", "$Port")
