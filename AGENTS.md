@@ -218,6 +218,12 @@ the official CLI to add `browser@openai-bundled` when it is available but
 missing or stale. The post-start phase must never restart Codex or become a
 service, scheduled task, watchdog, or recovery loop.
 
+Windows Live audio repair is also an explicit maintenance path. Run
+`Repair Codex Live Audio.cmd` only when Live does not start. Its doctor phase is
+read-only; real changes require Codex to be closed plus exact `REPAIR`
+confirmation, and `RESTORE` uses the newest timestamped audio backup. The daily
+Hot Router launcher must not change microphone consent or default audio devices.
+
 13. If Codex opens but the new conversation does not reply, run `bridge-health`
     again before changing any Codex files.
 

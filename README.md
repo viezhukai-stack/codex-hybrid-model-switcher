@@ -105,7 +105,7 @@ cache, rewrite old conversations, or install always-on recovery services.
 ### Windows full local one-click setup
 
 For a beginner Windows computer, share
-`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.3.zip`, extract the entire zip,
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.4.zip`, extract the entire zip,
 and double-click `Install Codex Hybrid.cmd`. This is the recommended netdisk
 package because it includes the local model path and does not require a cloud
 API key.
@@ -119,12 +119,17 @@ Windows hot router, and stop at guarded dry-run before asking for an explicit
 `APPLY` confirmation. It does not redistribute Codex Desktop, install CC
 Switch, or apply a real switch without explicit confirmation.
 
-Windows v2.18.3 also installs two explicit maintenance entries. `Repair Codex
+Windows v2.18.4 also installs three explicit maintenance entries. `Repair Codex
 Browser and CLI.cmd` copies the matching complete CLI companion set and repairs
 the current-user `CODEX_CLI_PATH` after a Codex app update, including the case
-where the app regenerates its Browser config block. `Change Codex Account.cmd`
-uses device-code login with a local transaction backup. The normal routing
-workflow still leaves account files untouched.
+where the app regenerates its Browser config block. `Repair Codex Live Audio.cmd`
+diagnoses microphone consent and default recording roles, remains read-only until
+the user types `REPAIR`, and keeps a timestamped `RESTORE` backup. `Change Codex
+Account.cmd` uses device-code login with a local transaction backup. The normal
+routing workflow still leaves account files untouched.
+
+See [`docs/windows-live-audio-repair.md`](docs/windows-live-audio-repair.md) for
+the Live audio doctor, explicit repair, and rollback behavior.
 
 The daily `Start Codex Hot Router.cmd` entry performs this CLI refresh
 automatically when the only detected problem is a supported Codex AppX version
@@ -162,7 +167,7 @@ See [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md)
 ### macOS full local one-click setup
 
 For a beginner Mac computer, share
-`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.3.zip`, extract the entire zip, and
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.4.zip`, extract the entire zip, and
 double-click `Install Codex Hybrid.command`. This is the recommended netdisk
 package because it includes both macOS x64 and arm64 llama.cpp runtimes plus
 `payload/models/local-gemma`, so a beginner can use the bundled local Gemma
@@ -186,8 +191,9 @@ Python by default, but the builder can include a tested runtime under
 See [`docs/macos-full-local-pack.md`](docs/macos-full-local-pack.md).
 The v2.17.3 full-local flow and v2.18.0 upgrade path have real Mac UI canaries recorded in
 [`docs/macos-full-local-pack-canary.md`](docs/macos-full-local-pack-canary.md);
-the current v2.18.3 package carries the same app-discovery path plus the shared
-Responses/tool-call preservation fix.
+the current v2.18.4 package carries the same app-discovery path plus the shared
+Responses/tool-call preservation fix and HTTP/1.1 WebSocket tunneling used by
+Codex Live voice.
 
 ### 2.0 hot-router configuration
 
@@ -200,7 +206,9 @@ Private configs may define the shared Mac/Windows hot router:
     "port": 19032,
     "default_cloud_provider_id": "cloud-gpt-main",
     "hidden_model_ids": [],
+    "visible_model_ids": [],
     "model_aliases": {},
+    "model_display_names": {},
     "catalog_cache_seconds": 15,
     "max_429_retries": 2,
     "max_retry_after_seconds": 30
@@ -209,9 +217,19 @@ Private configs may define the shared Mac/Windows hot router:
 ```
 
 The cloud catalog is dynamic unless an explicit private `visible_model_ids`
-allowlist is configured. Newly published models route through
-`default_cloud_provider_id`; model-specific provider entries still take
-precedence.
+allowlist is configured. A non-empty allowlist is strict for both cloud and
+local catalog entries, so every intended local model must also be listed. An
+explicitly allowlisted entry is normalized to `visibility = "list"`, preventing
+an upstream `visibility = "hide"` flag from silently removing it in Codex
+Desktop.
+`model_display_names` can rename catalog labels without changing the model id
+sent upstream. Newly published models route through `default_cloud_provider_id`;
+model-specific provider entries still take precedence.
+
+Machines whose local bridge exposes more than one model may add a private
+`local_catalog_models` array. Each item supplies catalog-only metadata such as
+`id`, `display_name`, `context_window`, and `input_modalities`; the existing
+singular `local_model` block remains the llama.cpp runtime configuration.
 
 The bounded 429 settings apply to cloud and local response forwarding. The
 Gemini High compatibility path requests one non-streaming upstream response and
@@ -219,6 +237,31 @@ reconstructs a complete Responses event stream while preserving message,
 reasoning, function-call, usage, and terminal-status items. Because that
 upstream can occasionally return HTTP 200 with an empty `output`, this one shim
 also retries an empty successful response at most twice before returning it.
+
+Codex Live voice creates a session with `POST /v1/live` and then upgrades to a
+Realtime WebSocket. The shared Hot Router accepts the HTTP/1.1 upgrade on the
+same port and tunnels it to the configured cloud provider. Router logs retain
+only route, status, and byte-count metadata; audio and WebSocket frame contents
+remain outside the log.
+
+When the cloud endpoint is behind Nginx, its proxy location must also preserve
+the upgrade hop. A typical configuration is:
+
+```nginx
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+location / {
+    proxy_pass http://YOUR_UPSTREAM;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+}
+```
 
 If you want Codex itself to configure this project for you, open this repository
 in Codex and start with [`START_HERE.md`](START_HERE.md). The root `AGENTS.md`

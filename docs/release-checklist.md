@@ -42,6 +42,9 @@ Confirm the repository does not contain:
 ## Safety Checks
 
 - No LaunchAgent, KeepAlive job, recovery loop, or scheduled auto-restart service is installed by this project.
+- `Repair Codex Live Audio.cmd` is read-only before exact confirmation, requires
+  Codex to be closed for writes, and does not terminate processes or directly
+  write the machine-wide MMDevices registry tree.
 - Real provider switches go through `guarded-switch` or the Windows guarded scripts.
 - Dry-run mode prints a redacted diff and writes nothing.
 - Real apply backs up `config.toml`.

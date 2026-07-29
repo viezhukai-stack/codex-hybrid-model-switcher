@@ -8,6 +8,7 @@ $enableHotRouterLauncher = Join-Path $desktop "Enable Codex Hot Router Mode.cmd"
 $restoreHotRouterLauncher = Join-Path $desktop "Restore Codex 19030 Mode.cmd"
 $restoreLauncher = Join-Path $desktop "Restore Official Codex.cmd"
 $repairUpdateLauncher = Join-Path $desktop "Repair Codex Browser and CLI.cmd"
+$repairLiveAudioLauncher = Join-Path $desktop "Repair Codex Live Audio.cmd"
 $changeAccountLauncher = Join-Path $desktop "Change Codex Account.cmd"
 
 $body = @"
@@ -84,6 +85,26 @@ pause >nul
 
 Set-Content -LiteralPath $repairUpdateLauncher -Value $repairUpdateBody -Encoding ASCII
 Write-Output "Installed: $repairUpdateLauncher"
+
+$repairLiveAudioBody = @"
+@echo off
+cd /d "$repo"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows-live-audio.ps1 -Action Doctor
+echo.
+echo Fully quit Codex before applying or restoring Live audio settings.
+echo Type REPAIR to create a backup and apply the recommended repair.
+echo Type RESTORE to restore the newest Live audio backup.
+echo Press Enter to leave settings unchanged.
+set /p LIVE_AUDIO_ACTION=Choice:
+if /I "%LIVE_AUDIO_ACTION%"=="REPAIR" powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows-live-audio.ps1 -Action Repair -Confirm REPAIR
+if /I "%LIVE_AUDIO_ACTION%"=="RESTORE" powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows-live-audio.ps1 -Action Restore -Confirm RESTORE
+echo.
+echo Press any key to close.
+pause >nul
+"@
+
+Set-Content -LiteralPath $repairLiveAudioLauncher -Value $repairLiveAudioBody -Encoding ASCII
+Write-Output "Installed: $repairLiveAudioLauncher"
 
 $changeAccountBody = @"
 @echo off

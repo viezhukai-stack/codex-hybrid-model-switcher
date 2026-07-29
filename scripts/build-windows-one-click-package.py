@@ -110,8 +110,10 @@ def project_payload_files() -> list[Path]:
         Path("scripts/windows-provider-switch.ps1"),
         Path("scripts/windows-restore-official.ps1"),
         Path("scripts/windows-update-repair.ps1"),
+        Path("scripts/windows-live-audio.ps1"),
         Path("scripts/windows-change-account.ps1"),
         Path("scripts/Repair Codex Browser and CLI.cmd"),
+        Path("scripts/Repair Codex Live Audio.cmd"),
         Path("scripts/Change Codex Account.cmd"),
         Path("scripts/install-windows-launcher.ps1"),
     }
@@ -292,6 +294,7 @@ def build(
         INSTALLER_ROOT / "Start Codex Hot Router.cmd",
         INSTALLER_ROOT / "Codex Hybrid Diagnostics.cmd",
         INSTALLER_ROOT / "Repair Codex Browser and CLI.cmd",
+        INSTALLER_ROOT / "Repair Codex Live Audio.cmd",
         INSTALLER_ROOT / "Change Codex Account.cmd",
         INSTALLER_ROOT / "Restore Official Codex.cmd",
         INSTALLER_ROOT / "Install-CodexHybrid.ps1",

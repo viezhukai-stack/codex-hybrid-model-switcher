@@ -15,8 +15,9 @@ Codex Hybrid Model Switcher - Windows netdisk one-click setup
 13. Use Codex Model Switcher.cmd only for guarded maintenance switches.
 14. To return to official Codex, double-click Restore Official Codex.cmd.
 15. If the daily launcher's automatic guarded CLI refresh stops after a Codex update, fully quit Codex and double-click Repair Codex Browser and CLI.cmd. It copies the complete matching CLI bundle and refreshes the current-user CODEX_CLI_PATH used by Browser.
-16. To change the ChatGPT account, fully quit Codex and double-click Change Codex Account.cmd. It uses device-code login and a local transaction backup.
-17. If setup fails, double-click Codex Hybrid Diagnostics.cmd and send the generated diagnostics text file.
+16. If Codex Live does not start, double-click Repair Codex Live Audio.cmd. It checks microphone consent and default recording roles without writing; type REPAIR only after Codex is fully closed, or RESTORE to restore the latest audio backup.
+17. To change the ChatGPT account, fully quit Codex and double-click Change Codex Account.cmd. It uses device-code login and a local transaction backup.
+18. If setup fails, double-click Codex Hybrid Diagnostics.cmd and send the generated diagnostics text file.
 
 This package does not install CC Switch. It includes this project's own guarded external switcher.
 In hot-router mode, Codex's bottom-right model selector is the source of truth. In maintenance mode, Codex Model Switcher.cmd is the source of truth.

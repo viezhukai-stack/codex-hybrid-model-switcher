@@ -18,8 +18,9 @@ Codex Hybrid Model Switcher - Windows 网盘一键安装包
 14. Codex Model Switcher.cmd 只作为维护/旧模式切换工具保留。
 15. 如果想恢复官方 Codex，双击 Restore Official Codex.cmd。
 16. Codex 更新后，如果日常入口的自动安全刷新停止，请完全退出 Codex，再双击 Repair Codex Browser and CLI.cmd。它会复制与新版 App 匹配的完整 CLI 套件，并刷新 Browser 使用的当前用户 CODEX_CLI_PATH。
-17. 需要更换 ChatGPT 账号时，请完全退出 Codex，再双击 Change Codex Account.cmd。它使用设备代码登录，并先创建本地事务备份。
-18. 如果安装失败，双击 Codex Hybrid Diagnostics.cmd，然后把桌面生成的诊断 txt 发回来。
+17. 如果 Codex Live 无法启动，双击 Repair Codex Live Audio.cmd。它先只读检查麦克风授权和默认录音设备；完全退出 Codex 后输入 REPAIR 才会备份并修复，输入 RESTORE 可恢复最近一次音频备份。
+18. 需要更换 ChatGPT 账号时，请完全退出 Codex，再双击 Change Codex Account.cmd。它使用设备代码登录，并先创建本地事务备份。
+19. 如果安装失败，双击 Codex Hybrid Diagnostics.cmd，然后把桌面生成的诊断 txt 发回来。
 
 说明：
 

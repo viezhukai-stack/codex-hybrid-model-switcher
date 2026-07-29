@@ -21,6 +21,7 @@ def test_load_config_and_expand_paths(tmp_path, monkeypatch):
                     "default_cloud_provider_id": "cloud",
                     "hidden_model_ids": ["hidden-model"],
                     "model_aliases": {"old-model": "new-model"},
+                    "model_display_names": {"new-model": "New Model"},
                     "catalog_cache_seconds": 9,
                     "max_429_retries": 3,
                     "max_retry_after_seconds": 12,
@@ -30,6 +31,10 @@ def test_load_config_and_expand_paths(tmp_path, monkeypatch):
                     {"id": "local", "kind": "local", "model": "local/test"},
                 ],
                 "local_model": {"id": "local/test"},
+                "local_catalog_models": [
+                    {"id": "local/test", "display_name": "Local Test"},
+                    {"id": "local/second", "display_name": "Local Second"},
+                ],
             }
         ),
         encoding="utf-8",
@@ -47,11 +52,14 @@ def test_load_config_and_expand_paths(tmp_path, monkeypatch):
     assert config.hot_router.default_cloud_provider_id == "cloud"
     assert config.hot_router.hidden_model_ids == ("hidden-model",)
     assert config.hot_router.model_aliases == {"old-model": "new-model"}
+    assert config.hot_router.model_display_names == {"new-model": "New Model"}
     assert config.hot_router.catalog_cache_seconds == 9
     assert config.hot_router.max_429_retries == 3
     assert config.hot_router.max_retry_after_seconds == 12
     assert config.provider("cloud")["model"] == "provider-model"
     assert config.provider_for_model("local/test")["kind"] == "local"
+    assert [model["id"] for model in config.local_catalog_models] == ["local/test", "local/second"]
+    assert config.local_catalog_model("local/second")["display_name"] == "Local Second"
 
 
 def test_load_config_accepts_utf8_bom(tmp_path):

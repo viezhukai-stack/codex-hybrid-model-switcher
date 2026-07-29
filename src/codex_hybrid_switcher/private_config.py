@@ -139,6 +139,42 @@ def validate_config(config: AppConfig, *, check_paths: bool = False) -> list[str
             for key, value in aliases.items()
         ):
             errors.append("hot_router.model_aliases must map non-empty strings to non-empty strings")
+        display_names = hot_router.get("model_display_names") or {}
+        if not isinstance(display_names, dict) or any(
+            not isinstance(key, str)
+            or not key
+            or not isinstance(value, str)
+            or not value
+            for key, value in display_names.items()
+        ):
+            errors.append("hot_router.model_display_names must map non-empty strings to non-empty strings")
+
+    catalog_models = config.raw.get("local_catalog_models") or []
+    if not isinstance(catalog_models, list) or any(
+        not isinstance(model, dict)
+        or not isinstance(model.get("id"), str)
+        or not model.get("id")
+        for model in catalog_models
+    ):
+        errors.append("local_catalog_models must be an array of objects with non-empty id values")
+    else:
+        catalog_ids: set[str] = set()
+        for model in catalog_models:
+            model_id = str(model["id"])
+            if model_id in catalog_ids:
+                errors.append(f"duplicate local catalog model id: {model_id}")
+            catalog_ids.add(model_id)
+            try:
+                if int(model.get("context_window") or 8192) <= 0:
+                    errors.append(f"local_catalog_models[{model_id}].context_window must be positive")
+            except (TypeError, ValueError):
+                errors.append(f"local_catalog_models[{model_id}].context_window must be an integer")
+            modalities = model.get("input_modalities")
+            if modalities is not None and (
+                not isinstance(modalities, list)
+                or any(not isinstance(value, str) or not value for value in modalities)
+            ):
+                errors.append(f"local_catalog_models[{model_id}].input_modalities must be an array of strings")
 
     local = config.local_model
     if has_local_provider:
@@ -193,6 +229,9 @@ def print_validation(config: AppConfig, *, check_paths: bool = False) -> None:
                 print(f"  - {key}: {'exists' if expand_path(value).exists() else 'missing'}")
             else:
                 print(f"  - {key}: configured")
+    raw_catalog_models = config.raw.get("local_catalog_models") or []
+    if isinstance(raw_catalog_models, list) and raw_catalog_models:
+        print(f"local_catalog_models: {len(raw_catalog_models)}")
     proxy = config.account_switch.get("proxy_url")
     print(f"account_switch_proxy: {'configured' if proxy else 'system/default'}")
 

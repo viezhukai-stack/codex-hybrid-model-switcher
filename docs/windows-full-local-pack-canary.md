@@ -15,27 +15,34 @@ installer under `payload/vcredist/`.
 ## Current Status
 
 Status: Full-local install passed on the HL Hyper-V VM with `v2.15.5`;
-v2.18.3 package integrity and guarded physical Windows canaries passed.
+v2.18.4 package integrity and guarded physical Windows canaries passed.
 
 Current private netdisk distribution uses
-`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.3.zip`. v2.18.3 keeps the proven
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.4.zip`. v2.18.4 keeps the proven
 full-local runtime path, the guarded Codex update/Browser CLI refresh and
-account-switch maintenance entries, and adds a bounded Browser post-start
-repair after Codex feature initialization. It also preserves complete Gemini
-Responses tool/reasoning items, blocks launch while a newer AppX is staged, and
-self-heals stale portable-Python release paths.
+account-switch maintenance entries, adds HTTP/1.1 WebSocket tunneling and strict
+model catalogs, and includes the explicit Live audio doctor/repair/restore
+entry.
 
-Current v2.18.3 package SHA256:
+Current v2.18.4 package SHA256:
 
 ```text
-14c75b47c4bbe8018258fc4e7323e0263c6ea2c9454d50b6b81ec42561ac1c96
+d4202240e2328c256b3f22ded800cc08fa2930b7ccdf809c570d872ab2b9de04
 ```
 
-The rebuilt v2.18.3 package passed ZIP integrity checks and package structure
+The rebuilt v2.18.4 package passed ZIP integrity checks and package structure
 audits for bundled portable Python, llama.cpp, VC++ Runtime, local Gemma GGUF,
-mmproj, test image, model manifest, the automatic update guard, both maintenance
-entries, the complete Responses converter, the portable-Python helper, and the
-redacted project payload.
+mmproj, test image, model manifest, the automatic update guard, all maintenance
+entries, current WebSocket Router, the portable-Python helper, executable modes,
+and the redacted project payload.
+
+The final v2.18.4 netdisk source payload was exercised on both physical Windows
+machines. HL returned 12 catalog models and Kevin returned 11; both returned a
+200 text response and forwarded a WebSocket upgrade to the upstream. The Live
+audio doctor reported healthy on both. HL also completed `REPAIR` followed by
+`RESTORE`. Protected Codex files stayed unchanged, both daily launchers reopened
+Codex, and `19031` was not resident while idle. The packaged local runtime and
+model payload are reused from the already verified v2.18.3 artifacts.
 
 The package also contains `windows-browser-ensure` and
 `windows-browser-post-start.ps1`. The daily launcher runs the existing
