@@ -6,13 +6,13 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.18.3.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.18.4.zip
 ```
 
 For private netdisk sharing with a bundled local model, build and share:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.18.3.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.18.4.zip
 ```
 
 It contains:
@@ -21,6 +21,7 @@ It contains:
 - `Start Codex Hot Router.cmd`
 - `Codex Hybrid Diagnostics.cmd`
 - `Repair Codex Browser and CLI.cmd`
+- `Repair Codex Live Audio.cmd`
 - `Change Codex Account.cmd`
 - `Restore Official Codex.cmd`
 - `Install-CodexHybrid.ps1`
@@ -129,6 +130,15 @@ The full local package also contains:
 - Installs `Change Codex Account.cmd` for an explicit, backup-first device-code
   login. Account switching is separate from normal model routing and remains a
   dry-run until the user types `SWITCH`.
+- Installs `Repair Codex Live Audio.cmd`. Its first pass is read-only and reports
+  packaged-app microphone consent, the Console/Multimedia/Communications capture
+  defaults, and eligible recording endpoints. It requires Codex to be fully
+  closed plus exact `REPAIR` confirmation before writing, preserves existing
+  defaults, and stores a timestamped rollback record accepted through
+  `RESTORE`.
+- Proxies Codex Live's HTTP/1.1 WebSocket upgrade through the same Hot Router.
+  The Router records only route, status, and byte counts, not audio frames or
+  prompt contents.
 
 ## What It Does Not Do
 
@@ -142,6 +152,8 @@ The full local package also contains:
   is intact.
 - It does not write API keys into the repository or private config.
 - It does not edit `auth.json`, `models_cache.json`, or rollout logs.
+- It does not automatically change microphone consent or the Windows default
+  recording device during installation or daily launch.
 - The optional account-switch entry invokes the official Codex logout/login
   commands after a local backup; normal install, repair, and routing commands
   still do not edit `auth.json`.
@@ -158,7 +170,7 @@ The full local package also contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.3.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.4.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -267,7 +279,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.3.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.4.zip
 ```
 
 Upload that zip to your netdisk.
@@ -291,7 +303,7 @@ one GGUF model and one mmproj GGUF file, then run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py `
-  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.3.zip `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.4.zip `
   --include-llama-dir D:\Tools\llama.cpp `
   --include-vcredist-file D:\Installers\vc_redist.x64.exe `
   --include-model-dir D:\Models\gemma-4-e4b

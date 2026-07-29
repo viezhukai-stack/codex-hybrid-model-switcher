@@ -1,12 +1,13 @@
 # macOS Full Local Model Package
 
-`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.3.zip` is the private netdisk
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.4.zip` is the private netdisk
 package for Mac users who should be able to use a bundled local model without a
 cloud API key.
 
-v2.18.3 also includes the shared Hot Router Responses fix: Gemini High
-non-streaming compatibility now preserves reasoning and function-call items,
-and bounded 429 retries honor `Retry-After`.
+v2.18.4 also includes the shared Hot Router Responses fix and HTTP/1.1
+WebSocket tunneling for Codex Live voice: Gemini High non-streaming
+compatibility preserves reasoning and function-call items, and bounded 429
+retries honor `Retry-After`.
 
 ## What It Includes
 
@@ -50,7 +51,7 @@ python3 scripts/build-macos-one-click-package.py --full-local
 ```
 
 The package is written to
-`dist/Codex-Hybrid-macOS-Full-Local-Setup-v2.18.3.zip`.
+`dist/Codex-Hybrid-macOS-Full-Local-Setup-v2.18.4.zip`.
 
 The build script uses the cached model directory by default:
 

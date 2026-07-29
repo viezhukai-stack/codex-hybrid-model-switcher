@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import io
+import socket
+import socketserver
 import ssl
 import threading
 import urllib.request
@@ -79,6 +81,41 @@ def test_local_models_come_from_config_not_machine_specific_defaults(tmp_path):
     assert "12b" not in json.dumps(local_catalog_entry("local/gemma", config)).lower()
 
 
+def test_multiple_local_catalog_models_keep_per_model_metadata(tmp_path):
+    config = AppConfig(
+        tmp_path / "config.json",
+        {
+            "providers": [{"id": "local-gemma", "kind": "local", "model": "local/gemma"}],
+            "local_model": {"id": "local/gemma", "context_window": 8192},
+            "local_catalog_models": [
+                {
+                    "id": "local/gemma",
+                    "display_name": "Local Gemma 12B",
+                    "context_window": 65536,
+                    "input_modalities": ["text", "image"],
+                },
+                {
+                    "id": "local/qwen-vl",
+                    "display_name": "Local Qwen VL",
+                    "context_window": 8192,
+                    "input_modalities": ["text", "image"],
+                },
+            ],
+        },
+    )
+
+    assert local_model_ids(config) == ["local/gemma", "local/qwen-vl"]
+    gemma = local_catalog_entry("local/gemma", config)
+    qwen = local_catalog_entry("local/qwen-vl", config)
+    assert gemma["display_name"] == "Local Gemma 12B"
+    assert gemma["context_window"] == 65536
+    assert qwen["display_name"] == "Local Qwen VL"
+    assert qwen["context_window"] == 8192
+    assert qwen["supports_parallel_tool_calls"] is False
+    assert qwen["experimental_supported_tools"] == []
+    assert qwen["model_messages"]["instructions_template"]
+
+
 def test_hot_router_routes_local_prefixes_and_single_cloud_provider(tmp_path):
     config = config_for_hot_router(tmp_path)
 
@@ -106,6 +143,98 @@ def test_hot_router_routes_future_model_through_configured_default_provider(tmp_
     assert provider["id"] == "cloud-b"
     assert provider["model"] == "future-model-2027"
     assert primary_cloud_provider(config)["id"] == "cloud-b"
+
+
+def test_hot_router_tunnels_websocket_upgrade_with_http_11_and_provider_auth(tmp_path, monkeypatch):
+    captured: dict[str, object] = {}
+
+    class FakeWebSocketUpstream(socketserver.BaseRequestHandler):
+        def handle(self):
+            raw = bytearray()
+            while b"\r\n\r\n" not in raw:
+                chunk = self.request.recv(4096)
+                if not chunk:
+                    return
+                raw.extend(chunk)
+            head = bytes(raw).split(b"\r\n\r\n", 1)[0].decode("latin-1")
+            lines = head.split("\r\n")
+            captured["request_line"] = lines[0]
+            captured["headers"] = {
+                name.lower(): value.strip()
+                for line in lines[1:]
+                if ":" in line
+                for name, value in [line.split(":", 1)]
+            }
+            self.request.sendall(
+                b"HTTP/1.1 101 Switching Protocols\r\n"
+                b"Connection: Upgrade\r\n"
+                b"Upgrade: websocket\r\n"
+                b"Sec-WebSocket-Accept: test-only\r\n\r\n"
+            )
+            payload = self.request.recv(4096)
+            captured["payload"] = payload
+            self.request.sendall(b"upstream:" + payload)
+
+    upstream = socketserver.ThreadingTCPServer(("127.0.0.1", 0), FakeWebSocketUpstream)
+    upstream.daemon_threads = True
+    upstream_thread = threading.Thread(target=upstream.serve_forever, daemon=True)
+    upstream_thread.start()
+
+    monkeypatch.setenv("HOT_ROUTER_TEST_KEY", "provider-secret")
+    config = AppConfig(
+        tmp_path / "config.json",
+        {
+            "hot_router": {"default_cloud_provider_id": "cloud-main"},
+            "providers": [
+                {
+                    "id": "cloud-main",
+                    "kind": "cloud",
+                    "base_url": f"http://127.0.0.1:{upstream.server_address[1]}/v1",
+                    "api_key_env": "HOT_ROUTER_TEST_KEY",
+                    "model": "gpt-test",
+                }
+            ],
+        },
+    )
+    router = hot_router.HotRouter(config, host="127.0.0.1", port=19032)
+    proxy = ThreadingHTTPServer(("127.0.0.1", 0), hot_router.handler_for(router))
+    proxy.daemon_threads = True
+    proxy_thread = threading.Thread(target=proxy.serve_forever, daemon=True)
+    proxy_thread.start()
+
+    client = socket.create_connection(proxy.server_address, timeout=5)
+    try:
+        client.sendall(
+            b"GET /v1/live/rtc_test?mode=voice HTTP/1.1\r\n"
+            b"Host: 127.0.0.1\r\n"
+            b"Connection: keep-alive, Upgrade\r\n"
+            b"Upgrade: websocket\r\n"
+            b"Sec-WebSocket-Version: 13\r\n"
+            b"Sec-WebSocket-Key: test-key\r\n"
+            b"Sec-WebSocket-Protocol: realtime\r\n"
+            b"Authorization: Bearer incoming-secret\r\n\r\n"
+        )
+        response = bytearray()
+        while b"\r\n\r\n" not in response:
+            response.extend(client.recv(4096))
+        assert bytes(response).startswith(b"HTTP/1.1 101 Switching Protocols")
+
+        client.sendall(b"client-payload")
+        assert client.recv(4096) == b"upstream:client-payload"
+    finally:
+        client.close()
+        proxy.shutdown()
+        proxy.server_close()
+        upstream.shutdown()
+        upstream.server_close()
+
+    headers = captured["headers"]
+    assert captured["request_line"] == "GET /v1/live/rtc_test?mode=voice HTTP/1.1"
+    assert headers["connection"].lower() == "upgrade"
+    assert headers["upgrade"].lower() == "websocket"
+    assert headers["sec-websocket-protocol"] == "realtime"
+    assert headers["authorization"] == "Bearer provider-secret"
+    assert captured["payload"] == b"client-payload"
 
 
 def test_hot_router_reuses_shared_connection_for_unlisted_model(tmp_path):
@@ -187,6 +316,41 @@ def test_hot_router_aliases_and_catalog_filters_are_config_driven(tmp_path):
     assert ids == ["gpt-5.6-sol", "future-model-2027", "local/gemma"]
     assert hidden == 1
     assert visible == 0
+    assert shape == "models"
+
+
+def test_visible_catalog_allowlist_is_strict_for_cloud_and_local_models(tmp_path):
+    body = json.dumps(
+        {
+            "models": [
+                {
+                    "slug": "gpt-5.6-sol",
+                    "display_name": "Old Sol",
+                    "visibility": "hide",
+                    "model_messages": {},
+                },
+                {"slug": "grok-4.5", "display_name": "Grok"},
+                {"slug": "local/gemma", "display_name": "Gemma"},
+                {"slug": "local/stale", "display_name": "Stale local"},
+            ]
+        }
+    ).encode("utf-8")
+
+    filtered, hidden, visible, shape = filter_catalog_models(
+        body,
+        {"gpt-5.6-sol", "local/gemma"},
+        set(),
+        {"gpt-5.6-sol": "GPT 5.6 Sol"},
+    )
+    models = json.loads(filtered)["models"]
+
+    assert [item["slug"] for item in models] == ["gpt-5.6-sol", "local/gemma"]
+    assert models[0]["display_name"] == "GPT 5.6 Sol"
+    assert models[0]["visibility"] == "list"
+    assert models[1]["visibility"] == "list"
+    assert models[0]["model_messages"] == {}
+    assert hidden == 0
+    assert visible == 2
     assert shape == "models"
 
 

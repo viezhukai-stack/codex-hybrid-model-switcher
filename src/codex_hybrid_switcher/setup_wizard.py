@@ -138,13 +138,16 @@ def build_first_run_config(
             "port": 19032,
             "default_cloud_provider_id": provider_id if include_cloud else None,
             "hidden_model_ids": [],
+            "visible_model_ids": [],
             "model_aliases": {},
+            "model_display_names": {},
             "catalog_cache_seconds": 15,
             "max_429_retries": 2,
             "max_retry_after_seconds": 30,
         },
         "providers": providers,
         "local_model": local_model,
+        "local_catalog_models": [],
     }
 
 

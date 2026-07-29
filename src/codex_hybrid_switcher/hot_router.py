@@ -6,6 +6,7 @@ import json
 import os
 import socket
 import ssl
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -36,6 +37,7 @@ HOP_BY_HOP_HEADERS = {
 }
 CATALOG_CONDITIONAL_HEADERS = {"if-match", "if-none-match", "if-modified-since", "if-unmodified-since", "if-range"}
 CATALOG_VALIDATOR_HEADERS = {"etag", "last-modified", "expires"}
+MAX_WEBSOCKET_HEADER_BYTES = 64 * 1024
 
 
 def build_tls_context() -> ssl.SSLContext:
@@ -123,8 +125,12 @@ def local_model_ids(config: AppConfig) -> list[str]:
         model = provider.get("model")
         if isinstance(model, str) and model and model not in ids:
             ids.append(model)
+    for local in config.local_catalog_models:
+        model = local.get("id")
+        if isinstance(model, str) and model and model not in ids:
+            ids.append(model)
     local_id = config.local_model.get("id")
-    if ids and isinstance(local_id, str) and local_id and local_id not in ids:
+    if isinstance(local_id, str) and local_id and local_id not in ids:
         ids.append(local_id)
     return ids
 
@@ -227,6 +233,163 @@ def apply_provider_auth(headers: dict[str, str], provider: dict[str, Any]) -> No
     secret_value = os.environ.get(env_name) if env_name else None
     if secret_value:
         headers["Authorization"] = f"Bearer {secret_value}"
+
+
+def is_websocket_upgrade(handler: BaseHTTPRequestHandler) -> bool:
+    upgrade = str(handler.headers.get("Upgrade") or "").strip().lower()
+    connection_tokens = {
+        token.strip().lower()
+        for token in str(handler.headers.get("Connection") or "").split(",")
+        if token.strip()
+    }
+    return upgrade == "websocket" and "upgrade" in connection_tokens
+
+
+def websocket_target_parts(upstream_base: str, path: str) -> tuple[str, int, str, bool, str]:
+    url = target_url(upstream_base, path)
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise ValueError(f"unsupported WebSocket upstream URL: {url}")
+    secure = parsed.scheme == "https"
+    port = parsed.port or (443 if secure else 80)
+    request_target = parsed.path or "/"
+    if parsed.query:
+        request_target += f"?{parsed.query}"
+    default_port = 443 if secure else 80
+    host_header = parsed.hostname if port == default_port else f"{parsed.hostname}:{port}"
+    return parsed.hostname, port, request_target, secure, host_header
+
+
+def websocket_upstream_headers(
+    handler: BaseHTTPRequestHandler,
+    provider: dict[str, Any],
+    host_header: str,
+) -> dict[str, str]:
+    headers: dict[str, str] = {}
+    provider_has_auth = bool(os.environ.get(str(provider.get("api_key_env") or "")))
+    for name, value in handler.headers.items():
+        lower = name.lower()
+        if lower in {"host", "content-length", "proxy-authenticate", "proxy-authorization", "accept-encoding"}:
+            continue
+        if lower in {"cookie", "set-cookie", "x-api-key", "openai-api-key"}:
+            continue
+        if lower == "authorization" and provider_has_auth:
+            continue
+        if lower in {"connection", "upgrade"}:
+            continue
+        headers[name] = value
+    headers["Host"] = host_header
+    headers["Connection"] = "Upgrade"
+    headers["Upgrade"] = "websocket"
+    apply_provider_auth(headers, provider)
+    return headers
+
+
+def websocket_request_bytes(request_target: str, headers: dict[str, str]) -> bytes:
+    if "\r" in request_target or "\n" in request_target:
+        raise ValueError("invalid WebSocket request target")
+    lines = [f"GET {request_target} HTTP/1.1"]
+    for name, value in headers.items():
+        if "\r" in name or "\n" in name or "\r" in value or "\n" in value:
+            raise ValueError("invalid WebSocket request header")
+        lines.append(f"{name}: {value}")
+    return ("\r\n".join(lines) + "\r\n\r\n").encode("latin-1")
+
+
+def read_http_response_head(sock: socket.socket) -> tuple[bytes, bytes]:
+    data = bytearray()
+    marker = b"\r\n\r\n"
+    while marker not in data:
+        chunk = sock.recv(4096)
+        if not chunk:
+            raise ConnectionError("upstream closed before the WebSocket handshake completed")
+        data.extend(chunk)
+        if len(data) > MAX_WEBSOCKET_HEADER_BYTES:
+            raise ValueError("upstream WebSocket handshake headers are too large")
+    split_at = data.index(marker) + len(marker)
+    return bytes(data[:split_at]), bytes(data[split_at:])
+
+
+def parse_http_response_head(head: bytes) -> tuple[int, dict[str, str]]:
+    lines = head.decode("latin-1").split("\r\n")
+    status_parts = lines[0].split(" ", 2)
+    if len(status_parts) < 2 or not status_parts[1].isdigit():
+        raise ValueError(f"invalid upstream WebSocket status line: {lines[0]!r}")
+    headers: dict[str, str] = {}
+    for line in lines[1:]:
+        if not line or ":" not in line:
+            continue
+        name, value = line.split(":", 1)
+        headers[name.strip().lower()] = value.strip()
+    return int(status_parts[1]), headers
+
+
+def relay_http_response_body(
+    upstream: socket.socket,
+    client: socket.socket,
+    initial: bytes,
+    headers: dict[str, str],
+) -> int:
+    total = 0
+    if initial:
+        client.sendall(initial)
+        total += len(initial)
+    try:
+        remaining = max(0, int(headers.get("content-length") or "0") - len(initial))
+    except ValueError:
+        remaining = 0
+    while remaining:
+        chunk = upstream.recv(min(64 * 1024, remaining))
+        if not chunk:
+            break
+        client.sendall(chunk)
+        total += len(chunk)
+        remaining -= len(chunk)
+    return total
+
+
+def relay_websocket_streams(client: socket.socket, upstream: socket.socket, initial: bytes = b"") -> tuple[int, int]:
+    counters = {"client_to_upstream": 0, "upstream_to_client": 0}
+    stop = threading.Event()
+
+    if initial:
+        client.sendall(initial)
+        counters["upstream_to_client"] += len(initial)
+
+    def pump(source: socket.socket, destination: socket.socket, counter: str) -> None:
+        try:
+            while not stop.is_set():
+                chunk = source.recv(64 * 1024)
+                if not chunk:
+                    break
+                destination.sendall(chunk)
+                counters[counter] += len(chunk)
+        except (OSError, ssl.SSLError):
+            pass
+        finally:
+            if not stop.is_set():
+                stop.set()
+                for connection in (client, upstream):
+                    try:
+                        connection.shutdown(socket.SHUT_RDWR)
+                    except OSError:
+                        pass
+
+    client_thread = threading.Thread(
+        target=pump,
+        args=(client, upstream, "client_to_upstream"),
+        daemon=True,
+    )
+    upstream_thread = threading.Thread(
+        target=pump,
+        args=(upstream, client, "upstream_to_client"),
+        daemon=True,
+    )
+    client_thread.start()
+    upstream_thread.start()
+    client_thread.join()
+    upstream_thread.join()
+    return counters["client_to_upstream"], counters["upstream_to_client"]
 
 
 def read_upstream(url: str, method: str, headers: dict[str, str], *, data: bytes | None = None, timeout: float = 30) -> tuple[int, dict[str, str], bytes]:
@@ -334,17 +497,46 @@ def catalog_items(obj: Any) -> list[dict[str, Any]]:
 
 
 def local_catalog_entry(model: str, config: AppConfig) -> dict[str, Any]:
-    local = config.local_model
-    display = local.get("display_name") if local.get("id") == model else None
+    local = config.local_catalog_model(model)
+    display = local.get("display_name")
     if not isinstance(display, str) or not display:
         display = "Local " + " ".join(part.capitalize() for part in model.split("/", 1)[-1].replace("-", " ").split())
     instructions = str(local.get("system_prompt") or "You are a concise local coding assistant running through llama.cpp.")
-    context = int(local.get("context_window") or 8192)
+    try:
+        context = max(1, int(local.get("context_window") or 8192))
+    except (TypeError, ValueError):
+        context = 8192
+    try:
+        max_context = max(context, int(local.get("max_context_window") or context))
+    except (TypeError, ValueError):
+        max_context = context
+    input_modalities = local.get("input_modalities")
+    if not isinstance(input_modalities, list) or any(not isinstance(value, str) or not value for value in input_modalities):
+        input_modalities = ["text", "image"]
+    supported_reasoning_levels = local.get("supported_reasoning_levels")
+    if supported_reasoning_levels and isinstance(supported_reasoning_levels, list) and all(
+        isinstance(value, str) and value for value in supported_reasoning_levels
+    ):
+        supported_reasoning_levels = [
+            {"effort": value, "description": f"Local {value} reasoning"}
+            for value in supported_reasoning_levels
+        ]
+    if not supported_reasoning_levels or not isinstance(supported_reasoning_levels, list) or any(
+        not isinstance(value, dict) for value in supported_reasoning_levels
+    ):
+        supported_reasoning_levels = [{"effort": "low", "description": "Local lightweight reasoning"}]
+    experimental_tools = local.get("experimental_supported_tools")
+    if not isinstance(experimental_tools, list):
+        experimental_tools = []
+    try:
+        priority = int(local.get("priority") or 9000)
+    except (TypeError, ValueError):
+        priority = 9000
     return {
         "slug": model,
         "id": model,
         "display_name": display,
-        "description": "Local llama.cpp model routed through Codex Hot Router",
+        "description": str(local.get("description") or "Local llama.cpp model routed through Codex Hot Router"),
         "base_instructions": instructions,
         "model_messages": {
             "instructions_template": instructions,
@@ -355,19 +547,19 @@ def local_catalog_entry(model: str, config: AppConfig) -> dict[str, Any]:
             },
         },
         "context_window": context,
-        "max_context_window": context,
-        "default_reasoning_level": "low",
-        "supported_reasoning_levels": [{"effort": "low", "description": "Local lightweight reasoning"}],
+        "max_context_window": max_context,
+        "default_reasoning_level": str(local.get("default_reasoning_level") or "low"),
+        "supported_reasoning_levels": supported_reasoning_levels,
         "shell_type": "shell_command",
         "visibility": "list",
         "supported_in_api": True,
-        "priority": 9000,
-        "input_modalities": ["text", "image"],
-        "supports_parallel_tool_calls": False,
-        "supports_reasoning_summaries": False,
-        "support_verbosity": False,
+        "priority": priority,
+        "input_modalities": input_modalities,
+        "supports_parallel_tool_calls": bool(local.get("supports_parallel_tool_calls", False)),
+        "supports_reasoning_summaries": bool(local.get("supports_reasoning_summaries", False)),
+        "support_verbosity": bool(local.get("support_verbosity", False)),
         "truncation_policy": {"mode": "tokens", "limit": context},
-        "experimental_supported_tools": [],
+        "experimental_supported_tools": experimental_tools,
     }
 
 
@@ -424,6 +616,7 @@ def filter_catalog_models(
     body: bytes,
     visible_ids: set[str],
     hidden_ids: set[str],
+    display_names: dict[str, str] | None = None,
 ) -> tuple[bytes, int, int, str]:
     try:
         obj = json.loads(body.decode("utf-8-sig"))
@@ -441,10 +634,20 @@ def filter_catalog_models(
         if mid and mid in hidden_ids:
             hidden_removed += 1
             continue
-        if visible_ids and mid and mid not in visible_ids and not should_route_local(mid):
+        if visible_ids and mid not in visible_ids:
             visible_removed += 1
             continue
-        kept.append(item)
+        normalized = dict(item)
+        # An explicit visible_model_ids allowlist is the operator's final menu
+        # decision. Some upstream catalogs keep otherwise usable legacy models
+        # as visibility="hide"; leaving that value intact makes Codex Desktop
+        # silently remove an allowlisted item from the picker.
+        if visible_ids and mid in visible_ids:
+            normalized["visibility"] = "list"
+        display_name = (display_names or {}).get(mid or "")
+        if display_name:
+            normalized["display_name"] = display_name
+        kept.append(normalized)
 
     if isinstance(obj, dict) and isinstance(obj.get("data"), list):
         result = dict(obj)
@@ -1140,6 +1343,7 @@ class HotRouter:
 
 class HotRouterHandler(BaseHTTPRequestHandler):
     server_version = "CodexHotRouter/1.0"
+    protocol_version = "HTTP/1.1"
     router: HotRouter
 
     def log_message(self, fmt: str, *args: Any) -> None:
@@ -1165,6 +1369,9 @@ class HotRouterHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         endpoint = urllib.parse.urlsplit(self.path).path
+        if is_websocket_upgrade(self):
+            self.proxy_websocket_request()
+            return
         if endpoint in {"/health", "/v1/health"}:
             provider = primary_cloud_provider(self.router.config)
             self.write_json(
@@ -1191,6 +1398,104 @@ class HotRouterHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         self.proxy_request()
+
+    def proxy_websocket_request(self) -> None:
+        request_id = uuid.uuid4().hex
+        endpoint = urllib.parse.urlsplit(self.path).path
+        provider = primary_cloud_provider(self.router.config)
+        self.close_connection = True
+        log_event(
+            "request",
+            request_id=request_id,
+            method=self.command,
+            endpoint=endpoint,
+            model=None,
+            route="cloud",
+            transport="websocket",
+        )
+        if not provider:
+            self.write_json(502, {"error": "no cloud provider configured for WebSocket forwarding"})
+            log_event(
+                "response",
+                request_id=request_id,
+                status=502,
+                route="cloud",
+                transport="websocket",
+                response_bytes=0,
+            )
+            return
+
+        upstream_socket: socket.socket | None = None
+        response_started = False
+        try:
+            hostname, port, request_target, secure, host_header = websocket_target_parts(
+                str(provider["base_url"]),
+                self.path,
+            )
+            upstream_socket = socket.create_connection((hostname, port), timeout=30)
+            if secure:
+                upstream_socket = TLS_CONTEXT.wrap_socket(upstream_socket, server_hostname=hostname)
+            headers = websocket_upstream_headers(self, provider, host_header)
+            upstream_socket.sendall(websocket_request_bytes(request_target, headers))
+            response_head, initial = read_http_response_head(upstream_socket)
+            status, response_headers = parse_http_response_head(response_head)
+            self.connection.sendall(response_head)
+            response_started = True
+            if status != 101:
+                response_bytes = relay_http_response_body(
+                    upstream_socket,
+                    self.connection,
+                    initial,
+                    response_headers,
+                )
+                log_event(
+                    "response",
+                    request_id=request_id,
+                    status=status,
+                    route="cloud",
+                    transport="websocket",
+                    response_bytes=response_bytes,
+                )
+                return
+
+            self.connection.settimeout(None)
+            upstream_socket.settimeout(None)
+            sent_bytes, received_bytes = relay_websocket_streams(
+                self.connection,
+                upstream_socket,
+                initial,
+            )
+            log_event(
+                "response",
+                request_id=request_id,
+                status=101,
+                route="cloud",
+                transport="websocket",
+                client_to_upstream_bytes=sent_bytes,
+                upstream_to_client_bytes=received_bytes,
+            )
+        except Exception as exc:
+            payload = {"error": f"{type(exc).__name__}: {exc}"}
+            if not response_started:
+                try:
+                    self.write_json(502, payload)
+                except (BrokenPipeError, ConnectionResetError, OSError):
+                    pass
+            log_event(
+                "response",
+                request_id=request_id,
+                status=502,
+                route="cloud",
+                transport="websocket",
+                error=payload["error"],
+                response_bytes=0,
+            )
+        finally:
+            if upstream_socket is not None:
+                try:
+                    upstream_socket.close()
+                except OSError:
+                    pass
 
     def proxy_models_request(self) -> None:
         request_id = uuid.uuid4().hex
@@ -1264,7 +1569,12 @@ class HotRouterHandler(BaseHTTPRequestHandler):
 
         visible_ids = set(self.router.config.hot_router.visible_model_ids)
         hidden_ids = set(self.router.config.hot_router.hidden_model_ids)
-        body, hidden_removed, visible_removed, filter_shape = filter_catalog_models(body, visible_ids, hidden_ids)
+        body, hidden_removed, visible_removed, filter_shape = filter_catalog_models(
+            body,
+            visible_ids,
+            hidden_ids,
+            self.router.config.hot_router.model_display_names,
+        )
         if shape in {"unknown", "none"}:
             shape = filter_shape
 

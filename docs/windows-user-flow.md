@@ -61,7 +61,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-windows-laun
 
 This creates `Start Codex Hot Router.cmd`, `Codex Model Switcher.cmd`,
 `Enable Codex Hot Router Mode.cmd`, `Restore Codex 19030 Mode.cmd`,
-`Repair Codex Browser and CLI.cmd`, `Change Codex Account.cmd`, and
+`Repair Codex Browser and CLI.cmd`, `Repair Codex Live Audio.cmd`,
+`Change Codex Account.cmd`, and
 `Restore Official Codex.cmd` on the desktop.
 
 `Start Codex Hot Router.cmd` always:

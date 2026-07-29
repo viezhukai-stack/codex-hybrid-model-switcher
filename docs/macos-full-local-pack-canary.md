@@ -25,14 +25,28 @@ Passed.
 Current private netdisk distribution uses:
 
 ```text
-Codex-Hybrid-macOS-Full-Local-Setup-v2.18.3.zip
-sha256: 305606d0c282112f4ecbd7d71676e309721532955a00e7c4763821d5b7897c0e
+Codex-Hybrid-macOS-Full-Local-Setup-v2.18.4.zip
+sha256: 5d7e9ee98116d0b397eeb7c059481c8380abcb2eac62997340565c9a9a6a7dff
 ```
 
-v2.18.3 keeps the same full-local runtime and upgraded ChatGPT/Codex app path,
-then adds complete Gemini Responses conversion, bounded 429/empty-output
-retries, and rebuilt package payloads that exclude repository development
-files.
+v2.18.4 keeps the same full-local runtime and upgraded ChatGPT/Codex app path,
+then adds strict catalogs and HTTP/1.1 WebSocket tunneling while retaining the
+complete Responses conversion and bounded retry behavior.
+
+## v2.18.4 final package canary
+
+Date: 2026-07-29
+
+Result: Passed without changing the active Codex task.
+
+- The final package source ran on isolated `127.0.0.1:19132` with a separate
+  HOME and runtime log.
+- The curated catalog returned 10 entries with complete `model_messages`.
+- A real cloud text probe returned HTTP 200.
+- A WebSocket upgrade request crossed the candidate Router and received the
+  upstream response; prompt text and frame contents were absent from the log.
+- ZIP integrity, x64/arm64 `llama-server` executable modes, model/mmproj
+  manifests, package version, and redaction checks passed.
 
 ## v2.18.3 isolated Router canary
 

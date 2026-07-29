@@ -32,6 +32,7 @@ class HotRouterConfig:
     hidden_model_ids: tuple[str, ...]
     visible_model_ids: tuple[str, ...]
     model_aliases: dict[str, str]
+    model_display_names: dict[str, str]
     catalog_cache_seconds: float
     max_429_retries: int
     max_retry_after_seconds: float
@@ -75,6 +76,9 @@ class AppConfig:
         aliases = data.get("model_aliases") or {}
         if not isinstance(aliases, dict):
             aliases = {}
+        display_names = data.get("model_display_names") or {}
+        if not isinstance(display_names, dict):
+            display_names = {}
         return HotRouterConfig(
             host=str(data.get("host") or "127.0.0.1"),
             port=int(data.get("port") or 19032),
@@ -88,6 +92,11 @@ class AppConfig:
             model_aliases={
                 str(key): str(value)
                 for key, value in aliases.items()
+                if isinstance(key, str) and key and isinstance(value, str) and value
+            },
+            model_display_names={
+                str(key): str(value)
+                for key, value in display_names.items()
                 if isinstance(key, str) and key and isinstance(value, str) and value
             },
             catalog_cache_seconds=float(data.get("catalog_cache_seconds") or 15),
@@ -121,6 +130,29 @@ class AppConfig:
         if not isinstance(model, dict):
             raise ValueError("local_model must be an object")
         return model
+
+    @property
+    def local_catalog_models(self) -> list[dict[str, Any]]:
+        models = self.raw.get("local_catalog_models") or []
+        if not isinstance(models, list):
+            raise ValueError("local_catalog_models must be an array")
+        if any(
+            not isinstance(model, dict)
+            or not isinstance(model.get("id"), str)
+            or not model.get("id")
+            for model in models
+        ):
+            raise ValueError("local_catalog_models entries must contain non-empty id values")
+        return [dict(model) for model in models]
+
+    def local_catalog_model(self, model_id: str) -> dict[str, Any]:
+        legacy = self.local_model
+        for model in self.local_catalog_models:
+            if model.get("id") == model_id:
+                merged = dict(legacy) if legacy.get("id") == model_id else {}
+                merged.update(model)
+                return merged
+        return dict(legacy) if legacy.get("id") == model_id else {}
 
     @property
     def account_switch(self) -> dict[str, Any]:

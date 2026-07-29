@@ -12,7 +12,9 @@
     "port": 19032,
     "default_cloud_provider_id": "cloud-gpt-main",
     "hidden_model_ids": [],
+    "visible_model_ids": [],
     "model_aliases": {},
+    "model_display_names": {},
     "catalog_cache_seconds": 15,
     "max_429_retries": 2,
     "max_retry_after_seconds": 30
@@ -111,5 +113,6 @@
       "0",
       "--no-mmproj-offload"
     ]
-  }
+  },
+  "local_catalog_models": []
 }

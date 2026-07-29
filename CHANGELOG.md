@@ -5,6 +5,26 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.18.4
+
+- Added HTTP/1.1 WebSocket upgrade tunneling for Codex Live voice sessions.
+  The Hot Router now preserves Realtime WebSocket negotiation headers, applies
+  the configured cloud-provider credential, and relays the upgraded connection
+  bidirectionally without recording audio, prompts, or frame contents.
+- Added strict curated Hot Router catalogs. A non-empty `visible_model_ids`
+  allowlist now applies to cloud and local entries, optional display-name
+  overrides keep selector labels clear, and multi-model local bridges can
+  provide per-model catalog metadata through `local_catalog_models` while the
+  singular `local_model` runtime configuration remains backward compatible.
+  Explicitly allowlisted entries are normalized to `visibility = "list"` so
+  upstream hidden flags cannot silently remove intended selector entries.
+- Added the explicit Windows `Repair Codex Live Audio.cmd` maintenance entry.
+  It diagnoses packaged-app microphone consent and default capture roles without
+  writing, requires exact `REPAIR` or `RESTORE` confirmation while Codex is
+  closed, treats a surviving Codex `app-server` or unsettled protected-file hash
+  as still running, stores a timestamped rollback record, and never kills Codex
+  or installs a service, scheduled task, watchdog, or restart loop.
+
 ## v2.18.3
 
 - Replaced the Gemini `gemini-pro-agent` text-only non-streaming shim with a

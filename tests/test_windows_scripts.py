@@ -20,6 +20,7 @@ def test_installed_windows_launcher_uses_guarded_menu_script():
     assert "Enable Codex Hot Router Mode.cmd" in text
     assert "Restore Codex 19030 Mode.cmd" in text
     assert "Repair Codex Browser and CLI.cmd" in text
+    assert "Repair Codex Live Audio.cmd" in text
     assert "Change Codex Account.cmd" in text
     assert "codex-hybrid-switcher menu" not in text
 
@@ -63,6 +64,7 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     launcher = (ROOT / "installer" / "windows" / "Install Codex Hybrid.cmd").read_text(encoding="utf-8")
     diagnostics = (ROOT / "installer" / "windows" / "Codex Hybrid Diagnostics.cmd").read_text(encoding="utf-8")
     repair = (ROOT / "installer" / "windows" / "Repair Codex Browser and CLI.cmd").read_text(encoding="utf-8")
+    live_audio = (ROOT / "installer" / "windows" / "Repair Codex Live Audio.cmd").read_text(encoding="utf-8")
     account = (ROOT / "installer" / "windows" / "Change Codex Account.cmd").read_text(encoding="utf-8")
     restore = (ROOT / "installer" / "windows" / "Restore Official Codex.cmd").read_text(encoding="utf-8")
     readme = (ROOT / "installer" / "windows" / "README.txt").read_text(encoding="utf-8")
@@ -136,14 +138,18 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "windows-hot-router-start.ps1" in hot_router
     assert "VERSION.txt" in hot_router
     assert "pyproject.toml" in hot_router
-    assert 'set "PACKAGE_VERSION=2.18.3"' not in hot_router
+    assert 'set "PACKAGE_VERSION=2.18.4"' not in hot_router
     assert "-DiagnosticsOnly" in diagnostics
     assert "windows-restore-official.ps1" in restore
     assert "VERSION.txt" in restore
     assert "pyproject.toml" in restore
-    assert 'set "PACKAGE_VERSION=2.18.3"' not in restore
+    assert 'set "PACKAGE_VERSION=2.18.4"' not in restore
     assert "windows-update-repair.ps1" in repair
     assert "-Apply" in repair
+    assert "windows-live-audio.ps1" in live_audio
+    assert "-Action Doctor" in live_audio
+    assert "-Action Repair -Confirm REPAIR" in live_audio
+    assert "-Action Restore -Confirm RESTORE" in live_audio
     assert "windows-change-account.ps1" in account
     assert "-Apply" in account
     assert "Full local model packages may include payload\\models\\local-gemma" in readme
@@ -182,6 +188,8 @@ def test_windows_package_builder_defaults_to_portable_python_with_no_python_esca
     assert "Start Codex Hot Router.cmd" in text
     assert "windows-hot-router-start.ps1" in text
     assert "windows-update-repair.ps1" in text
+    assert "windows-live-audio.ps1" in text
+    assert "Repair Codex Live Audio.cmd" in text
     assert "windows-browser-post-start.ps1" in text
     assert "windows-change-account.ps1" in text
     assert "windows-portable-python-path.ps1" in text
@@ -227,6 +235,36 @@ def test_windows_browser_post_start_helper_is_bounded_and_one_shot():
     assert "New-Service" not in text
     assert "Restart-Computer" not in text
     assert "Stop-Process" not in text
+
+
+def test_windows_live_audio_repair_is_explicit_backup_first_and_user_scoped():
+    text = (ROOT / "scripts" / "windows-live-audio.ps1").read_text(encoding="utf-8")
+    launcher = (ROOT / "scripts" / "Repair Codex Live Audio.cmd").read_text(encoding="utf-8")
+
+    assert 'ValidateSet("Doctor", "Repair", "Restore")' in text
+    assert '$Confirm -cne "REPAIR"' in text
+    assert '$Confirm -cne "RESTORE"' in text
+    assert "Test-CodexDesktopRunning" in text
+    assert "Get-CimInstance Win32_Process" in text
+    assert 'CommandLine -match "app-server"' in text
+    assert "Get-StableProtectedHashes" in text
+    assert "New-LiveAudioBackup" in text
+    assert text.index("New-LiveAudioBackup") < text.index("Set-CodexMicrophoneConsent")
+    assert "CapabilityAccessManager\\ConsentStore\\microphone" in text
+    assert "SetEndpointVisibility" in text
+    assert "SetDefaultEndpoint" in text
+    assert "Get-ProtectedHashes" in text
+    assert '".codex\\auth.json"' in text
+    assert '".codex\\models_cache.json"' in text
+    assert '".codex\\state_5.sqlite"' in text
+    assert "Set-ItemProperty -Path $script:CaptureRegistryRoot" not in text
+    assert "Stop-Process" not in text
+    assert "Register-ScheduledTask" not in text
+    assert "New-Service" not in text
+    assert "Restart-Computer" not in text
+    assert "REPAIR" in launcher
+    assert "RESTORE" in launcher
+    assert "-Action Doctor" in launcher
 
 
 def test_windows_download_scripts_disable_progress_rendering():
@@ -289,6 +327,7 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     assert "Start Codex Hot Router.cmd" in names
     assert "Codex Hybrid Diagnostics.cmd" in names
     assert "Repair Codex Browser and CLI.cmd" in names
+    assert "Repair Codex Live Audio.cmd" in names
     assert "Change Codex Account.cmd" in names
     assert "Restore Official Codex.cmd" in names
     assert "Install-CodexHybrid.ps1" in names
@@ -310,6 +349,8 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     assert "payload/codex-hybrid-model-switcher/scripts/windows-provider-switch.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-restore-official.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-update-repair.ps1" in names
+    assert "payload/codex-hybrid-model-switcher/scripts/windows-live-audio.ps1" in names
+    assert "payload/codex-hybrid-model-switcher/scripts/Repair Codex Live Audio.cmd" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-change-account.ps1" in names
     assert not any(name.startswith(".git/") for name in names)
     assert not any(name.startswith(".venv/") for name in names)
