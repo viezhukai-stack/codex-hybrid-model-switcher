@@ -26,16 +26,16 @@ function Invoke-Switcher($ArgsList) {
         $portablePython = Join-Path $env:LOCALAPPDATA "CodexHybridModelSwitcher\python\python.exe"
         $portablePythonNested = Join-Path $env:LOCALAPPDATA "CodexHybridModelSwitcher\python\python\python.exe"
         if (Test-Path $portablePython) {
-            & $portablePython -m codex_hybrid_switcher @ArgsList
+            & $portablePython -m codex_hybrid_switcher @ArgsList | Out-Host
         }
         elseif (Test-Path $portablePythonNested) {
-            & $portablePythonNested -m codex_hybrid_switcher @ArgsList
+            & $portablePythonNested -m codex_hybrid_switcher @ArgsList | Out-Host
         }
         elseif (Get-Command py -ErrorAction SilentlyContinue) {
-            & py -3 -m codex_hybrid_switcher @ArgsList
+            & py -3 -m codex_hybrid_switcher @ArgsList | Out-Host
         }
         elseif (Get-Command python -ErrorAction SilentlyContinue) {
-            & python -m codex_hybrid_switcher @ArgsList
+            & python -m codex_hybrid_switcher @ArgsList | Out-Host
         }
         else {
             throw "Python is required. Run Install Codex Hybrid.cmd first."

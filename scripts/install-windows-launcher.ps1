@@ -7,6 +7,7 @@ $hotRouterLauncher = Join-Path $desktop "Start Codex Hot Router.cmd"
 $enableHotRouterLauncher = Join-Path $desktop "Enable Codex Hot Router Mode.cmd"
 $restoreHotRouterLauncher = Join-Path $desktop "Restore Codex 19030 Mode.cmd"
 $restoreLauncher = Join-Path $desktop "Restore Official Codex.cmd"
+$orchestrateUpdateLauncher = Join-Path $desktop "Repair Codex Update and Plugins.cmd"
 $repairUpdateLauncher = Join-Path $desktop "Repair Codex Browser and CLI.cmd"
 $repairLiveAudioLauncher = Join-Path $desktop "Repair Codex Live Audio.cmd"
 $changeAccountLauncher = Join-Path $desktop "Change Codex Account.cmd"
@@ -73,6 +74,21 @@ pause
 
 Set-Content -LiteralPath $restoreLauncher -Value $restoreBody -Encoding ASCII
 Write-Output "Installed: $restoreLauncher"
+
+$orchestrateUpdateBody = @"
+@echo off
+cd /d "$repo"
+echo Codex must be fully closed before this repair.
+echo This will register a staged official update and refresh the current Browser/Chrome bundle.
+echo.
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows-update-orchestrate.ps1 -Config "%USERPROFILE%\.codex-hybrid-model-switcher\config.json" -Apply
+echo.
+echo Press any key to close.
+pause >nul
+"@
+
+Set-Content -LiteralPath $orchestrateUpdateLauncher -Value $orchestrateUpdateBody -Encoding ASCII
+Write-Output "Installed: $orchestrateUpdateLauncher"
 
 $repairUpdateBody = @"
 @echo off

@@ -20,6 +20,7 @@ def test_installed_windows_launcher_uses_guarded_menu_script():
     assert "Enable Codex Hot Router Mode.cmd" in text
     assert "Restore Codex 19030 Mode.cmd" in text
     assert "Repair Codex Browser and CLI.cmd" in text
+    assert "Repair Codex Update and Plugins.cmd" in text
     assert "Repair Codex Live Audio.cmd" in text
     assert "Change Codex Account.cmd" in text
     assert "codex-hybrid-switcher menu" not in text
@@ -64,6 +65,8 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     launcher = (ROOT / "installer" / "windows" / "Install Codex Hybrid.cmd").read_text(encoding="utf-8")
     diagnostics = (ROOT / "installer" / "windows" / "Codex Hybrid Diagnostics.cmd").read_text(encoding="utf-8")
     repair = (ROOT / "installer" / "windows" / "Repair Codex Browser and CLI.cmd").read_text(encoding="utf-8")
+    orchestrate = (ROOT / "installer" / "windows" / "Repair Codex Update and Plugins.cmd").read_text(encoding="utf-8")
+    orchestrator_script = (ROOT / "scripts" / "windows-update-orchestrate.ps1").read_text(encoding="utf-8")
     live_audio = (ROOT / "installer" / "windows" / "Repair Codex Live Audio.cmd").read_text(encoding="utf-8")
     account = (ROOT / "installer" / "windows" / "Change Codex Account.cmd").read_text(encoding="utf-8")
     restore = (ROOT / "installer" / "windows" / "Restore Official Codex.cmd").read_text(encoding="utf-8")
@@ -138,14 +141,20 @@ def test_windows_one_click_installer_has_safe_beginner_boundaries():
     assert "windows-hot-router-start.ps1" in hot_router
     assert "VERSION.txt" in hot_router
     assert "pyproject.toml" in hot_router
-    assert 'set "PACKAGE_VERSION=2.18.4"' not in hot_router
+    assert 'set "PACKAGE_VERSION=2.18.5"' not in hot_router
     assert "-DiagnosticsOnly" in diagnostics
     assert "windows-restore-official.ps1" in restore
     assert "VERSION.txt" in restore
     assert "pyproject.toml" in restore
-    assert 'set "PACKAGE_VERSION=2.18.4"' not in restore
+    assert 'set "PACKAGE_VERSION=2.18.5"' not in restore
     assert "windows-update-repair.ps1" in repair
     assert "-Apply" in repair
+    assert "windows-update-orchestrate.ps1" in orchestrate
+    assert "-Apply" in orchestrate
+    assert "windows-update-orchestrate.ps1" in orchestrate
+    assert "SettleChecks" in orchestrator_script
+    assert "SettleTotalTimeoutSeconds" in orchestrator_script
+    assert "MaxRegistrationPasses" in orchestrator_script
     assert "windows-live-audio.ps1" in live_audio
     assert "-Action Doctor" in live_audio
     assert "-Action Repair -Confirm REPAIR" in live_audio
@@ -188,6 +197,8 @@ def test_windows_package_builder_defaults_to_portable_python_with_no_python_esca
     assert "Start Codex Hot Router.cmd" in text
     assert "windows-hot-router-start.ps1" in text
     assert "windows-update-repair.ps1" in text
+    assert "windows-update-orchestrate.ps1" in text
+    assert "Repair Codex Update and Plugins.cmd" in text
     assert "windows-live-audio.ps1" in text
     assert "Repair Codex Live Audio.cmd" in text
     assert "windows-browser-post-start.ps1" in text
@@ -200,11 +211,13 @@ def test_windows_hot_router_launcher_checks_bridge_before_router_and_opens_codex
     cmd = (ROOT / "scripts" / "Start Codex Hot Router.cmd").read_text(encoding="utf-8")
 
     assert text.index("ensure-bridge") < text.index('@("hot-router"')
-    assert text.index("windows-update-ensure") < text.index("ensure-bridge")
-    assert text.index("Repair-PortablePythonPath") < text.index("windows-update-ensure")
+    assert text.index("windows-update-orchestrate.ps1") < text.index("ensure-bridge")
+    assert "-Apply" in text
+    assert "-Automatic" in text
+    assert text.index("Repair-PortablePythonPath") < text.index("windows-update-orchestrate.ps1")
     assert '$ProgressPreference = "SilentlyContinue"' in text
     assert "windows-portable-python-path.ps1" in text
-    assert "Repair Codex Browser and CLI.cmd" in text
+    assert "Repair Codex Update and Plugins.cmd" in text
     assert "Start-BrowserPostStartCheck" in text
     assert "windows-browser-post-start.ps1" in text
     assert "127.0.0.1:19030" in text
@@ -220,6 +233,17 @@ def test_windows_hot_router_launcher_checks_bridge_before_router_and_opens_codex
     assert "New-Service" not in text
     assert "Start-Service" not in text
     assert "windows-hot-router-start.ps1" in cmd
+
+
+def test_windows_maintenance_wrappers_stream_output_without_polluting_exit_code():
+    for name in (
+        "windows-update-orchestrate.ps1",
+        "windows-update-repair.ps1",
+        "windows-change-account.ps1",
+    ):
+        text = (ROOT / "scripts" / name).read_text(encoding="utf-8")
+        assert text.count("| Out-Host") >= 4
+        assert "return $LASTEXITCODE" in text
     assert "Register-ScheduledTask" not in text
     assert "Restart-Computer" not in text
 
@@ -326,6 +350,7 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     assert "VERSION.txt" in names
     assert "Start Codex Hot Router.cmd" in names
     assert "Codex Hybrid Diagnostics.cmd" in names
+    assert "Repair Codex Update and Plugins.cmd" in names
     assert "Repair Codex Browser and CLI.cmd" in names
     assert "Repair Codex Live Audio.cmd" in names
     assert "Change Codex Account.cmd" in names
@@ -343,12 +368,14 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/account_switch.py" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-hot-router-start.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-browser-post-start.ps1" in names
+    assert "payload/codex-hybrid-model-switcher/scripts/windows-update-orchestrate.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-hot-router-mode.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-portable-python-path.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/Start Codex Hot Router.cmd" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-provider-switch.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-restore-official.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-update-repair.ps1" in names
+    assert "payload/codex-hybrid-model-switcher/scripts/Repair Codex Update and Plugins.cmd" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-live-audio.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/Repair Codex Live Audio.cmd" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-change-account.ps1" in names

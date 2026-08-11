@@ -1,7 +1,8 @@
 # Windows Codex Update Canary
 
-This canary validates the v2.18.3 Browser/CLI update guard and optional account
-switch on a real Windows Codex Hybrid 2.0 installation.
+This canary validates the v2.18.6 Windows AppX registration, Browser/CLI update
+guard, and optional account switch on a real Windows Codex Hybrid 2.0
+installation.
 
 ## Safety boundary
 
@@ -14,37 +15,42 @@ switch on a real Windows Codex Hybrid 2.0 installation.
 - Do not edit official Browser/Chrome plugin caches, Codex databases, session
   JSONL, rollout logs, Windows proxy settings, services, or scheduled tasks.
 - A Codex Store/AppX update may not have a reliable version rollback. Run all
-  v2.18.3 dry-runs against the old app before updating it.
+  v2.18.6 dry-runs against the old app before updating it.
 
 ## Candidate flow
 
 1. Run `windows-update-doctor --skip-resource-check` on the old Codex app. It
    must report `launch_safe: yes` and write nothing.
 2. Run `windows-update-repair` without `--apply`; it must finish as a dry-run.
+   The narrower `windows-update-ensure` path remains available for a
+   version-only CLI refresh, and the manual fallback is
+   `windows-update-repair --apply` with the exact `REPAIR` confirmation.
 3. Run `change-account` without `--apply`; it must report the existing login,
    Hot Router entry, optional proxy state, and no interrupted transaction.
 4. Update Codex through its official Windows update path while Codex is closed.
-5. Before first launch, run `windows-update-doctor` again. If the CLI hash/path
-   is stale, verify the repair dry-run, then run `windows-update-ensure`. It must
-   accept only the supported version-only repair, copy the complete CLI
-   companion set, write the versioned path to the current-user
-   `CODEX_CLI_PATH` environment value, and return a healthy launch gate.
-   If automatic eligibility is intentionally rejected, verify the manual
-   fallback with `windows-update-repair --apply` and type `REPAIR` instead.
-   Confirm the report also contains `highest_staged_version` and
-   `pending_registration`. If a newer AppX is only staged, the launch gate must
-   stop before opening the old version; complete official registration first.
-6. Start `Start Codex Hot Router.cmd`. Confirm its one-shot post-start helper
+5. Before first launch, run `windows-update-doctor` again. If
+   `pending_registration=true`, run `windows-update-orchestrate` dry-run, then
+   apply it while Codex is closed. The apply path uses the Microsoft Store
+   product `9PLM9XGG6VKS` through official `winget`, requires three identical
+   current/staged-version observations before registration, waits for the
+   post-registration view to settle, and allows at most two registration
+   passes. It then refreshes the complete CLI companion set and rebinds
+   `CODEX_CLI_PATH` only when needed.
+6. The same orchestrator refreshes the current AppX bundled marketplace with
+   the official CLI and installs both `browser@openai-bundled` and
+   `chrome@openai-bundled`; it must not copy or delete old plugin cache
+   directories.
+7. Start `Start Codex Hot Router.cmd`. Confirm its one-shot post-start helper
    invokes `windows-browser-ensure`, waits for Codex feature initialization,
    reports Browser healthy or installs it through the official CLI, then exits
    without restarting Codex.
-7. Restart Codex twice through the same daily entry. Confirm neither restart
+8. Restart Codex twice through the same daily entry. Confirm neither restart
    reverts the Browser plugin or CLI path.
-8. Confirm account UI, projects, plugins, MCP, model catalog, one cloud model,
+9. Confirm account UI, projects, plugins, MCP, model catalog, one cloud model,
    local Gemma, and any machine-private second local model still work.
-9. Confirm only one llama.cpp model runs at a time and the local runtime exits
+10. Confirm only one llama.cpp model runs at a time and the local runtime exits
    under the configured idle policy.
-10. Keep the real account unchanged for the release canary. Run only the
+11. Keep the real account unchanged for the release canary. Run only the
    `change-account` dry-run on the real profile; exercise success/failure and
    interrupted recovery against an isolated temporary Codex home and fake CLI.
 

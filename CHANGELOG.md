@@ -5,6 +5,53 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.18.6
+
+- Added a bounded Windows Store stability gate to the daily Hot Router launch.
+  When a Codex AppX update is pending, the launcher now requires three
+  consecutive identical current/staged-version observations before registering
+  it.
+- Added a post-registration stability pass and support for up to two bounded
+  registration passes. If Microsoft Store stages another build during the
+  transaction, the matching CLI and official Browser/Chrome marketplace are
+  realigned before Codex is opened; if the queue still changes, Codex stays
+  closed instead of reopening an older build.
+- Kept the no-update path fast: a healthy installation does not wait through
+  the full Store settling window. The stability wait is used for a pending
+  update and after each registration.
+- Added focused tests for version settling, a second staged build, the bounded
+  failure path, the no-pending fast path, and protected-state invariants.
+- No service, scheduled task, KeepAlive job, background updater, automatic
+  process termination, account change, database edit, or plugin-cache delete
+  was added.
+
+## v2.18.5
+
+- Added a closed-app Windows update orchestrator for the daily Hot Router
+  entry. It detects a staged Microsoft Store Codex AppX, completes the
+  current-user registration through the official `winget` Store product, then
+  rechecks the registered AppX before continuing.
+- Added current-AppX bundled marketplace refresh. The official Codex CLI now
+  removes and re-adds only `openai-bundled`, then installs Browser and Chrome
+  from the matching AppX source instead of reusing an older `.tmp` marketplace
+  snapshot. Old plugin cache directories are left untouched.
+- Added transaction backups and invariant checks for `config.toml`,
+  `auth.json`, `models_cache.json`, `state_5.sqlite`, and SQLite sidecars.
+  Provider routing, user MCP entries, projects, account state, and protected
+  files are verified before Codex is opened; no account login or database
+  repair is performed by the update path.
+- Added `Repair Codex Update and Plugins.cmd` as an explicit manual fallback
+  while retaining the narrower CLI-only repair entry. No service, scheduled
+  task, KeepAlive job, watchdog, or automatic restart loop was added.
+- Fixed the Windows maintenance wrappers so Python output is streamed to the
+  user without becoming part of the PowerShell function return value. Update,
+  repair, and account-switch launchers now preserve the actual child-process
+  exit code instead of risking a false success result.
+- The Windows launch gate now also normalizes a hash-matching CLI that still
+  lives in an older managed version directory. `CODEX_CLI_PATH` is moved to the
+  directory for the currently registered AppX version, preventing stale folder
+  names from being mistaken for the active CLI after later upgrades.
+
 ## v2.18.4
 
 - Added HTTP/1.1 WebSocket upgrade tunneling for Codex Live voice sessions.

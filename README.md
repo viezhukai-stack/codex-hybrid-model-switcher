@@ -105,7 +105,7 @@ cache, rewrite old conversations, or install always-on recovery services.
 ### Windows full local one-click setup
 
 For a beginner Windows computer, share
-`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.4.zip`, extract the entire zip,
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.6.zip`, extract the entire zip,
 and double-click `Install Codex Hybrid.cmd`. This is the recommended netdisk
 package because it includes the local model path and does not require a cloud
 API key.
@@ -119,7 +119,9 @@ Windows hot router, and stop at guarded dry-run before asking for an explicit
 `APPLY` confirmation. It does not redistribute Codex Desktop, install CC
 Switch, or apply a real switch without explicit confirmation.
 
-Windows v2.18.4 also installs three explicit maintenance entries. `Repair Codex
+Windows v2.18.6 also installs four explicit maintenance entries. `Repair Codex
+Update and Plugins.cmd` completes a staged official Store registration and
+refreshes the current AppX marketplace through the official CLI. `Repair Codex
 Browser and CLI.cmd` copies the matching complete CLI companion set and repairs
 the current-user `CODEX_CLI_PATH` after a Codex app update, including the case
 where the app regenerates its Browser config block. `Repair Codex Live Audio.cmd`
@@ -131,24 +133,29 @@ routing workflow still leaves account files untouched.
 See [`docs/windows-live-audio-repair.md`](docs/windows-live-audio-repair.md) for
 the Live audio doctor, explicit repair, and rollback behavior.
 
-The daily `Start Codex Hot Router.cmd` entry performs this CLI refresh
-automatically when the only detected problem is a supported Codex AppX version
-change and Codex is fully closed. It validates all five companion files and
-protected Codex state before opening the app. Other update failures stop and
-leave the manual repair entry available.
+The daily `Start Codex Hot Router.cmd` entry performs the complete closed-app
+update transaction automatically. When Windows has staged a newer Codex AppX,
+it first waits for three identical Store observations, registers the staged
+version, then waits and checks again for a second staged build. It allows at
+most two registration passes, validates all five CLI companion files, refreshes
+the current AppX bundled marketplace, and checks Browser/Chrome before opening
+the app. A healthy installation takes the fast path; if Store versions keep
+changing, Codex stays closed and the explicit repair entry remains available.
 
-Before that repair runs, the launcher also checks whether Windows has staged a
-newer Codex AppX package for registration. When a newer staged version exists,
-it leaves the old app closed instead of reopening it mid-update. Every packaged
-Windows entry self-heals portable Python's `python312._pth` file so it imports
-the current release instead of a surviving older release directory.
+The update transaction checks whether Windows has staged a newer Codex AppX
+package for registration and completes that registration through the official
+Microsoft Store product before proceeding. If registration, CLI validation, or
+plugin refresh fails, the old app stays closed and a private timestamped
+backup is left for recovery. Every packaged Windows entry self-heals portable
+Python's `python312._pth` file so it imports the current release instead of a
+surviving older release directory.
 
 After Codex opens, the same daily entry runs one bounded Browser check in the
-background. It waits for Codex's feature initialization, does nothing when the
-official Browser plugin is already healthy, and uses the current official CLI
-to install Browser only when the plugin catalog reports it available but
-missing or stale. It never restarts Codex and does not install a service,
-scheduled task, watchdog, or recovery loop.
+background as a final feature-initialization verification. It does nothing when
+the official Browser plugin is healthy and never restarts Codex. The pre-start
+transaction is the phase that refreshes the current AppX marketplace and both
+official Browser/Chrome entries. No service, scheduled task, watchdog, or
+recovery loop is installed.
 
 The full local package can include `payload/models/local-gemma`,
 `payload/llama.cpp`, and `payload/vcredist/vc_redist.x64.exe` so a beginner can
@@ -167,7 +174,7 @@ See [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md)
 ### macOS full local one-click setup
 
 For a beginner Mac computer, share
-`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.4.zip`, extract the entire zip, and
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.6.zip`, extract the entire zip, and
 double-click `Install Codex Hybrid.command`. This is the recommended netdisk
 package because it includes both macOS x64 and arm64 llama.cpp runtimes plus
 `payload/models/local-gemma`, so a beginner can use the bundled local Gemma
@@ -191,7 +198,7 @@ Python by default, but the builder can include a tested runtime under
 See [`docs/macos-full-local-pack.md`](docs/macos-full-local-pack.md).
 The v2.17.3 full-local flow and v2.18.0 upgrade path have real Mac UI canaries recorded in
 [`docs/macos-full-local-pack-canary.md`](docs/macos-full-local-pack-canary.md);
-the current v2.18.4 package carries the same app-discovery path plus the shared
+the current v2.18.6 package carries the same app-discovery path plus the shared
 Responses/tool-call preservation fix and HTTP/1.1 WebSocket tunneling used by
 Codex Live voice.
 

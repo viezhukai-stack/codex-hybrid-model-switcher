@@ -160,11 +160,15 @@ if (Test-Path -LiteralPath $Config) {
 if (-not $RouterHost) { $RouterHost = "127.0.0.1" }
 if (-not $Port) { $Port = 19032 }
 
-Write-Host "Checking Codex Browser/CLI update compatibility..."
-Invoke-Switcher -ArgsList @("windows-update-ensure", "--config", $Config) -AllowFailure
+Write-Host "Preparing Codex App update, CLI, Browser, and Chrome compatibility..."
+$updateOrchestrator = Join-Path $PSScriptRoot "windows-update-orchestrate.ps1"
+if (!(Test-Path -LiteralPath $updateOrchestrator)) {
+    Fail "Windows update orchestrator was not found: $updateOrchestrator"
+}
+& powershell -NoProfile -ExecutionPolicy Bypass -File $updateOrchestrator -Config $Config -Apply -Automatic
 $updateExit = $LASTEXITCODE
 if ($updateExit -ne 0) {
-    Fail "Automatic Codex Browser/CLI refresh stopped. Quit Codex and run 'Repair Codex Browser and CLI.cmd', then start this launcher again."
+    Fail "Automatic Codex update registration/CLI/Browser refresh stopped. Codex remains closed. Run 'Repair Codex Update and Plugins.cmd' for the detailed repair path, then start this launcher again."
 }
 
 Write-Host "Checking local bridge on 127.0.0.1:19030..."

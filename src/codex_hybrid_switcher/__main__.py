@@ -23,6 +23,7 @@ from .smoke import run_smoke
 from .switcher import guarded_switch_provider, interactive_menu, run_ensure_bridge, switch_provider
 from .windows_update import (
     run_windows_browser_ensure,
+    run_windows_update_orchestrate,
     run_windows_update_doctor,
     run_windows_update_ensure,
     run_windows_update_repair,
@@ -76,6 +77,15 @@ def main(argv: list[str] | None = None) -> int:
     windows_update_repair.add_argument("--apply", action="store_true")
     windows_update_ensure = sub.add_parser("windows-update-ensure")
     windows_update_ensure.add_argument("--config", dest="sub_config")
+    windows_update_orchestrate = sub.add_parser("windows-update-orchestrate")
+    windows_update_orchestrate.add_argument("--config", dest="sub_config")
+    windows_update_orchestrate.add_argument("--apply", action="store_true")
+    windows_update_orchestrate.add_argument("--automatic", action="store_true")
+    windows_update_orchestrate.add_argument("--settle-checks", type=int, default=3)
+    windows_update_orchestrate.add_argument("--settle-poll-seconds", type=float, default=5)
+    windows_update_orchestrate.add_argument("--settle-timeout-seconds", type=float, default=120)
+    windows_update_orchestrate.add_argument("--settle-total-timeout-seconds", type=float, default=180)
+    windows_update_orchestrate.add_argument("--max-registration-passes", type=int, default=2)
     windows_browser_ensure = sub.add_parser("windows-browser-ensure")
     windows_browser_ensure.add_argument("--config", dest="sub_config")
     windows_browser_ensure.add_argument("--wait-seconds", type=float, default=90)
@@ -198,6 +208,17 @@ def main(argv: list[str] | None = None) -> int:
         return run_windows_update_repair(config_path, apply=args.apply)
     if args.command == "windows-update-ensure":
         return run_windows_update_ensure(config_path)
+    if args.command == "windows-update-orchestrate":
+        return run_windows_update_orchestrate(
+            config_path,
+            apply=args.apply,
+            automatic=args.automatic,
+            settle_checks=args.settle_checks,
+            settle_poll_seconds=args.settle_poll_seconds,
+            settle_timeout_seconds=args.settle_timeout_seconds,
+            settle_total_timeout_seconds=args.settle_total_timeout_seconds,
+            max_registration_passes=args.max_registration_passes,
+        )
     if args.command == "windows-browser-ensure":
         return run_windows_browser_ensure(
             config_path,
