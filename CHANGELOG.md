@@ -17,8 +17,12 @@ conservative release process because it edits Codex provider configuration.
   realigned before Codex is opened; if the queue still changes, Codex stays
   closed instead of reopening an older build.
 - Kept the no-update path fast: a healthy installation does not wait through
-  the full Store settling window. The stability wait is used for a pending
+  the full Store settling window and now exits before creating a transaction
+  backup or copying CLI/plugin files. The stability wait is used for a pending
   update and after each registration.
+- Forced official `winget` output decoding to UTF-8 with replacement for
+  malformed bytes. This removes the GBK reader-thread exception observed by
+  the Kevin physical canary while preserving the real command exit status.
 - Added focused tests for version settling, a second staged build, the bounded
   failure path, the no-pending fast path, and protected-state invariants.
 - No service, scheduled task, KeepAlive job, background updater, automatic
