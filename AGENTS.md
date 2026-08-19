@@ -210,13 +210,16 @@ maintenance-only.
 - Windows daily entry: `Start Codex Hot Router.cmd`
 - rollback entry: restore the guarded pre-router `19030` configuration
 
-On Windows, app updates use two strictly separated phases. While Codex is
-closed, `windows-update-ensure` may refresh only the current hash-matched CLI
-bundle. After Codex opens and finishes feature initialization,
-`windows-browser-ensure` performs one bounded plugin-catalog check and may use
-the official CLI to add `browser@openai-bundled` when it is available but
-missing or stale. The post-start phase must never restart Codex or become a
-service, scheduled task, watchdog, or recovery loop.
+On Windows, app updates use a guarded closed-app transaction plus one bounded
+post-start verification. `windows-update-orchestrate` detects a staged Store
+AppX, completes current-user registration through the official Store product,
+refreshes the hash-matched CLI bundle, and rebinds the current AppX
+`openai-bundled` marketplace before adding Browser and Chrome through the
+official Codex CLI. After Codex opens and finishes feature initialization,
+`windows-browser-ensure` performs one bounded Browser catalog check. Neither
+phase may log in, restart Codex, edit history/cache files, or become a service,
+scheduled task, watchdog, or recovery loop. `windows-update-ensure` remains the
+narrow CLI-only fallback.
 
 Windows Live audio repair is also an explicit maintenance path. Run
 `Repair Codex Live Audio.cmd` only when Live does not start. Its doctor phase is

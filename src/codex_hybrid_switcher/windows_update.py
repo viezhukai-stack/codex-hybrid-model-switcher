@@ -26,6 +26,7 @@ AUTO_REPAIR_ERROR_PREFIXES = (
     "Configured CODEX_CLI_PATH is missing companion programs:",
     "Configured CODEX_CLI_PATH is missing or not runnable.",
     "Configured CODEX_CLI_PATH does not match the current Codex app CLI.",
+    "Configured CODEX_CLI_PATH uses an older managed version directory.",
 )
 
 MANAGED_CLI_BUNDLE_FILES = (
@@ -37,7 +38,16 @@ MANAGED_CLI_BUNDLE_FILES = (
 )
 MANAGED_CLI_COMPANION_FILES = MANAGED_CLI_BUNDLE_FILES[1:]
 BROWSER_PLUGIN_ID = "browser@openai-bundled"
+CHROME_PLUGIN_ID = "chrome@openai-bundled"
+BUNDLED_MARKETPLACE_NAME = "openai-bundled"
+CODEX_STORE_PRODUCT_ID = "9PLM9XGG6VKS"
+BUNDLED_PLUGIN_IDS = (BROWSER_PLUGIN_ID, CHROME_PLUGIN_ID)
 BROWSER_POST_START_LOCK_SECONDS = 300
+DEFAULT_APPX_SETTLE_CHECKS = 3
+DEFAULT_APPX_SETTLE_POLL_SECONDS = 5.0
+DEFAULT_APPX_SETTLE_TIMEOUT_SECONDS = 120.0
+DEFAULT_APPX_SETTLE_TOTAL_TIMEOUT_SECONDS = 180.0
+DEFAULT_MAX_REGISTRATION_PASSES = 2
 
 
 @dataclass
@@ -106,6 +116,22 @@ class WindowsUpdateReport:
 
     def redacted_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass
+class AppxUpdateSnapshot:
+    app_info: dict[str, str] | None
+    current_version: str = "missing"
+    highest_staged_version: str = "missing"
+    pending_registration: bool = False
+
+    @property
+    def stability_key(self) -> tuple[str, str, bool]:
+        return (
+            self.current_version,
+            self.highest_staged_version,
+            self.pending_registration,
+        )
 
 
 def is_windows() -> bool:
@@ -204,6 +230,74 @@ def pending_codex_registration(
     highest = max(staged_versions, key=windows_version_key)
     current = str(app_info.get("Version") or "")
     return highest, windows_version_key(highest) > windows_version_key(current)
+
+
+def codex_appx_update_snapshot() -> AppxUpdateSnapshot:
+    """Read one current-user/staged Codex AppX update observation."""
+
+    app = windows_codex_app_info()
+    if not app:
+        return AppxUpdateSnapshot(app_info=None)
+    highest, pending = pending_codex_registration(app)
+    return AppxUpdateSnapshot(
+        app_info=app,
+        current_version=str(app.get("Version") or "missing"),
+        highest_staged_version=highest,
+        pending_registration=pending,
+    )
+
+
+def wait_for_codex_appx_stability(
+    *,
+    consecutive_checks: int = DEFAULT_APPX_SETTLE_CHECKS,
+    poll_seconds: float = DEFAULT_APPX_SETTLE_POLL_SECONDS,
+    timeout_seconds: float = DEFAULT_APPX_SETTLE_TIMEOUT_SECONDS,
+    probe: Callable[[], AppxUpdateSnapshot] | None = None,
+    sleeper: Callable[[float], None] | None = None,
+    clock: Callable[[], float] | None = None,
+) -> AppxUpdateSnapshot | None:
+    """Wait until the registered/staged AppX view is unchanged repeatedly.
+
+    Microsoft Store can stage a second Codex build immediately after the first
+    registration finishes.  A single snapshot therefore is not a safe launch
+    gate.  This bounded helper requires the complete observation tuple to stay
+    unchanged for ``consecutive_checks`` probes.  It never starts Codex and it
+    does not modify Store, Codex, or user state.
+    """
+
+    checks_required = max(1, int(consecutive_checks))
+    interval = max(0.0, float(poll_seconds))
+    timeout = max(0.0, float(timeout_seconds))
+    probe = probe or codex_appx_update_snapshot
+    sleeper = sleeper or time.sleep
+    clock = clock or time.monotonic
+    deadline = clock() + timeout
+    last_key: tuple[str, str, bool] | None = None
+    stable_checks = 0
+
+    while True:
+        snapshot = probe()
+        if snapshot.app_info is None:
+            print("OpenAI.Codex AppX package disappeared while waiting for Store stability.")
+            return None
+        if snapshot.stability_key == last_key:
+            stable_checks += 1
+        else:
+            last_key = snapshot.stability_key
+            stable_checks = 1
+        print(
+            "Codex Store stability check "
+            f"{stable_checks}/{checks_required}: current={snapshot.current_version} "
+            f"staged={snapshot.highest_staged_version} "
+            f"pending={'yes' if snapshot.pending_registration else 'no'}"
+        )
+        if stable_checks >= checks_required:
+            return snapshot
+        remaining = deadline - clock()
+        if remaining <= 0:
+            print("Codex Store versions did not become stable before the bounded wait expired.")
+            return None
+        sleeper(min(interval, remaining))
 
 
 def sha256_file(path: Path) -> str:
@@ -305,12 +399,173 @@ def source_cli_path(app_info: dict[str, str] | None) -> Path | None:
     return next((candidate for candidate in candidates if candidate.is_file()), None)
 
 
+def bundled_marketplace_path(app_info: dict[str, str] | None) -> Path | None:
+    """Return the marketplace shipped by the currently registered Codex AppX.
+
+    Windows Codex has used both ``app/resources`` and ``resources`` layouts
+    across releases.  The path is resolved from the live AppX package rather
+    than from a surviving ``.tmp`` copy, so plugin refreshes cannot silently
+    install an older Browser/Chrome bundle.
+    """
+
+    if not app_info:
+        return None
+    root = Path(app_info.get("InstallLocation") or "")
+    candidates = (
+        root / "app" / "resources" / "plugins" / BUNDLED_MARKETPLACE_NAME,
+        root / "resources" / "plugins" / BUNDLED_MARKETPLACE_NAME,
+    )
+    for candidate in candidates:
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
+def winget_path() -> Path | None:
+    """Find the official Windows Package Manager executable without a shell."""
+
+    for name in ("winget.exe", "winget"):
+        found = shutil.which(name)
+        if found:
+            return Path(found)
+    local = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" / "Local"))
+    candidate = local / "Microsoft" / "WindowsApps" / "winget.exe"
+    return candidate if candidate.is_file() else None
+
+
+def _run_winget_codex_registration(
+    *,
+    product_id: str = CODEX_STORE_PRODUCT_ID,
+    timeout: float = 300,
+) -> subprocess.CompletedProcess[str]:
+    executable = winget_path()
+    if executable is None:
+        return subprocess.CompletedProcess(
+            ["winget.exe"],
+            127,
+            "",
+            "winget.exe was not found",
+        )
+    arguments = [
+        str(executable),
+        "install",
+        "--id",
+        product_id,
+        "-e",
+        "--source",
+        "msstore",
+        "--force",
+        "--accept-source-agreements",
+        "--accept-package-agreements",
+        "--silent",
+        "--disable-interactivity",
+    ]
+    creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if is_windows() else 0
+    try:
+        return subprocess.run(
+            arguments,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout,
+            check=False,
+            creationflags=creationflags,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return subprocess.CompletedProcess(arguments, 1, "", f"{type(exc).__name__}")
+
+
+def _registration_target_reached(target_version: str) -> tuple[bool, dict[str, str] | None]:
+    app = windows_codex_app_info()
+    if not app:
+        return False, None
+    current = str(app.get("Version") or "")
+    return windows_version_key(current) >= windows_version_key(target_version), app
+
+
+def run_windows_appx_registration(
+    app_info: dict[str, str] | None = None,
+    *,
+    apply: bool = False,
+    target_version: str | None = None,
+    timeout_seconds: float = 300,
+    poll_seconds: float = 3,
+    runner: Callable[[], subprocess.CompletedProcess[str]] | None = None,
+) -> int:
+    """Complete a staged Store update for the current Codex user.
+
+    The dry-run path never invokes winget.  The apply path only runs while
+    Codex is fully closed and uses the official Microsoft Store product ID;
+    it does not log in, change the provider, or touch Codex databases.
+    """
+
+    if not is_windows():
+        print("Codex AppX registration is available only on Windows.")
+        return 20
+    app = app_info or windows_codex_app_info()
+    if not app:
+        print("OpenAI.Codex AppX package was not found.")
+        return 20
+    highest, pending = pending_codex_registration(app)
+    target = target_version or highest
+    current_version = str(app.get("Version") or "")
+    if target_version and windows_version_key(current_version) >= windows_version_key(target):
+        print(f"Codex AppX registration target is already current: {current_version}.")
+        return 0
+    if not pending and not target_version:
+        print("Codex AppX registration is already current.")
+        return 0
+    print(
+        "Codex AppX registration is pending: "
+        f"current={app.get('Version') or 'missing'} target={target} "
+        f"highest_staged={highest}."
+    )
+    print(f"store_product_id: {CODEX_STORE_PRODUCT_ID}")
+    print("planned: winget install from the Microsoft Store with accepted agreements and no interaction")
+    if not apply:
+        print("DRY-RUN COMPLETE. No Store registration was started.")
+        return 0
+    if codex_is_running():
+        print("Codex/ChatGPT is running. Quit it completely before registering the update.")
+        return 20
+    result = runner() if runner is not None else _run_winget_codex_registration(timeout=timeout_seconds)
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip().splitlines()
+        suffix = f" Detail: {detail[-1]}" if detail else ""
+        print(f"Official Codex Store registration failed (exit {result.returncode}).{suffix}")
+        return 20
+
+    deadline = time.monotonic() + max(0.0, timeout_seconds)
+    while True:
+        reached, current = _registration_target_reached(target)
+        if reached:
+            print(f"Codex AppX registration complete: {current.get('Version') or 'unknown'}.")
+            return 0
+        if time.monotonic() >= deadline:
+            print(
+                "The Store command finished, but Windows did not register the requested "
+                f"Codex version {target} before the bounded wait expired."
+            )
+            return 20
+        time.sleep(min(max(0.1, poll_seconds), max(0.1, deadline - time.monotonic())))
+
+
 def managed_cli_path(app_info: dict[str, str] | None) -> Path | None:
     if not app_info:
         return None
     version = re.sub(r"[^0-9A-Za-z._-]+", "-", app_info.get("Version") or "unknown")
     local = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" / "Local"))
     return local / "CodexHybridModelSwitcher" / "codex-cli" / version / "codex.exe"
+
+
+def paths_equivalent(left: Path | None, right: Path | None) -> bool:
+    if left is None or right is None:
+        return left is right
+    return os.path.normcase(os.path.abspath(os.fspath(left))) == os.path.normcase(
+        os.path.abspath(os.fspath(right))
+    )
 
 
 def user_environment_value(name: str) -> str | None:
@@ -481,6 +736,141 @@ def write_utf8_text_atomic(path: Path, text: str, *, bom: bool) -> None:
     os.replace(temp, path)
 
 
+def config_guard_text(text: str) -> str:
+    """Normalize config text for the update transaction invariant.
+
+    Official plugin/marketplace refreshes are allowed to rewrite their own
+    sections and the Browser node-repl block.  Provider routing, user MCP
+    entries, permissions, and all other Codex settings remain protected.
+    ``CODEX_CLI_PATH`` is also normalized because the guarded CLI repair may
+    intentionally update that one path.
+    """
+
+    current = ""
+    kept: list[str] = []
+    skip = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            current = stripped
+            lower = current.lower()
+            skip = (
+                lower.startswith("[plugins")
+                or lower.startswith("[plugin")
+                or lower.startswith("[marketplace")
+            )
+        if skip:
+            continue
+        if current.lower().startswith("[mcp_servers.node_repl"):
+            if re.match(r"^\s*(command|CODEX_CLI_PATH|BROWSER_USE_CODEX_APP_VERSION)\s*=", line):
+                kept.append("<managed-browser-runtime-setting>")
+            else:
+                kept.append(line.rstrip())
+            continue
+        if re.match(r"^\s*CODEX_CLI_PATH\s*=", line):
+            kept.append("CODEX_CLI_PATH = <managed-by-codex-hybrid>")
+        else:
+            kept.append(line.rstrip())
+    return "\n".join(kept).strip() + "\n"
+
+
+def config_guard_hash(text: str) -> str:
+    return hashlib.sha256(config_guard_text(text).encode("utf-8")).hexdigest()
+
+
+def _update_backup_root() -> Path:
+    local = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" / "Local"))
+    return local / "CodexHybridModelSwitcher" / "backups"
+
+
+def _restrict_update_backup_acl(path: Path) -> None:
+    """Restrict update backups to the current user on Windows."""
+
+    if is_windows():
+        username = os.environ.get("USERNAME") or ""
+        if not username:
+            raise OSError("USERNAME is unavailable for update backup ACL setup")
+        identity = f"{os.environ.get('COMPUTERNAME')}\\{username}" if os.environ.get("COMPUTERNAME") else username
+        proc = subprocess.run(
+            [
+                "icacls",
+                str(path),
+                "/inheritance:r",
+                "/grant:r",
+                f"{identity}:(OI)(CI)F",
+                "SYSTEM:(OI)(CI)F",
+                "/C",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        if proc.returncode != 0:
+            raise OSError("update backup ACL setup failed")
+    else:
+        try:
+            path.chmod(0o700)
+        except OSError:
+            pass
+
+
+def backup_windows_update_state(config: AppConfig) -> Path:
+    """Create a private, timestamped update backup without changing Codex state."""
+
+    root = _update_backup_root()
+    root.mkdir(parents=True, exist_ok=True)
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    backup = root / f"update-orchestrate-{stamp}"
+    backup.mkdir(parents=False, exist_ok=False)
+    _restrict_update_backup_acl(backup)
+    names = (
+        "config.toml",
+        "auth.json",
+        "models_cache.json",
+        "state_5.sqlite",
+        "state_5.sqlite-wal",
+        "state_5.sqlite-shm",
+    )
+    hashes: dict[str, str | None] = {}
+    for name in names:
+        source = config.codex_home / name
+        target = backup / name
+        if source.is_file():
+            shutil.copy2(source, target)
+            hashes[name] = sha256_file(target)
+        else:
+            hashes[name] = None
+    manifest = {
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "codex_home": str(config.codex_home),
+        "files": hashes,
+        "note": "Private backup for Windows Codex AppX registration and plugin refresh.",
+    }
+    (backup / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return backup
+
+
+def _restore_config_from_backup(backup: Path, config: AppConfig) -> bool:
+    source = backup / "config.toml"
+    target = config.codex_home / "config.toml"
+    if not source.is_file():
+        return False
+    temp = target.with_name(f"{target.name}.tmp-codex-update-restore-{os.getpid()}")
+    try:
+        shutil.copy2(source, temp)
+        os.replace(temp, target)
+    except OSError:
+        try:
+            temp.unlink()
+        except OSError:
+            pass
+        return False
+    return sha256_file(source) == sha256_file(target)
+
+
 def classify_cli_path(path: Path | None) -> str:
     if not path:
         return "missing"
@@ -624,6 +1014,81 @@ def _run_codex_plugin_command(
         check=False,
         creationflags=creationflags,
     )
+
+
+def _plugin_command_output(process: subprocess.CompletedProcess[str]) -> str:
+    return "\n".join(
+        part.strip()
+        for part in (process.stdout or "", process.stderr or "")
+        if part and part.strip()
+    )
+
+
+def _marketplace_remove_is_already_absent(process: subprocess.CompletedProcess[str]) -> bool:
+    if process.returncode == 0:
+        return True
+    text = _plugin_command_output(process).lower()
+    return any(
+        marker in text
+        for marker in (
+            "not found",
+            "does not exist",
+            "no marketplace",
+            "unknown marketplace",
+        )
+    )
+
+
+def refresh_official_bundled_plugins(
+    cli_path: Path,
+    app_info: dict[str, str],
+    *,
+    apply: bool = False,
+    plugin_ids: tuple[str, ...] = BUNDLED_PLUGIN_IDS,
+) -> int:
+    """Refresh the marketplace and official Browser/Chrome through Codex CLI.
+
+    The old plugin cache is deliberately not copied or deleted.  Removing and
+    re-adding only the named marketplace makes the official CLI resolve the
+    source shipped by the currently registered AppX package.  Individual old
+    plugin cache directories are left in place because Windows may expose a
+    ``latest`` reparse link that cannot be removed reliably.
+    """
+
+    marketplace = bundled_marketplace_path(app_info)
+    if marketplace is None:
+        print("The current Codex AppX bundled marketplace was not found.")
+        return 20
+    if not cli_path.is_file():
+        print("The current Codex CLI was not found; marketplace refresh stopped.")
+        return 20
+
+    commands = [
+        ["marketplace", "remove", BUNDLED_MARKETPLACE_NAME, "--json"],
+        ["marketplace", "add", str(marketplace), "--json"],
+        *[["add", plugin_id, "--json"] for plugin_id in plugin_ids],
+    ]
+    print(f"official_marketplace: {marketplace}")
+    print("planned_plugin_operations: " + "; ".join("plugin " + " ".join(command) for command in commands))
+    if not apply:
+        print("DRY-RUN COMPLETE. No marketplace or plugin files were changed.")
+        return 0
+
+    for index, command in enumerate(commands):
+        try:
+            result = _run_codex_plugin_command(cli_path, command)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            print(f"Official Codex plugin command failed: {type(exc).__name__}.")
+            return 20
+        if index == 0 and _marketplace_remove_is_already_absent(result):
+            continue
+        if result.returncode != 0:
+            detail = _plugin_command_output(result).splitlines()
+            suffix = f" Detail: {detail[-1]}" if detail else ""
+            print(f"Official Codex plugin command exited with code {result.returncode}.{suffix}")
+            return 20
+    print("Official bundled marketplace and Browser/Chrome refresh complete.")
+    return 0
 
 
 def query_codex_plugin_catalog(
@@ -876,6 +1341,14 @@ def inspect_windows_update(
             launch_safe = False
             status = STATUS_REPAIR_REQUIRED
             errors.append("Configured CODEX_CLI_PATH does not match the current Codex app CLI.")
+        if (
+            configured_probe.kind == "hybrid-cache"
+            and managed_path is not None
+            and not paths_equivalent(configured_path, managed_path)
+        ):
+            launch_safe = False
+            status = STATUS_REPAIR_REQUIRED
+            errors.append("Configured CODEX_CLI_PATH uses an older managed version directory.")
     if source_probe.exists and not source_probe.runnable:
         warnings.append("The AppX CLI could not be executed in this process context; file integrity was still checked.")
     for plugin in (browser, chrome):
@@ -1005,6 +1478,63 @@ def _backup_cli_environment(root: Path, previous: str | None) -> Path:
     return backup
 
 
+def _install_cli_bundle_atomically(
+    source: Path,
+    destination: Path,
+    source_hashes: dict[str, str],
+) -> tuple[bool, Path | None, Path | None]:
+    """Stage and swap the complete managed CLI directory as one rename."""
+
+    destination_dir = destination.parent
+    bundle_root = destination_dir.parent
+    bundle_root.mkdir(parents=True, exist_ok=True)
+    staging_dir = bundle_root / f".staging-{os.getpid()}-{int(time.time())}-codex-cli"
+    previous_dir = bundle_root / f".previous-{os.getpid()}-{int(time.time())}-codex-cli"
+    staging_dir.mkdir(parents=False, exist_ok=False)
+    try:
+        for name, source_path in cli_bundle_paths(source).items():
+            shutil.copy2(source_path, staging_dir / name)
+        staged_cli = staging_dir / "codex.exe"
+        copied = probe_cli(
+            staged_cli,
+            "hybrid-cache",
+            execute=True,
+            required_siblings=MANAGED_CLI_COMPANION_FILES,
+        )
+        if not copied.runnable or not copied.bundle_complete or cli_bundle_hashes(staged_cli) != source_hashes:
+            return False, staging_dir, None
+
+        if destination_dir.exists():
+            os.replace(destination_dir, previous_dir)
+        os.replace(staging_dir, destination_dir)
+        installed = probe_cli(
+            destination,
+            "hybrid-cache",
+            execute=True,
+            required_siblings=MANAGED_CLI_COMPANION_FILES,
+        )
+        if not installed.runnable or cli_bundle_hashes(destination) != source_hashes:
+            # Do not leave a mixed directory behind if post-swap validation
+            # fails. The old directory is retained until this point.
+            if destination_dir.exists():
+                shutil.rmtree(destination_dir, ignore_errors=True)
+            if previous_dir.exists():
+                os.replace(previous_dir, destination_dir)
+            return False, None, None
+        return True, None, previous_dir if previous_dir.exists() else None
+    except Exception:
+        if destination_dir.exists() and previous_dir.exists():
+            shutil.rmtree(destination_dir, ignore_errors=True)
+            try:
+                os.replace(previous_dir, destination_dir)
+            except OSError:
+                pass
+        raise
+    finally:
+        if staging_dir.exists():
+            shutil.rmtree(staging_dir, ignore_errors=True)
+
+
 def run_windows_update_repair(
     config_path: str | None = None,
     *,
@@ -1025,7 +1555,10 @@ def run_windows_update_repair(
             "A newer Codex AppX package is waiting for registration: "
             f"current={app.get('Version') or 'missing'} staged={highest_staged_version}."
         )
-        print("Finish the Codex app update first; the old CLI bundle was left unchanged.")
+        print(
+            "Run the closed-app windows-update-orchestrate path to complete "
+            "official Store registration before the CLI repair."
+        )
         return 20
     codex_config = config.codex_home / "config.toml"
     try:
@@ -1115,33 +1648,15 @@ def run_windows_update_repair(
     config_backup: Path | None = None
     destination_dir = destination.parent
     destination_dir.parent.mkdir(parents=True, exist_ok=True)
-    staging_dir = destination_dir.parent / f".staging-{os.getpid()}-{int(time.time())}-codex-cli"
+    previous_bundle_dir: Path | None = None
     try:
-        staging_dir.mkdir(parents=True, exist_ok=False)
-        for name, source_path in cli_bundle_paths(source).items():
-            shutil.copy2(source_path, staging_dir / name)
-        staged_cli = staging_dir / "codex.exe"
-        copied = probe_cli(
-            staged_cli,
-            "hybrid-cache",
-            execute=True,
-            required_siblings=MANAGED_CLI_COMPANION_FILES,
-        )
-        copied_hashes = cli_bundle_hashes(staged_cli)
-        if not copied.runnable or not copied.bundle_complete or copied_hashes != source_hashes:
-            print("Copied CLI bundle failed validation. Codex config was not changed.")
-            return 20
-        destination_dir.mkdir(parents=True, exist_ok=True)
-        for name in MANAGED_CLI_BUNDLE_FILES:
-            os.replace(staging_dir / name, destination_dir / name)
-        installed = probe_cli(
+        installed_ok, _staging_dir, previous_bundle_dir = _install_cli_bundle_atomically(
+            source,
             destination,
-            "hybrid-cache",
-            execute=True,
-            required_siblings=MANAGED_CLI_COMPANION_FILES,
+            source_hashes,
         )
-        if not installed.runnable or cli_bundle_hashes(destination) != source_hashes:
-            print("Installed CLI bundle failed validation. Codex config was not changed.")
+        if not installed_ok:
+            print("Copied CLI bundle failed validation. Codex config was not changed.")
             return 20
         environment_backup = _backup_cli_environment(destination_dir.parent, previous_environment)
         set_user_environment_value("CODEX_CLI_PATH", str(destination))
@@ -1155,11 +1670,9 @@ def run_windows_update_repair(
             shutil.copy2(config_backup, codex_config)
         raise
     finally:
-        try:
-            if staging_dir.exists():
-                shutil.rmtree(staging_dir)
-        except OSError:
-            pass
+        # The previous versioned directory is intentionally retained as a
+        # private rollback copy. It is never selected by CODEX_CLI_PATH.
+        pass
     after = protected_hashes(config)
     changed = [name for name in before if before[name] != after[name]]
     if changed:
@@ -1222,7 +1735,7 @@ def run_windows_update_ensure(config_path: str | None = None) -> int:
         _print_report(report)
         print(
             "Codex has downloaded a newer app version but Windows has not registered it for this user yet. "
-            "Keep Codex closed, finish the app update, then run this launcher again."
+            "Keep Codex closed and run windows-update-orchestrate or Repair Codex Update and Plugins.cmd."
         )
         return 20
     if not auto_repair_eligible(report):
@@ -1257,6 +1770,367 @@ def run_windows_update_ensure(config_path: str | None = None) -> int:
         return 20
     print("Automatic CLI refresh complete. Protected Codex files were unchanged.")
     return 0
+
+
+def official_plugins_need_refresh(config: AppConfig, app_info: dict[str, str]) -> bool:
+    """Return whether either official bundled plugin is missing or stale."""
+
+    try:
+        text, _ = read_utf8_text_preserving_bom(config.codex_home / "config.toml")
+    except OSError:
+        return True
+    probes = [plugin_probe(name, app_info, config.codex_home, text) for name in ("browser", "chrome")]
+    return any(not probe.installed or not probe.version_matches for probe in probes)
+
+
+def verify_official_bundled_plugins(
+    config: AppConfig,
+    app_info: dict[str, str],
+    cli_path: Path,
+) -> tuple[bool, str]:
+    """Verify both plugin files and the official CLI catalog after refresh."""
+
+    try:
+        text, _ = read_utf8_text_preserving_bom(config.codex_home / "config.toml")
+    except OSError as exc:
+        return False, f"config read failed: {type(exc).__name__}"
+    for name in ("browser", "chrome"):
+        probe = plugin_probe(name, app_info, config.codex_home, text)
+        if not probe.installed or not probe.version_matches:
+            return False, (
+                f"{name} is not installed with the current AppX version "
+                f"(bundled={probe.source_version}, cache={probe.cache_version})"
+            )
+    states, error = query_codex_plugin_catalog(cli_path)
+    if error:
+        return False, error
+    awaiting_feature_gate: list[str] = []
+    for plugin_id in BUNDLED_PLUGIN_IDS:
+        state = states.get(plugin_id)
+        if state is None or not state.installed or not state.enabled:
+            return False, f"{plugin_id} is not installed and enabled in the official CLI catalog"
+        if not state.available:
+            awaiting_feature_gate.append(plugin_id)
+    if awaiting_feature_gate:
+        return True, (
+            "Browser/Chrome are installed and enabled; Codex post-start verification will wait for AVAILABLE: "
+            + ", ".join(awaiting_feature_gate)
+        )
+    return True, "Browser and Chrome are installed, enabled, and version-aligned"
+
+
+def run_windows_update_orchestrate(
+    config_path: str | None = None,
+    *,
+    apply: bool = False,
+    automatic: bool = False,
+    registration_timeout_seconds: float = 300,
+    registration_poll_seconds: float = 3,
+    settle_checks: int = DEFAULT_APPX_SETTLE_CHECKS,
+    settle_poll_seconds: float = DEFAULT_APPX_SETTLE_POLL_SECONDS,
+    settle_timeout_seconds: float = DEFAULT_APPX_SETTLE_TIMEOUT_SECONDS,
+    settle_total_timeout_seconds: float = DEFAULT_APPX_SETTLE_TOTAL_TIMEOUT_SECONDS,
+    max_registration_passes: int = DEFAULT_MAX_REGISTRATION_PASSES,
+    confirm: Callable[[str], str] = input,
+) -> int:
+    """Run the complete closed-app Windows update transaction.
+
+    The order is deliberately fixed: observe and back up, wait for the Store
+    view to become stable, register up to two staged AppX versions if needed,
+    refresh the matching CLI bundle, then refresh the current AppX marketplace
+    and official Browser/Chrome entries.  Registration is followed by another
+    stability wait so a second Store build cannot be missed.  Codex is opened
+    only by the outer desktop launcher after this command succeeds.
+    """
+
+    config = load_config(config_path)
+    if not is_windows():
+        print("Windows Codex update orchestration is available only on Windows.")
+        return 20
+    if codex_is_running():
+        print("Codex/ChatGPT is running. Quit it completely before the update transaction.")
+        return 20
+    app = windows_codex_app_info()
+    if not app:
+        print("OpenAI.Codex AppX package was not found.")
+        return 20
+
+    report = inspect_windows_update(config, include_resources=False, app_info=app)
+    initial_plugins_need_refresh = official_plugins_need_refresh(config, app)
+    print("Windows Codex update orchestration")
+    print(f"codex_app_version: {report.app_version}")
+    print(f"pending_registration: {'yes' if report.pending_registration else 'no'}")
+    print(f"cli_launch_gate: {'ready' if report.launch_safe else 'repair-needed'}")
+    print(f"plugins_need_refresh: {'yes' if initial_plugins_need_refresh else 'no'}")
+    if not apply:
+        if report.pending_registration:
+            print(
+                "planned: require "
+                f"{max(1, int(settle_checks))} stable Store observations, register at most "
+                f"{max(1, int(max_registration_passes))} versions, and settle again before launch"
+            )
+        if not report.launch_safe:
+            print("planned: refresh the current AppX CLI bundle and CODEX_CLI_PATH")
+        if initial_plugins_need_refresh:
+            cli = current_codex_cli_for_plugins(config, app)
+            if cli:
+                refresh_official_bundled_plugins(cli, app, apply=False)
+            else:
+                print("planned: refresh Browser/Chrome after a matching CLI becomes available")
+        print("DRY-RUN COMPLETE. No Store, config, plugin, or Codex state was changed.")
+        return 0
+
+    if not automatic and confirm("Type APPLY to continue: ") != "APPLY":
+        print("Cancelled. No Windows update or plugin changes were made.")
+        return 3
+
+    initial_snapshot = codex_appx_update_snapshot()
+    if initial_snapshot.app_info is None:
+        print("OpenAI.Codex AppX package disappeared before the update transaction started.")
+        return 20
+    force_plugin_refresh = False
+    if (
+        report.launch_safe
+        and not report.pending_registration
+        and not initial_snapshot.pending_registration
+        and not initial_plugins_need_refresh
+    ):
+        quick_cli = current_codex_cli_for_plugins(config, initial_snapshot.app_info)
+        if quick_cli is not None:
+            quick_ok, quick_detail = verify_official_bundled_plugins(
+                config,
+                initial_snapshot.app_info,
+                quick_cli,
+            )
+            if quick_ok:
+                print("Healthy fast path: " + quick_detail)
+                print("No Store registration, backup, CLI copy, or plugin refresh was needed.")
+                return 0
+            force_plugin_refresh = True
+            print("Fast-path plugin verification needs repair: " + quick_detail)
+
+    before_hashes = protected_hashes(config)
+    try:
+        before_config, before_bom = read_utf8_text_preserving_bom(config.codex_home / "config.toml")
+    except OSError as exc:
+        print(f"Codex config could not be read: {type(exc).__name__}")
+        return 20
+    before_guard = config_guard_hash(before_config)
+    try:
+        backup = backup_windows_update_state(config)
+    except OSError as exc:
+        print(f"Update backup preparation failed: {type(exc).__name__}. Codex remains closed.")
+        return 20
+    print(f"Update backup created: {backup}")
+
+    def transaction_invariants_hold(stage: str, *, restore_backup: bool = False) -> bool:
+        current_hashes = protected_hashes(config)
+        changed = [
+            name
+            for name in before_hashes
+            if before_hashes[name] != current_hashes[name]
+        ]
+        if changed:
+            print(f"Protected Codex files changed during {stage}: " + ", ".join(changed))
+            print(f"Codex remains closed. Update backup: {backup}")
+            return False
+        try:
+            current_config, _ = read_utf8_text_preserving_bom(config.codex_home / "config.toml")
+        except OSError as exc:
+            print(f"Codex config verification failed during {stage}: {type(exc).__name__}")
+            return False
+        if config_guard_hash(current_config) != before_guard:
+            if restore_backup:
+                _restore_config_from_backup(backup, config)
+            else:
+                _restore_config_from_text(config.codex_home / "config.toml", before_config, before_bom)
+            print(
+                f"A protected Codex configuration block changed during {stage}; "
+                "the original config was restored."
+            )
+            return False
+        return True
+
+    registration_passes = 0
+    alignment_retries = 0
+    plugins_refreshed = False
+    settle_deadline = time.monotonic() + max(0.0, float(settle_total_timeout_seconds))
+
+    def wait_for_stable_store_view() -> AppxUpdateSnapshot | None:
+        remaining = settle_deadline - time.monotonic()
+        if remaining <= 0:
+            print("The total Codex Store stability wait reached its bounded limit.")
+            return None
+        return wait_for_codex_appx_stability(
+            consecutive_checks=settle_checks,
+            poll_seconds=settle_poll_seconds,
+            timeout_seconds=min(max(0.0, float(settle_timeout_seconds)), remaining),
+        )
+
+    snapshot = initial_snapshot
+    snapshot_is_stable = False
+
+    while True:
+        while snapshot.pending_registration:
+            if not snapshot_is_stable:
+                stable = wait_for_stable_store_view()
+                if stable is None:
+                    print("Codex remains closed because the Store update view did not stabilize.")
+                    return 20
+                snapshot = stable
+                snapshot_is_stable = True
+            if not snapshot.pending_registration:
+                break
+            if registration_passes >= max(1, int(max_registration_passes)):
+                print(
+                    "A newer Codex build is still pending after the bounded registration passes. "
+                    "Codex remains closed; retry the same daily entry after the Store finishes staging."
+                )
+                return 20
+            target = snapshot.highest_staged_version
+            registration_passes += 1
+            print(
+                f"Codex Store registration pass {registration_passes}/"
+                f"{max(1, int(max_registration_passes))}: target={target}"
+            )
+            registration = run_windows_appx_registration(
+                snapshot.app_info,
+                apply=True,
+                target_version=target,
+                timeout_seconds=registration_timeout_seconds,
+                poll_seconds=registration_poll_seconds,
+            )
+            if registration != 0:
+                print(
+                    "Codex remains closed. Resolve the official Store registration, "
+                    "then retry the daily entry."
+                )
+                return registration
+            if not transaction_invariants_hold(
+                f"Store registration pass {registration_passes}",
+                restore_backup=True,
+            ):
+                return 20
+            stable = wait_for_stable_store_view()
+            if stable is None:
+                print("Codex remains closed because the post-registration Store view did not stabilize.")
+                return 20
+            snapshot = stable
+            snapshot_is_stable = True
+
+        app = snapshot.app_info
+        if app is None:
+            print("Codex AppX disappeared before CLI alignment. Codex remains closed.")
+            return 20
+
+        # The existing ensure path remains the single source of truth for the
+        # versioned, hash-checked CLI bundle.  It is a no-op when aligned.
+        ensure = run_windows_update_ensure(config_path)
+        if ensure != 0:
+            late_snapshot = codex_appx_update_snapshot()
+            if late_snapshot.app_info is not None and late_snapshot.pending_registration:
+                print("A newer Codex build appeared during CLI alignment; returning to the Store gate.")
+                snapshot = late_snapshot
+                snapshot_is_stable = False
+                continue
+            print("Codex remains closed because the matching CLI bundle was not verified.")
+            return ensure
+
+        app = windows_codex_app_info() or app
+        cli = current_codex_cli_for_plugins(config, app)
+        if cli is None:
+            print("The current hash-matched Codex CLI was not found for official plugin refresh.")
+            return 20
+
+        if force_plugin_refresh or official_plugins_need_refresh(config, app):
+            try:
+                plugin_config_before, plugin_bom = read_utf8_text_preserving_bom(
+                    config.codex_home / "config.toml"
+                )
+            except OSError as exc:
+                print(f"Codex config could not be read before plugin refresh: {type(exc).__name__}")
+                return 20
+            refresh = refresh_official_bundled_plugins(cli, app, apply=True)
+            if refresh != 0:
+                # Keep any validated CLI repair, but do not leave a half-written
+                # marketplace/config transaction behind.
+                _restore_config_from_text(
+                    config.codex_home / "config.toml",
+                    plugin_config_before,
+                    plugin_bom,
+                )
+                print("Browser/Chrome refresh failed. The previous config was restored and Codex remains closed.")
+                return refresh
+            plugins_refreshed = True
+            force_plugin_refresh = False
+
+        if not transaction_invariants_hold("CLI and Browser/Chrome alignment"):
+            return 20
+
+        final_snapshot = codex_appx_update_snapshot()
+        if final_snapshot.app_info is None:
+            print("OpenAI.Codex AppX package disappeared during final verification.")
+            return 20
+        aligned_version = str(app.get("Version") or "missing")
+        if final_snapshot.pending_registration:
+            print("A newer Codex build appeared during final verification; returning to the Store gate.")
+            snapshot = final_snapshot
+            snapshot_is_stable = False
+            continue
+        if final_snapshot.current_version != aligned_version:
+            alignment_retries += 1
+            if alignment_retries > max(1, int(max_registration_passes)):
+                print(
+                    "The registered Codex version kept changing during final alignment. "
+                    "Codex remains closed; retry after Microsoft Store activity settles."
+                )
+                return 20
+            print(
+                "Windows registered another Codex build during CLI/plugin alignment; "
+                "rechecking the final AppX once more."
+            )
+            snapshot = final_snapshot
+            snapshot_is_stable = False
+            continue
+        snapshot = final_snapshot
+        break
+
+    final_report = inspect_windows_update(
+        config,
+        include_resources=False,
+        app_info=snapshot.app_info,
+    )
+    if final_report.pending_registration or not final_report.launch_safe:
+        _print_report(final_report)
+        print("The final AppX/CLI launch gate is not healthy. Codex remains closed.")
+        return 20
+    final_cli = current_codex_cli_for_plugins(config, snapshot.app_info or {})
+    if final_cli is None:
+        print("The final current-AppX CLI could not be verified. Codex remains closed.")
+        return 20
+    ok, detail = verify_official_bundled_plugins(config, snapshot.app_info or {}, final_cli)
+    if not ok:
+        print("Official Browser/Chrome verification failed: " + detail)
+        print(f"Codex remains closed. Update backup: {backup}")
+        return 20
+    print("Official Browser/Chrome verification: " + detail)
+    if not plugins_refreshed:
+        print("Browser/Chrome were already aligned with the final AppX marketplace.")
+    if not transaction_invariants_hold("final update verification"):
+        return 20
+    print(
+        "Windows update orchestration complete. Account, model catalog, MCP, "
+        "projects, and protected state were preserved. "
+        f"Store registration passes: {registration_passes}."
+    )
+    return 0
+
+
+def _restore_config_from_text(path: Path, text: str, bom: bool) -> None:
+    try:
+        write_utf8_text_atomic(path, text, bom=bom)
+    except OSError:
+        pass
 
 
 def run_windows_browser_ensure(

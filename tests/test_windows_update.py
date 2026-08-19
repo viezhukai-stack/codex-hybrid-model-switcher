@@ -95,6 +95,42 @@ def test_parse_cli_plugin_catalog_distinguishes_installed_and_available():
     assert states["chrome@openai-bundled"].installed is False
 
 
+def test_orchestrator_plugin_verification_accepts_prestart_feature_gate(tmp_path, monkeypatch):
+    config_path, codex_home = write_config(tmp_path)
+    config = load_config(str(config_path))
+    app, source = app_fixture(tmp_path)
+    add_plugin_cache(codex_home)
+    (codex_home / "config.toml").write_text(
+        '[plugins."browser@openai-bundled"]\nenabled = true\n'
+        '[plugins."chrome@openai-bundled"]\nenabled = true\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        windows_update,
+        "query_codex_plugin_catalog",
+        lambda _cli: (
+            {
+                plugin_id: windows_update.CliPluginState(
+                    plugin_id=plugin_id,
+                    found=True,
+                    installed=True,
+                    enabled=True,
+                    install_policy="PENDING",
+                    version="26.715.9000",
+                    bucket="installed",
+                )
+                for plugin_id in windows_update.BUNDLED_PLUGIN_IDS
+            },
+            None,
+        ),
+    )
+
+    ok, detail = windows_update.verify_official_bundled_plugins(config, app, source)
+
+    assert ok is True
+    assert "post-start" in detail
+
+
 def test_plugin_probe_accepts_new_bundled_marketplace_layout(tmp_path):
     _config_path, codex_home = write_config(tmp_path)
     app, _source = app_fixture(tmp_path)
@@ -183,6 +219,461 @@ def test_pending_registration_compares_current_and_staged_appx_versions():
     assert pending is True
 
 
+def test_appx_stability_requires_three_identical_observations():
+    app_v1 = {"Version": "26.803.8161.0"}
+    app_v2 = {"Version": "26.803.10989.0"}
+    observations = iter(
+        (
+            windows_update.AppxUpdateSnapshot(app_v1, app_v1["Version"], "26.803.9000.0", True),
+            windows_update.AppxUpdateSnapshot(app_v1, app_v1["Version"], app_v2["Version"], True),
+            windows_update.AppxUpdateSnapshot(app_v1, app_v1["Version"], app_v2["Version"], True),
+            windows_update.AppxUpdateSnapshot(app_v1, app_v1["Version"], app_v2["Version"], True),
+        )
+    )
+
+    stable = windows_update.wait_for_codex_appx_stability(
+        consecutive_checks=3,
+        poll_seconds=0,
+        timeout_seconds=1,
+        probe=lambda: next(observations),
+        sleeper=lambda _seconds: None,
+        clock=lambda: 0,
+    )
+
+    assert stable is not None
+    assert stable.highest_staged_version == "26.803.10989.0"
+    assert stable.pending_registration is True
+
+
+def test_bundled_marketplace_path_comes_from_current_appx(tmp_path):
+    app, _source = app_fixture(tmp_path, version="26.727.6591.0")
+
+    marketplace = windows_update.bundled_marketplace_path(app)
+
+    assert marketplace == (
+        Path(app["InstallLocation"])
+        / "app"
+        / "resources"
+        / "plugins"
+        / "openai-bundled"
+    )
+
+
+def test_winget_registration_command_uses_official_store_product(monkeypatch, tmp_path):
+    winget = tmp_path / "winget.exe"
+    winget.write_bytes(b"winget")
+    observed: dict[str, object] = {}
+    monkeypatch.setattr(windows_update, "winget_path", lambda: winget)
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+
+    def fake_run(arguments, **kwargs):
+        observed["arguments"] = arguments
+        observed["kwargs"] = kwargs
+        return subprocess.CompletedProcess(arguments, 0, "ok", "")
+
+    monkeypatch.setattr(windows_update.subprocess, "run", fake_run)
+
+    result = windows_update._run_winget_codex_registration(timeout=12)
+
+    assert result.returncode == 0
+    arguments = observed["arguments"]
+    assert arguments[:3] == [str(winget), "install", "--id"]
+    assert windows_update.CODEX_STORE_PRODUCT_ID in arguments
+    assert ["--source", "msstore"] == arguments[5:7]
+    assert "--force" in arguments
+    assert "--silent" in arguments
+    assert "--disable-interactivity" in arguments
+    assert observed["kwargs"]["encoding"] == "utf-8"
+    assert observed["kwargs"]["errors"] == "replace"
+
+
+def test_appx_registration_apply_waits_until_target_is_registered(tmp_path, monkeypatch):
+    old_app, _source = app_fixture(tmp_path, version="26.721.3996.0")
+    new_app = dict(old_app, Version="26.727.6591.0")
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(windows_update, "codex_is_running", lambda: False)
+    monkeypatch.setattr(windows_update, "windows_codex_app_info", lambda: new_app)
+    monkeypatch.setattr(
+        windows_update,
+        "windows_codex_all_user_packages",
+        lambda: [{"Version": "26.727.6591.0", "UserInstallStates": [{"state": "Staged"}]}],
+    )
+    monkeypatch.setattr(windows_update.time, "sleep", lambda _seconds: None)
+
+    result = windows_update.run_windows_appx_registration(
+        old_app,
+        apply=True,
+        timeout_seconds=1,
+        poll_seconds=0.1,
+        runner=lambda: subprocess.CompletedProcess(["winget"], 0, "ok", ""),
+    )
+
+    assert result == 0
+
+
+def test_appx_registration_returns_after_target_even_if_newer_build_is_staged(tmp_path, monkeypatch):
+    old_app, _source = app_fixture(tmp_path, version="26.803.8161.0")
+    registered_app = dict(old_app, Version="26.803.9000.0")
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(windows_update, "codex_is_running", lambda: False)
+    monkeypatch.setattr(windows_update, "windows_codex_app_info", lambda: registered_app)
+    monkeypatch.setattr(
+        windows_update,
+        "windows_codex_all_user_packages",
+        lambda: [
+            {
+                "Version": "26.803.10989.0",
+                "UserInstallStates": [{"state": "Staged"}],
+            }
+        ],
+    )
+
+    result = windows_update.run_windows_appx_registration(
+        old_app,
+        apply=True,
+        target_version="26.803.9000.0",
+        timeout_seconds=1,
+        poll_seconds=0.1,
+        runner=lambda: subprocess.CompletedProcess(["winget"], 0, "ok", ""),
+    )
+
+    assert result == 0
+
+
+def test_refresh_official_plugins_uses_current_marketplace_and_both_plugins(tmp_path, monkeypatch):
+    app, source = app_fixture(tmp_path)
+    commands: list[list[str]] = []
+
+    def fake_command(_cli, arguments, **_kwargs):
+        commands.append(arguments)
+        return subprocess.CompletedProcess(["codex", *arguments], 0, "{}", "")
+
+    monkeypatch.setattr(windows_update, "_run_codex_plugin_command", fake_command)
+
+    result = windows_update.refresh_official_bundled_plugins(source, app, apply=True)
+
+    assert result == 0
+    assert commands == [
+        ["marketplace", "remove", "openai-bundled", "--json"],
+        [
+            "marketplace",
+            "add",
+            str(Path(app["InstallLocation"]) / "app" / "resources" / "plugins" / "openai-bundled"),
+            "--json",
+        ],
+        ["add", "browser@openai-bundled", "--json"],
+        ["add", "chrome@openai-bundled", "--json"],
+    ]
+
+
+def test_config_guard_ignores_plugin_node_repl_and_cli_path_but_preserves_other_mcp():
+    before = """model_provider = "custom"
+
+[model_providers.custom]
+base_url = "http://127.0.0.1:19032/v1"
+
+[mcp_servers.node_repl]
+command = "old"
+
+[mcp_servers.obsidian]
+command = "obsidian"
+
+[plugins."browser@openai-bundled"]
+enabled = true
+"""
+    after = before.replace("old", "new") + "\n[plugins.\"chrome@openai-bundled\"]\nenabled = true\n"
+
+    assert windows_update.config_guard_hash(before) == windows_update.config_guard_hash(after)
+    changed = before.replace('base_url = "http://127.0.0.1:19032/v1"', 'base_url = "http://bad"')
+    assert windows_update.config_guard_hash(before) != windows_update.config_guard_hash(changed)
+    node_repl_changed = before.replace('command = "old"', 'timeout = 999')
+    assert windows_update.config_guard_hash(before) != windows_update.config_guard_hash(node_repl_changed)
+
+
+def test_update_orchestrator_dry_run_never_registers_or_creates_backup(tmp_path, monkeypatch):
+    config_path, codex_home = write_config(tmp_path)
+    app, source = app_fixture(tmp_path)
+    add_plugin_cache(codex_home)
+    (codex_home / "config.toml").write_text(
+        f"model_provider = 'custom'\n[mcp_servers.node_repl]\ncommand='node'\n"
+        f"[mcp_servers.node_repl.env]\nCODEX_CLI_PATH='{source}'\n"
+        "[plugins.\"browser@openai-bundled\"]\nenabled = true\n"
+        "[plugins.\"chrome@openai-bundled\"]\nenabled = true\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(windows_update, "codex_is_running", lambda: False)
+    monkeypatch.setattr(windows_update, "windows_codex_app_info", lambda: app)
+    monkeypatch.setattr(windows_update, "windows_codex_all_user_packages", lambda: [])
+    monkeypatch.setattr(
+        windows_update,
+        "inspect_windows_update",
+        lambda *_args, **_kwargs: windows_update.WindowsUpdateReport(
+            status=windows_update.STATUS_HEALTHY,
+            launch_safe=True,
+            app_version=app["Version"],
+        ),
+    )
+    monkeypatch.setattr(windows_update, "official_plugins_need_refresh", lambda *_args: False)
+    monkeypatch.setattr(
+        windows_update,
+        "run_windows_appx_registration",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("registration should not run")),
+    )
+    monkeypatch.setattr(
+        windows_update,
+        "refresh_official_bundled_plugins",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("refresh should not run")),
+    )
+
+    before = {name: (codex_home / name).read_bytes() for name in ("auth.json", "models_cache.json", "state_5.sqlite")}
+    assert windows_update.run_windows_update_orchestrate(str(config_path), apply=False) == 0
+    assert {name: (codex_home / name).read_bytes() for name in before} == before
+    assert not (tmp_path / "CodexHybridModelSwitcher").exists()
+
+
+def test_update_orchestrator_apply_refreshes_plugins_after_cli_gate(tmp_path, monkeypatch):
+    config_path, codex_home = write_config(tmp_path)
+    app, source = app_fixture(tmp_path)
+    config_toml = codex_home / "config.toml"
+    config_toml.write_text(
+        "model_provider = 'custom'\n\n[model_providers.custom]\nbase_url = 'http://127.0.0.1:19032/v1'\n"
+        "\n[mcp_servers.obsidian]\ncommand = 'obsidian'\n",
+        encoding="utf-8",
+    )
+    backup = tmp_path / "backup"
+    backup.mkdir()
+    (backup / "config.toml").write_bytes(config_toml.read_bytes())
+    observed: dict[str, object] = {}
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(windows_update, "codex_is_running", lambda: False)
+    monkeypatch.setattr(windows_update, "windows_codex_app_info", lambda: app)
+    monkeypatch.setattr(windows_update, "inspect_windows_update", lambda *_args, **_kwargs: windows_update.WindowsUpdateReport(
+        status=windows_update.STATUS_HEALTHY,
+        launch_safe=True,
+        app_version=app["Version"],
+    ))
+    monkeypatch.setattr(windows_update, "official_plugins_need_refresh", lambda *_args: True)
+    monkeypatch.setattr(
+        windows_update,
+        "backup_windows_update_state",
+        lambda _config: backup,
+    )
+    def fake_ensure(_path):
+        observed["ensure"] = True
+        return 0
+
+    monkeypatch.setattr(windows_update, "run_windows_update_ensure", fake_ensure)
+    monkeypatch.setattr(windows_update, "current_codex_cli_for_plugins", lambda *_args: source)
+    def fake_refresh(_cli, _app, *, apply=False):
+        observed["refresh"] = apply
+        return 0
+
+    monkeypatch.setattr(windows_update, "refresh_official_bundled_plugins", fake_refresh)
+    monkeypatch.setattr(
+        windows_update,
+        "verify_official_bundled_plugins",
+        lambda *_args: (True, "ok"),
+    )
+
+    assert windows_update.run_windows_update_orchestrate(
+        str(config_path),
+        apply=True,
+        automatic=True,
+    ) == 0
+    assert observed == {"ensure": True, "refresh": True}
+
+
+def test_update_orchestrator_registers_two_consecutive_store_builds(tmp_path, monkeypatch):
+    config_path, codex_home = write_config(tmp_path)
+    app0, source = app_fixture(tmp_path, version="26.803.8161.0")
+    app1 = dict(app0, Version="26.803.9000.0")
+    app2 = dict(app0, Version="26.803.10989.0")
+    (codex_home / "config.toml").write_text(
+        "model_provider='custom'\n[model_providers.custom]\nbase_url='http://127.0.0.1:19032/v1'\n",
+        encoding="utf-8",
+    )
+    backup = tmp_path / "backup"
+    backup.mkdir()
+    (backup / "config.toml").write_bytes((codex_home / "config.toml").read_bytes())
+    current_app = {"value": app0}
+    initial = windows_update.AppxUpdateSnapshot(app0, app0["Version"], app1["Version"], True)
+    final = windows_update.AppxUpdateSnapshot(app2, app2["Version"], "missing", False)
+    direct_snapshots = iter((initial, final))
+    stable_snapshots = iter(
+        (
+            initial,
+            windows_update.AppxUpdateSnapshot(app1, app1["Version"], app2["Version"], True),
+            final,
+        )
+    )
+    inspect_calls = {"count": 0}
+    targets: list[str] = []
+
+    def fake_inspect(*_args, **_kwargs):
+        inspect_calls["count"] += 1
+        if inspect_calls["count"] == 1:
+            return windows_update.WindowsUpdateReport(
+                status=windows_update.STATUS_MANUAL_ACTION,
+                launch_safe=False,
+                app_version=app0["Version"],
+                highest_staged_version=app1["Version"],
+                pending_registration=True,
+            )
+        return windows_update.WindowsUpdateReport(
+            status=windows_update.STATUS_HEALTHY,
+            launch_safe=True,
+            app_version=app2["Version"],
+        )
+
+    def fake_registration(_app, *, target_version=None, **_kwargs):
+        assert target_version is not None
+        targets.append(target_version)
+        current_app["value"] = app1 if target_version == app1["Version"] else app2
+        return 0
+
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(windows_update, "codex_is_running", lambda: False)
+    monkeypatch.setattr(windows_update, "windows_codex_app_info", lambda: current_app["value"])
+    monkeypatch.setattr(windows_update, "inspect_windows_update", fake_inspect)
+    monkeypatch.setattr(windows_update, "official_plugins_need_refresh", lambda *_args: False)
+    monkeypatch.setattr(windows_update, "backup_windows_update_state", lambda _config: backup)
+    monkeypatch.setattr(windows_update, "codex_appx_update_snapshot", lambda: next(direct_snapshots))
+    monkeypatch.setattr(windows_update, "wait_for_codex_appx_stability", lambda **_kwargs: next(stable_snapshots))
+    monkeypatch.setattr(windows_update, "run_windows_appx_registration", fake_registration)
+    monkeypatch.setattr(windows_update, "run_windows_update_ensure", lambda _path: 0)
+    monkeypatch.setattr(windows_update, "current_codex_cli_for_plugins", lambda *_args: source)
+    monkeypatch.setattr(windows_update, "verify_official_bundled_plugins", lambda *_args: (True, "ok"))
+
+    protected_before = {
+        name: (codex_home / name).read_bytes()
+        for name in ("auth.json", "models_cache.json", "state_5.sqlite")
+    }
+    assert windows_update.run_windows_update_orchestrate(
+        str(config_path),
+        apply=True,
+        automatic=True,
+        settle_checks=3,
+        settle_poll_seconds=0,
+        max_registration_passes=2,
+    ) == 0
+    assert targets == [app1["Version"], app2["Version"]]
+    assert {
+        name: (codex_home / name).read_bytes()
+        for name in protected_before
+    } == protected_before
+
+
+def test_update_orchestrator_stays_closed_when_third_build_is_still_pending(tmp_path, monkeypatch):
+    config_path, codex_home = write_config(tmp_path)
+    app0, _source = app_fixture(tmp_path, version="26.803.8161.0")
+    app1 = dict(app0, Version="26.803.9000.0")
+    app2 = dict(app0, Version="26.803.10989.0")
+    app3 = dict(app0, Version="26.803.12000.0")
+    (codex_home / "config.toml").write_text("model_provider='custom'\n", encoding="utf-8")
+    backup = tmp_path / "backup"
+    backup.mkdir()
+    (backup / "config.toml").write_bytes((codex_home / "config.toml").read_bytes())
+    initial = windows_update.AppxUpdateSnapshot(app0, app0["Version"], app1["Version"], True)
+    stable_snapshots = iter(
+        (
+            initial,
+            windows_update.AppxUpdateSnapshot(app1, app1["Version"], app2["Version"], True),
+            windows_update.AppxUpdateSnapshot(app2, app2["Version"], app3["Version"], True),
+        )
+    )
+    targets: list[str] = []
+
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(windows_update, "codex_is_running", lambda: False)
+    monkeypatch.setattr(windows_update, "windows_codex_app_info", lambda: app0)
+    monkeypatch.setattr(
+        windows_update,
+        "inspect_windows_update",
+        lambda *_args, **_kwargs: windows_update.WindowsUpdateReport(
+            status=windows_update.STATUS_MANUAL_ACTION,
+            launch_safe=False,
+            app_version=app0["Version"],
+            highest_staged_version=app1["Version"],
+            pending_registration=True,
+        ),
+    )
+    monkeypatch.setattr(windows_update, "official_plugins_need_refresh", lambda *_args: False)
+    monkeypatch.setattr(windows_update, "backup_windows_update_state", lambda _config: backup)
+    monkeypatch.setattr(windows_update, "codex_appx_update_snapshot", lambda: initial)
+    monkeypatch.setattr(windows_update, "wait_for_codex_appx_stability", lambda **_kwargs: next(stable_snapshots))
+
+    def fake_registration(_app, *, target_version=None, **_kwargs):
+        targets.append(str(target_version))
+        return 0
+
+    monkeypatch.setattr(windows_update, "run_windows_appx_registration", fake_registration)
+    monkeypatch.setattr(
+        windows_update,
+        "run_windows_update_ensure",
+        lambda _path: (_ for _ in ()).throw(AssertionError("CLI alignment must not start")),
+    )
+
+    assert windows_update.run_windows_update_orchestrate(
+        str(config_path),
+        apply=True,
+        automatic=True,
+        settle_poll_seconds=0,
+        max_registration_passes=2,
+    ) == 20
+    assert targets == [app1["Version"], app2["Version"]]
+
+
+def test_update_orchestrator_no_pending_update_uses_fast_path(tmp_path, monkeypatch):
+    config_path, codex_home = write_config(tmp_path)
+    app, source = app_fixture(tmp_path, version="26.803.10989.0")
+    (codex_home / "config.toml").write_text("model_provider='custom'\n", encoding="utf-8")
+    backup = tmp_path / "backup"
+    backup.mkdir()
+    (backup / "config.toml").write_bytes((codex_home / "config.toml").read_bytes())
+    snapshot = windows_update.AppxUpdateSnapshot(app, app["Version"], "missing", False)
+
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(windows_update, "codex_is_running", lambda: False)
+    monkeypatch.setattr(windows_update, "windows_codex_app_info", lambda: app)
+    monkeypatch.setattr(
+        windows_update,
+        "inspect_windows_update",
+        lambda *_args, **_kwargs: windows_update.WindowsUpdateReport(
+            status=windows_update.STATUS_HEALTHY,
+            launch_safe=True,
+            app_version=app["Version"],
+        ),
+    )
+    monkeypatch.setattr(windows_update, "official_plugins_need_refresh", lambda *_args: False)
+    monkeypatch.setattr(
+        windows_update,
+        "backup_windows_update_state",
+        lambda _config: (_ for _ in ()).throw(AssertionError("healthy fast path must not create a backup")),
+    )
+    monkeypatch.setattr(windows_update, "codex_appx_update_snapshot", lambda: snapshot)
+    monkeypatch.setattr(
+        windows_update,
+        "wait_for_codex_appx_stability",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("stable wait should not run")),
+    )
+    monkeypatch.setattr(
+        windows_update,
+        "run_windows_appx_registration",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("registration should not run")),
+    )
+    monkeypatch.setattr(windows_update, "run_windows_update_ensure", lambda _path: 0)
+    monkeypatch.setattr(windows_update, "current_codex_cli_for_plugins", lambda *_args: source)
+    monkeypatch.setattr(windows_update, "verify_official_bundled_plugins", lambda *_args: (True, "ok"))
+
+    assert windows_update.run_windows_update_orchestrate(
+        str(config_path),
+        apply=True,
+        automatic=True,
+    ) == 0
+
+
 def test_render_cli_path_update_preserves_other_mcp_and_plugin_config(tmp_path):
     existing = """model_provider = "custom"
 
@@ -237,6 +728,40 @@ def test_inspect_windows_update_detects_healthy_and_stale_cli(tmp_path, monkeypa
     )
     assert stale.status == windows_update.STATUS_REPAIR_REQUIRED
     assert stale.launch_safe is False
+
+
+def test_inspect_windows_update_repairs_matching_cli_in_older_managed_directory(tmp_path, monkeypatch):
+    config_path, codex_home = write_config(tmp_path)
+    config = load_config(str(config_path))
+    app, source = app_fixture(tmp_path, version="26.727.6591.0")
+    add_plugin_cache(codex_home)
+    configured = (
+        tmp_path
+        / "CodexHybridModelSwitcher"
+        / "codex-cli"
+        / "26.727.4816.0"
+        / "codex.exe"
+    )
+    copy_cli_bundle(source, configured)
+    (codex_home / "config.toml").write_text(
+        f"[mcp_servers.node_repl]\ncommand='node'\n"
+        f"[mcp_servers.node_repl.env]\nCODEX_CLI_PATH='{configured}'\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+
+    report = windows_update.inspect_windows_update(
+        config,
+        execute_cli=False,
+        include_resources=False,
+        app_info=app,
+    )
+
+    assert report.configured_cli.sha256 == report.source_cli.sha256
+    assert report.status == windows_update.STATUS_REPAIR_REQUIRED
+    assert report.launch_safe is False
+    assert "Configured CODEX_CLI_PATH uses an older managed version directory." in report.errors
+    assert windows_update.auto_repair_eligible(report) is True
 
 
 def test_inspect_blocks_launch_when_newer_appx_is_staged(tmp_path, monkeypatch):

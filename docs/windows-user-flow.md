@@ -61,15 +61,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-windows-laun
 
 This creates `Start Codex Hot Router.cmd`, `Codex Model Switcher.cmd`,
 `Enable Codex Hot Router Mode.cmd`, `Restore Codex 19030 Mode.cmd`,
-`Repair Codex Browser and CLI.cmd`, `Repair Codex Live Audio.cmd`,
+`Repair Codex Update and Plugins.cmd`, `Repair Codex Browser and CLI.cmd`,
+`Repair Codex Live Audio.cmd`,
 `Change Codex Account.cmd`, and
 `Restore Official Codex.cmd` on the desktop.
 
 `Start Codex Hot Router.cmd` always:
 
-- runs the Windows Codex update launch gate and automatically refreshes the
-  complete Browser CLI bundle only for a supported AppX version change while
-  Codex is closed
+- runs the closed-app Windows update orchestrator, completes a staged official
+  Store registration when needed, refreshes the matching complete CLI bundle,
+  and rebinds the current AppX Browser/Chrome marketplace
 - checks or starts the lightweight bridge on `127.0.0.1:19030`
 - starts or reuses the hot router on `127.0.0.1:19032`
 - enables `19032` hot-router mode while Codex is closed when needed
@@ -93,9 +94,14 @@ The launcher always:
 The maintenance switcher does not open Codex automatically. The hot-router
 launcher does open Codex automatically after health checks pass.
 
-After a Codex app update, the next daily launch normally refreshes the matching
-CLI bundle automatically before opening Codex. Run `Repair Codex Browser and
-CLI.cmd` only when the automatic refresh stops. To change the ChatGPT account,
+After a Codex app update, the next daily launch normally waits for three stable
+Store observations, completes registration, performs a second bounded
+stability check for newly staged builds, refreshes the matching CLI and
+Browser/Chrome bundle, and then opens Codex. A healthy installation skips the
+full wait. Run
+`Repair Codex Update and Plugins.cmd` when the full transaction needs an
+explicit retry; `Repair Codex Browser and CLI.cmd` is the CLI-only fallback. To
+change the ChatGPT account,
 use `Change Codex Account.cmd`; it uses device-code login, keeps a local
 transaction backup, and does not move project conversations between provider
 buckets.
@@ -106,7 +112,9 @@ versioned project-owned directory and stores that path in the current-user
 its Browser configuration during startup. It does not create a service,
 scheduled task, watchdog, or restart loop.
 
-Browser plugin repair is intentionally separate from the closed-app CLI repair.
+The current AppX marketplace and both official Browser/Chrome plugins are
+refreshed while Codex is closed. Browser feature-gate verification remains a
+separate post-start step.
 `windows-browser-post-start.ps1` waits for the running app to finish loading its
 feature gates, then invokes `windows-browser-ensure`. The command checks the
 official plugin catalog and, only when needed, runs the current official CLI's

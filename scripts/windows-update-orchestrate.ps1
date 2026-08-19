@@ -1,8 +1,12 @@
 param(
     [string]$Config = "$env:USERPROFILE\.codex-hybrid-model-switcher\config.json",
     [switch]$Apply,
-    [switch]$RecoverLast,
-    [string]$ProxyUrl
+    [switch]$Automatic,
+    [int]$SettleChecks = 3,
+    [double]$SettlePollSeconds = 5,
+    [double]$SettleTimeoutSeconds = 120,
+    [double]$SettleTotalTimeoutSeconds = 180,
+    [int]$MaxRegistrationPasses = 2
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,10 +31,10 @@ function Invoke-Switcher($ArgsList) {
     try {
         $portablePython = Join-Path $env:LOCALAPPDATA "CodexHybridModelSwitcher\python\python.exe"
         $portablePythonNested = Join-Path $env:LOCALAPPDATA "CodexHybridModelSwitcher\python\python\python.exe"
-        if (Test-Path $portablePython) {
+        if (Test-Path -LiteralPath $portablePython) {
             & $portablePython -m codex_hybrid_switcher @ArgsList | Out-Host
         }
-        elseif (Test-Path $portablePythonNested) {
+        elseif (Test-Path -LiteralPath $portablePythonNested) {
             & $portablePythonNested -m codex_hybrid_switcher @ArgsList | Out-Host
         }
         elseif (Get-Command py -ErrorAction SilentlyContinue) {
@@ -50,26 +54,19 @@ function Invoke-Switcher($ArgsList) {
 }
 
 if ($env:OS -ne "Windows_NT") {
-    throw "This account entry is for Windows only."
+    throw "This update entry is for Windows only."
 }
 
 Initialize-PortablePythonPath
-
-$arguments = @("change-account", "--config", $Config)
+$arguments = @("windows-update-orchestrate", "--config", $Config)
 if ($Apply) { $arguments += "--apply" }
-if ($RecoverLast) { $arguments += "--recover-last" }
-if ($ProxyUrl) { $arguments += @("--proxy-url", $ProxyUrl) }
+if ($Automatic) { $arguments += "--automatic" }
+$arguments += @(
+    "--settle-checks", [string]$SettleChecks,
+    "--settle-poll-seconds", [string]$SettlePollSeconds,
+    "--settle-timeout-seconds", [string]$SettleTimeoutSeconds,
+    "--settle-total-timeout-seconds", [string]$SettleTotalTimeoutSeconds,
+    "--max-registration-passes", [string]$MaxRegistrationPasses
+)
 $exitCode = Invoke-Switcher -ArgsList $arguments
-if ($exitCode -eq 3) {
-    exit 0
-}
-if ($exitCode -eq 0 -and $Apply -and -not $RecoverLast) {
-    $launcher = Join-Path ([Environment]::GetFolderPath("Desktop")) "Start Codex Hot Router.cmd"
-    if (Test-Path -LiteralPath $launcher) {
-        Start-Process -FilePath $launcher
-    }
-    else {
-        Write-Host "Account login completed. Start Codex through the normal Hot Router entry."
-    }
-}
 exit $exitCode

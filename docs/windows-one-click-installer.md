@@ -6,13 +6,13 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.18.4.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.18.6.zip
 ```
 
 For private netdisk sharing with a bundled local model, build and share:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.18.4.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.18.6.zip
 ```
 
 It contains:
@@ -20,6 +20,7 @@ It contains:
 - `Install Codex Hybrid.cmd`
 - `Start Codex Hot Router.cmd`
 - `Codex Hybrid Diagnostics.cmd`
+- `Repair Codex Update and Plugins.cmd`
 - `Repair Codex Browser and CLI.cmd`
 - `Repair Codex Live Audio.cmd`
 - `Change Codex Account.cmd`
@@ -106,16 +107,27 @@ The full local package also contains:
 - Writes a redacted diagnostics report when `Codex Hybrid Diagnostics.cmd` is
   double-clicked.
 - Checks the active Codex AppX CLI and Browser/Chrome plugin versions before
-  the daily hot-router launch. For a supported AppX version change while Codex
-  is closed, `windows-update-ensure` automatically copies and hash-checks
-  `codex.exe`, `rg.exe`,
+  the daily hot-router launch. `windows-update-orchestrate` runs while Codex is
+  closed, waits for three identical Store observations, completes a pending
+  Microsoft Store registration through official `winget` product
+  `9PLM9XGG6VKS`, performs a bounded post-registration stability pass for a
+  newly staged build, and then invokes the guarded CLI refresh and
+  copies/hash-checks `codex.exe`, `rg.exe`,
   `codex-windows-sandbox-setup.exe`, `codex-command-runner.exe`, and
-  `codex-code-mode-host.exe`, persists the versioned path in the current-user
-  `CODEX_CLI_PATH`, reruns the launch gate, and only then opens Codex.
+  `codex-code-mode-host.exe` when needed.
+- The same transaction removes and re-adds only the current AppX
+  `openai-bundled` marketplace and installs both `browser@openai-bundled` and
+  `chrome@openai-bundled` through the official CLI. It leaves old cache
+  directories untouched, verifies provider
+  routing and protected-file hashes, and only then lets the daily entry open
+  Codex.
 - Compares the current-user AppX registration with all-user staged Codex
   packages. If `highest_staged_version` is newer, the doctor sets
-  `pending_registration`, the daily launch gate leaves Codex closed, and the
-  user finishes the official app registration before trying again.
+  `pending_registration`; the orchestrator completes registration while Codex
+  remains closed, allows at most two registration passes, and leaves Codex
+  closed if Store versions keep changing. A healthy installation takes the
+  fast path. `Repair Codex Update and Plugins.cmd` is the explicit manual
+  fallback for the same transaction.
 - Disables PowerShell progress rendering around `Invoke-WebRequest`, avoiding
   the console `Write-Progress` failure while preserving normal download errors.
 - Stops on any update condition outside that narrow automatic repair and points
@@ -127,6 +139,8 @@ The full local package also contains:
   `plugin add browser@openai-bundled --json` through the current official CLI
   only when Browser is available but missing or stale. It never restarts Codex
   and exits after writing a small local diagnostic log.
+- The narrower `windows-update-ensure` and `Repair Codex Browser and CLI.cmd`
+  paths remain available when only the versioned CLI bundle needs repair.
 - Installs `Change Codex Account.cmd` for an explicit, backup-first device-code
   login. Account switching is separate from normal model routing and remains a
   dry-run until the user types `SWITCH`.
@@ -170,7 +184,7 @@ The full local package also contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.4.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.6.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -279,7 +293,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.4.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.6.zip
 ```
 
 Upload that zip to your netdisk.
@@ -303,7 +317,7 @@ one GGUF model and one mmproj GGUF file, then run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py `
-  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.4.zip `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.6.zip `
   --include-llama-dir D:\Tools\llama.cpp `
   --include-vcredist-file D:\Installers\vc_redist.x64.exe `
   --include-model-dir D:\Models\gemma-4-e4b
