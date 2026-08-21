@@ -1,6 +1,6 @@
 # Windows Codex Update Canary
 
-This canary validates the v2.18.6 Windows AppX registration, Browser/CLI update
+This canary validates the v2.18.7 Windows AppX registration, Browser/CLI update
 guard, and optional account switch on a real Windows Codex Hybrid 2.0
 installation.
 
@@ -15,7 +15,7 @@ installation.
 - Do not edit official Browser/Chrome plugin caches, Codex databases, session
   JSONL, rollout logs, Windows proxy settings, services, or scheduled tasks.
 - A Codex Store/AppX update may not have a reliable version rollback. Run all
-  v2.18.6 dry-runs against the old app before updating it.
+  v2.18.7 dry-runs against the old app before updating it.
 
 ## Candidate flow
 
@@ -34,7 +34,9 @@ installation.
    product `9PLM9XGG6VKS` through official `winget`, requires three identical
    current/staged-version observations before registration, waits for the
    post-registration view to settle, and allows at most two registration
-   passes. It then refreshes the complete CLI companion set and rebinds
+   passes. If Store registration fails while the matching official package is
+   already staged locally, it registers that package's `AppxManifest.xml` for
+   the current user. It then refreshes the complete CLI companion set and rebinds
    `CODEX_CLI_PATH` only when needed.
 6. The same orchestrator refreshes the current AppX bundled marketplace with
    the official CLI and installs both `browser@openai-bundled` and

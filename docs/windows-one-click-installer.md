@@ -6,13 +6,13 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.18.6.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.18.7.zip
 ```
 
 For private netdisk sharing with a bundled local model, build and share:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.18.6.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.18.7.zip
 ```
 
 It contains:
@@ -95,6 +95,11 @@ The full local package also contains:
   on `127.0.0.1:19030`, starts or reuses the hot router on `127.0.0.1:19032`,
   enables hot-router mode while Codex is closed when needed, then opens Codex
   Desktop.
+- Installs a stable launcher under
+  `%LOCALAPPDATA%\CodexHybridModelSwitcher\launcher` and an atomic
+  `current-project.txt` pointer. The desktop shortcut discovers the newest
+  valid installed Hybrid release instead of permanently embedding one release
+  directory.
 - Preserves complete Responses output when Gemini High uses its non-streaming
   compatibility path, including reasoning summaries and function calls, and
   performs only bounded `Retry-After`-aware 429 retries.
@@ -128,6 +133,13 @@ The full local package also contains:
   closed if Store versions keep changing. A healthy installation takes the
   fast path. `Repair Codex Update and Plugins.cmd` is the explicit manual
   fallback for the same transaction.
+- If the Store command fails but the matching official `OpenAI.Codex` package
+  is already staged locally, the same closed-app transaction registers that
+  package's `AppxManifest.xml` for the current user and continues. It does not
+  download or register third-party AppX content.
+- Private configs may set `hot_router.ignore_system_proxy` to `true` on a TUN
+  machine with a stale Windows proxy entry. Only the Router process bypasses
+  that entry; the launcher does not rewrite Windows proxy or DNS settings.
 - Disables PowerShell progress rendering around `Invoke-WebRequest`, avoiding
   the console `Write-Progress` failure while preserving normal download errors.
 - Stops on any update condition outside that narrow automatic repair and points
@@ -184,7 +196,7 @@ The full local package also contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.6.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.7.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -293,7 +305,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.6.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.7.zip
 ```
 
 Upload that zip to your netdisk.
@@ -317,7 +329,7 @@ one GGUF model and one mmproj GGUF file, then run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py `
-  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.6.zip `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.7.zip `
   --include-llama-dir D:\Tools\llama.cpp `
   --include-vcredist-file D:\Installers\vc_redist.x64.exe `
   --include-model-dir D:\Models\gemma-4-e4b

@@ -11,6 +11,20 @@ $orchestrateUpdateLauncher = Join-Path $desktop "Repair Codex Update and Plugins
 $repairUpdateLauncher = Join-Path $desktop "Repair Codex Browser and CLI.cmd"
 $repairLiveAudioLauncher = Join-Path $desktop "Repair Codex Live Audio.cmd"
 $changeAccountLauncher = Join-Path $desktop "Change Codex Account.cmd"
+$installRoot = Join-Path $env:LOCALAPPDATA "CodexHybridModelSwitcher"
+$stableLauncherRoot = Join-Path $installRoot "launcher"
+$stableHotRouterLauncher = Join-Path $stableLauncherRoot "Start-Codex-Hot-Router.ps1"
+$stableHotRouterSource = Join-Path $repo "scripts\windows-current-release-launcher.ps1"
+$currentProjectPointer = Join-Path $installRoot "current-project.txt"
+
+if (-not (Test-Path -LiteralPath $stableHotRouterSource)) {
+    throw "Stable Windows launcher source was not found: $stableHotRouterSource"
+}
+New-Item -ItemType Directory -Force -Path $stableLauncherRoot | Out-Null
+Copy-Item -LiteralPath $stableHotRouterSource -Destination $stableHotRouterLauncher -Force
+$pointerTemporary = "$currentProjectPointer.tmp-$PID"
+[IO.File]::WriteAllText($pointerTemporary, $repo + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
+Move-Item -LiteralPath $pointerTemporary -Destination $currentProjectPointer -Force
 
 $body = @"
 @echo off
@@ -24,8 +38,15 @@ Write-Output "Installed: $launcher"
 
 $hotRouterBody = @"
 @echo off
-cd /d "$repo"
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\windows-hot-router-start.ps1 -Config "%USERPROFILE%\.codex-hybrid-model-switcher\config.json"
+setlocal
+set "STABLE_LAUNCHER=%LOCALAPPDATA%\CodexHybridModelSwitcher\launcher\Start-Codex-Hot-Router.ps1"
+if not exist "%STABLE_LAUNCHER%" (
+  echo Stable Codex Hybrid launcher was not found.
+  echo Run Install Codex Hybrid.cmd once, then try again.
+  pause
+  exit /b 20
+)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%STABLE_LAUNCHER%" -Config "%USERPROFILE%\.codex-hybrid-model-switcher\config.json"
 echo.
 echo Router stopped. Press any key to close.
 pause >nul

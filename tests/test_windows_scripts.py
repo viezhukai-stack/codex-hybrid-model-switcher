@@ -14,7 +14,7 @@ def test_installed_windows_launcher_uses_guarded_menu_script():
     text = (ROOT / "scripts" / "install-windows-launcher.ps1").read_text(encoding="utf-8")
 
     assert "windows-provider-menu.ps1" in text
-    assert "windows-hot-router-start.ps1" in text
+    assert "windows-current-release-launcher.ps1" in text
     assert "windows-hot-router-mode.ps1" in text
     assert "Start Codex Hot Router.cmd" in text
     assert "Enable Codex Hot Router Mode.cmd" in text
@@ -24,6 +24,9 @@ def test_installed_windows_launcher_uses_guarded_menu_script():
     assert "Repair Codex Live Audio.cmd" in text
     assert "Change Codex Account.cmd" in text
     assert "codex-hybrid-switcher menu" not in text
+    assert "windows-current-release-launcher.ps1" in text
+    assert "current-project.txt" in text
+    assert "Start-Codex-Hot-Router.ps1" in text
 
 
 def test_repository_windows_launcher_uses_guarded_menu_script():
@@ -235,6 +238,25 @@ def test_windows_hot_router_launcher_checks_bridge_before_router_and_opens_codex
     assert "windows-hot-router-start.ps1" in cmd
 
 
+def test_windows_stable_launcher_selects_latest_installed_release_without_services():
+    text = (ROOT / "scripts" / "windows-current-release-launcher.ps1").read_text(encoding="utf-8")
+    installed = (ROOT / "scripts" / "install-windows-launcher.ps1").read_text(encoding="utf-8")
+    package = (ROOT / "installer" / "windows" / "Start Codex Hot Router.cmd").read_text(encoding="utf-8")
+
+    assert "current-project.txt" in text
+    assert "Installed-Projects" in text
+    assert "Project-Version" in text
+    assert "windows-hot-router-start.ps1" in text
+    assert "| Out-Host" in text
+    assert "return $LASTEXITCODE" not in text
+    assert "exit $LASTEXITCODE" in text
+    assert "Start-Codex-Hot-Router.ps1" in installed
+    assert "Start-Codex-Hot-Router.ps1" in package
+    for source in (text, installed, package):
+        assert "Register-ScheduledTask" not in source
+        assert "New-Service" not in source
+
+
 def test_windows_maintenance_wrappers_stream_output_without_polluting_exit_code():
     for name in (
         "windows-update-orchestrate.ps1",
@@ -367,6 +389,7 @@ def test_windows_one_click_package_builder_creates_expected_zip(tmp_path):
     assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/windows_update.py" in names
     assert "payload/codex-hybrid-model-switcher/src/codex_hybrid_switcher/account_switch.py" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-hot-router-start.ps1" in names
+    assert "payload/codex-hybrid-model-switcher/scripts/windows-current-release-launcher.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-browser-post-start.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-update-orchestrate.ps1" in names
     assert "payload/codex-hybrid-model-switcher/scripts/windows-hot-router-mode.ps1" in names

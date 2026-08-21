@@ -105,7 +105,7 @@ cache, rewrite old conversations, or install always-on recovery services.
 ### Windows full local one-click setup
 
 For a beginner Windows computer, share
-`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.6.zip`, extract the entire zip,
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.7.zip`, extract the entire zip,
 and double-click `Install Codex Hybrid.cmd`. This is the recommended netdisk
 package because it includes the local model path and does not require a cloud
 API key.
@@ -119,7 +119,7 @@ Windows hot router, and stop at guarded dry-run before asking for an explicit
 `APPLY` confirmation. It does not redistribute Codex Desktop, install CC
 Switch, or apply a real switch without explicit confirmation.
 
-Windows v2.18.6 also installs four explicit maintenance entries. `Repair Codex
+Windows v2.18.7 also installs four explicit maintenance entries. `Repair Codex
 Update and Plugins.cmd` completes a staged official Store registration and
 refreshes the current AppX marketplace through the official CLI. `Repair Codex
 Browser and CLI.cmd` copies the matching complete CLI companion set and repairs
@@ -141,6 +141,12 @@ most two registration passes, validates all five CLI companion files, refreshes
 the current AppX bundled marketplace, and checks Browser/Chrome before opening
 the app. A healthy installation takes the fast path; if Store versions keep
 changing, Codex stays closed and the explicit repair entry remains available.
+
+If Microsoft Store registration is temporarily offline but the official newer
+package is already staged on disk, v2.18.7 registers that local official
+package for the current user and continues the same guarded transaction. The
+desktop entry now calls a stable launcher that discovers the newest valid
+installed Hybrid release instead of embedding one release directory forever.
 
 The update transaction checks whether Windows has staged a newer Codex AppX
 package for registration and completes that registration through the official
@@ -174,7 +180,7 @@ See [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md)
 ### macOS full local one-click setup
 
 For a beginner Mac computer, share
-`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.6.zip`, extract the entire zip, and
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.7.zip`, extract the entire zip, and
 double-click `Install Codex Hybrid.command`. This is the recommended netdisk
 package because it includes both macOS x64 and arm64 llama.cpp runtimes plus
 `payload/models/local-gemma`, so a beginner can use the bundled local Gemma
@@ -198,7 +204,7 @@ Python by default, but the builder can include a tested runtime under
 See [`docs/macos-full-local-pack.md`](docs/macos-full-local-pack.md).
 The v2.17.3 full-local flow and v2.18.0 upgrade path have real Mac UI canaries recorded in
 [`docs/macos-full-local-pack-canary.md`](docs/macos-full-local-pack-canary.md);
-the current v2.18.6 package carries the same app-discovery path plus the shared
+the current v2.18.7 package carries the same app-discovery path plus the shared
 Responses/tool-call preservation fix and HTTP/1.1 WebSocket tunneling used by
 Codex Live voice.
 
@@ -218,7 +224,8 @@ Private configs may define the shared Mac/Windows hot router:
     "model_display_names": {},
     "catalog_cache_seconds": 15,
     "max_429_retries": 2,
-    "max_retry_after_seconds": 30
+    "max_retry_after_seconds": 30,
+    "ignore_system_proxy": false
   }
 }
 ```
@@ -232,6 +239,9 @@ Desktop.
 `model_display_names` can rename catalog labels without changing the model id
 sent upstream. Newly published models route through `default_cloud_provider_id`;
 model-specific provider entries still take precedence.
+On Windows machines that use a TUN proxy and have a stale system-proxy entry,
+set `ignore_system_proxy` to `true`; only the Hot Router process bypasses that
+system entry.
 
 Machines whose local bridge exposes more than one model may add a private
 `local_catalog_models` array. Each item supplies catalog-only metadata such as

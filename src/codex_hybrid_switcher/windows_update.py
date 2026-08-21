@@ -477,6 +477,66 @@ def _run_winget_codex_registration(
         return subprocess.CompletedProcess(arguments, 1, "", f"{type(exc).__name__}")
 
 
+def staged_codex_package_for_registration(
+    target_version: str,
+    packages: list[dict[str, Any]] | None = None,
+) -> dict[str, Any] | None:
+    """Return the official staged package that can satisfy ``target_version``."""
+
+    packages = windows_codex_all_user_packages() if packages is None else packages
+    eligible = [
+        package
+        for package in packages
+        if package_is_staged(package)
+        and str(package.get("Name") or "OpenAI.Codex") == "OpenAI.Codex"
+        and package.get("Version")
+        and package.get("InstallLocation")
+        and windows_version_key(str(package.get("Version")))
+        >= windows_version_key(target_version)
+    ]
+    if not eligible:
+        return None
+    exact = [package for package in eligible if str(package.get("Version")) == target_version]
+    candidates = exact or eligible
+    return min(candidates, key=lambda package: windows_version_key(str(package.get("Version"))))
+
+
+def _powershell_single_quoted(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _run_local_staged_codex_registration(
+    package: dict[str, Any],
+    *,
+    timeout: float = 120,
+) -> subprocess.CompletedProcess[str]:
+    """Register an already downloaded official Codex AppX for the current user."""
+
+    install_location = str(package.get("InstallLocation") or "")
+    if not install_location:
+        return subprocess.CompletedProcess(
+            ["powershell"],
+            2,
+            "",
+            "staged package InstallLocation is missing",
+        )
+    manifest = Path(install_location) / "AppxManifest.xml"
+    script = (
+        f"$manifest={_powershell_single_quoted(str(manifest))};"
+        "if(-not (Test-Path -LiteralPath $manifest)){Write-Error 'AppxManifest.xml is missing';exit 2};"
+        "Add-AppxPackage -Register $manifest -DisableDevelopmentMode -ErrorAction Stop"
+    )
+    try:
+        return _run_powershell(script, timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return subprocess.CompletedProcess(
+            ["powershell"],
+            1,
+            "",
+            type(exc).__name__,
+        )
+
+
 def _registration_target_reached(target_version: str) -> tuple[bool, dict[str, str] | None]:
     app = windows_codex_app_info()
     if not app:
@@ -493,6 +553,7 @@ def run_windows_appx_registration(
     timeout_seconds: float = 300,
     poll_seconds: float = 3,
     runner: Callable[[], subprocess.CompletedProcess[str]] | None = None,
+    local_runner: Callable[[dict[str, Any]], subprocess.CompletedProcess[str]] | None = None,
 ) -> int:
     """Complete a staged Store update for the current Codex user.
 
@@ -524,6 +585,10 @@ def run_windows_appx_registration(
     )
     print(f"store_product_id: {CODEX_STORE_PRODUCT_ID}")
     print("planned: winget install from the Microsoft Store with accepted agreements and no interaction")
+    print(
+        "fallback: if Store registration fails and the matching official package is already staged, "
+        "register its local AppxManifest.xml for the current user"
+    )
     if not apply:
         print("DRY-RUN COMPLETE. No Store registration was started.")
         return 0
@@ -535,7 +600,28 @@ def run_windows_appx_registration(
         detail = (result.stderr or result.stdout or "").strip().splitlines()
         suffix = f" Detail: {detail[-1]}" if detail else ""
         print(f"Official Codex Store registration failed (exit {result.returncode}).{suffix}")
-        return 20
+        candidate = staged_codex_package_for_registration(target)
+        if candidate is None:
+            print("No matching official staged Codex package is available for local registration.")
+            return 20
+        print(
+            "Falling back to the already downloaded official Codex package: "
+            f"{candidate.get('Version') or target}."
+        )
+        local_result = (
+            local_runner(candidate)
+            if local_runner is not None
+            else _run_local_staged_codex_registration(candidate, timeout=timeout_seconds)
+        )
+        if local_result.returncode != 0:
+            local_detail = (local_result.stderr or local_result.stdout or "").strip().splitlines()
+            local_suffix = f" Detail: {local_detail[-1]}" if local_detail else ""
+            print(
+                "Local official Codex AppX registration failed "
+                f"(exit {local_result.returncode}).{local_suffix}"
+            )
+            return 20
+        print("Local official Codex AppX registration command completed.")
 
     deadline = time.monotonic() + max(0.0, timeout_seconds)
     while True:

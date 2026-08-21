@@ -1,10 +1,10 @@
 # macOS Full One-Click Beginner Installer
 
-`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.6.zip` is the supported macOS
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.7.zip` is the supported macOS
 beginner distribution. It includes the local model path and can also configure
 an optional OpenAI-compatible cloud provider.
 
-The v2.18.6 shared router preserves message, reasoning, function-call, usage,
+The v2.18.7 shared router preserves message, reasoning, function-call, usage,
 and terminal-status objects when a cloud model needs the non-streaming
 Responses compatibility path. It also supports the HTTP/1.1 WebSocket upgrade
 used by Codex Live voice.
@@ -67,7 +67,7 @@ python scripts/build-macos-one-click-package.py --full-local
 ```
 
 The package is written to
-`dist/Codex-Hybrid-macOS-Full-Local-Setup-v2.18.6.zip`.
+`dist/Codex-Hybrid-macOS-Full-Local-Setup-v2.18.7.zip`.
 
 ## Validation
 

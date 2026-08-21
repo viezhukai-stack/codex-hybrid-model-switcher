@@ -117,6 +117,7 @@ def test_validate_config_checks_hot_router_default_provider_and_shapes(tmp_path)
                     "model_display_names": ["not-an-object"],
                     "max_429_retries": 9,
                     "max_retry_after_seconds": 999,
+                    "ignore_system_proxy": "sometimes",
                 },
                 "local_catalog_models": [{"display_name": "Missing id"}],
                 "providers": [{"id": "openai-official", "kind": "official"}],
@@ -134,6 +135,7 @@ def test_validate_config_checks_hot_router_default_provider_and_shapes(tmp_path)
     assert "local_catalog_models must be an array of objects with non-empty id values" in errors
     assert "hot_router.max_429_retries must be between 0 and 5" in errors
     assert "hot_router.max_retry_after_seconds must be between 0 and 120" in errors
+    assert "hot_router.ignore_system_proxy must be true or false" in errors
 
 
 def test_run_validate_config_redacts_private_endpoint_and_paths(tmp_path, capsys):

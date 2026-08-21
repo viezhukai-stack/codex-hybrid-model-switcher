@@ -121,6 +121,8 @@ def validate_config(config: AppConfig, *, check_paths: bool = False) -> list[str
                 errors.append("hot_router.max_retry_after_seconds must be between 0 and 120")
         except (TypeError, ValueError):
             errors.append("hot_router.max_retry_after_seconds must be a number")
+        if not isinstance(hot_router.get("ignore_system_proxy", False), bool):
+            errors.append("hot_router.ignore_system_proxy must be true or false")
         default_provider_id = hot_router.get("default_cloud_provider_id")
         if default_provider_id:
             default_provider = next((provider for provider in providers if provider.get("id") == default_provider_id), None)
@@ -216,7 +218,8 @@ def print_validation(config: AppConfig, *, check_paths: bool = False) -> None:
         "hot_router: "
         f"{router.host}:{router.port} "
         f"default_cloud_provider_id={router.default_cloud_provider_id or '<auto>'} "
-        f"dynamic_catalog={'yes' if not router.visible_model_ids else 'filtered'}"
+        f"dynamic_catalog={'yes' if not router.visible_model_ids else 'filtered'} "
+        f"ignore_system_proxy={'yes' if router.ignore_system_proxy else 'no'}"
     )
     if any(provider.get("kind") == "local" for provider in config.providers):
         print("local_model:")

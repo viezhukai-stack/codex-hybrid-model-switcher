@@ -14,7 +14,7 @@ Codex Hybrid Model Switcher - Windows 网盘一键安装包
 10. 如果 payload\llama.cpp 里已经带有 llama-server.exe，安装器会优先使用它；否则会在需要本地模型时尝试从 ggml-org 官方 GitHub Releases 下载 llama.cpp。
 11. 默认运行只做到 dry-run 检查，不会真正切换 Codex。
 12. 只有你确认 dry-run 没问题，并且已经完全退出 Codex 后，才可以输入 APPLY 执行真实切换。
-13. 安装成功后，日常使用优先双击 Start Codex Hot Router.cmd。它会先检查是否有尚未完成注册的 Microsoft Store 更新；如果有更新，会先连续观察三次，确认版本稳定后完成当前用户的 AppX 注册，注册后再检查是否出现更高版本，最多处理两轮。然后复制并校验与当前版本匹配的完整 CLI 套件，并通过官方 Codex CLI 刷新当前 AppX 自带的 Browser/Chrome marketplace。没有待处理更新时走快速路径。接着检查 127.0.0.1:19030 轻量 bridge，启动 127.0.0.1:19032 hot router，最后自动打开 Codex。Codex 完成功能初始化后，还会执行一次有时限的 Browser 检查；全程不会自动登录、重启 Codex 或改写历史数据库。
+13. 安装成功后，日常使用优先双击 Start Codex Hot Router.cmd。这个入口会自动寻找已安装的最新混合配置版本，不再永久绑定某一个旧目录。它会先检查是否有尚未完成注册的 Microsoft Store 更新；如果有更新，会先连续观察三次，确认版本稳定后完成当前用户的 AppX 注册，注册后再检查是否出现更高版本，最多处理两轮。如果 Store 联网注册失败，但官方新版已经下载到本机，它会直接为当前用户注册这个本地官方包并继续。然后复制并校验与当前版本匹配的完整 CLI 套件，并通过官方 Codex CLI 刷新当前 AppX 自带的 Browser/Chrome marketplace。没有待处理更新时走快速路径。接着检查 127.0.0.1:19030 轻量 bridge，启动 127.0.0.1:19032 hot router，最后自动打开 Codex。Codex 完成功能初始化后，还会执行一次有时限的 Browser 检查；全程不会自动登录、重启 Codex 或改写历史数据库。
 14. Codex Model Switcher.cmd 只作为维护/旧模式切换工具保留。
 15. 如果想恢复官方 Codex，双击 Restore Official Codex.cmd。
 16. Codex 更新后，如果日常入口的自动更新流程停止，请完全退出 Codex，再双击 Repair Codex Update and Plugins.cmd。它会完成官方 Store 注册、复制与新版 App 匹配的完整 CLI 套件，并刷新当前 AppX marketplace 及 Browser/Chrome。Repair Codex Browser and CLI.cmd 只作为 CLI 路径问题的窄范围备用入口。

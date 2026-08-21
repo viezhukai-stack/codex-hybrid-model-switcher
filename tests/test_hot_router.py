@@ -14,6 +14,7 @@ from codex_hybrid_switcher.config import AppConfig
 from codex_hybrid_switcher.hot_router import (
     cloud_provider_for_model,
     cloud_response_stream_shim_empty_retries,
+    configure_proxy_environment,
     filter_catalog_models,
     local_catalog_entry,
     local_model_ids,
@@ -79,6 +80,26 @@ def test_local_models_come_from_config_not_machine_specific_defaults(tmp_path):
 
     assert local_model_ids(config) == ["local/gemma"]
     assert "12b" not in json.dumps(local_catalog_entry("local/gemma", config)).lower()
+
+
+def test_hot_router_can_ignore_stale_system_proxy_without_changing_default(tmp_path, monkeypatch):
+    monkeypatch.setenv("NO_PROXY", "existing")
+    monkeypatch.setenv("no_proxy", "existing")
+    default_config = config_for_hot_router(tmp_path)
+
+    configure_proxy_environment(default_config)
+
+    assert default_config.hot_router.ignore_system_proxy is False
+    assert hot_router.os.environ["NO_PROXY"] == "existing"
+
+    bypass_config = AppConfig(
+        tmp_path / "bypass.json",
+        {"hot_router": {"ignore_system_proxy": True}},
+    )
+    configure_proxy_environment(bypass_config)
+
+    assert hot_router.os.environ["NO_PROXY"] == "*"
+    assert hot_router.os.environ["no_proxy"] == "*"
 
 
 def test_multiple_local_catalog_models_keep_per_model_metadata(tmp_path):
