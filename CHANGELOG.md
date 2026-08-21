@@ -5,6 +5,27 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.18.7
+
+- Added an offline-safe current-user AppX registration fallback for Windows.
+  The updater still tries the official Microsoft Store product through
+  `winget` first; when that command fails and the matching official
+  `OpenAI.Codex` package is already staged locally, it registers that package's
+  `AppxManifest.xml` and then resumes the existing CLI and Browser/Chrome
+  alignment transaction.
+- Replaced the installed daily desktop shortcut's fixed release path with a
+  stable launcher under `%LOCALAPPDATA%\CodexHybridModelSwitcher\launcher`.
+  It reads `current-project.txt`, discovers newer valid installed releases when
+  necessary, atomically refreshes the pointer, and then invokes the selected
+  release. No service, scheduled task, watchdog, or background updater is
+  installed.
+- Added the private `hot_router.ignore_system_proxy` option. When enabled, only
+  the Hot Router process bypasses stale Windows system-proxy entries; Windows
+  proxy, DNS, TUN, account, and Codex settings are not rewritten.
+- Added focused tests for Store failure fallback, official staged-package
+  selection, local manifest registration, stable release discovery, proxy
+  isolation, package contents, and protected-state boundaries.
+
 ## v2.18.6
 
 - Added a bounded Windows Store stability gate to the daily Hot Router launch.

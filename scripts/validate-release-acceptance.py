@@ -49,6 +49,7 @@ REQUIRED_FILES = (
     "scripts/bootstrap-windows.ps1",
     "scripts/build-windows-one-click-package.py",
     "scripts/windows-browser-post-start.ps1",
+    "scripts/windows-current-release-launcher.ps1",
     "scripts/windows-update-orchestrate.ps1",
     "scripts/windows-portable-python-path.ps1",
     "scripts/windows-live-audio.ps1",

@@ -36,6 +36,7 @@ class HotRouterConfig:
     catalog_cache_seconds: float
     max_429_retries: int
     max_retry_after_seconds: float
+    ignore_system_proxy: bool
 
 
 @dataclass(frozen=True)
@@ -118,6 +119,7 @@ class AppConfig:
                     120.0,
                 ),
             ),
+            ignore_system_proxy=bool(data.get("ignore_system_proxy", False)),
         )
 
     @property

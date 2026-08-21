@@ -30,6 +30,7 @@ def test_build_first_run_config_defaults_to_cloud_without_local_provider():
     assert data["hot_router"]["port"] == 19032
     assert data["hot_router"]["max_429_retries"] == 2
     assert data["hot_router"]["max_retry_after_seconds"] == 30
+    assert data["hot_router"]["ignore_system_proxy"] is False
     assert data["local_model"]["model_path"] == "~/path/to/model.gguf"
 
 

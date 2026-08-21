@@ -17,7 +17,8 @@
     "model_display_names": {},
     "catalog_cache_seconds": 15,
     "max_429_retries": 2,
-    "max_retry_after_seconds": 30
+    "max_retry_after_seconds": 30,
+    "ignore_system_proxy": false
   },
   "account_switch": {
     "proxy_url": ""

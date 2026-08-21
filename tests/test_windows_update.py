@@ -287,6 +287,104 @@ def test_winget_registration_command_uses_official_store_product(monkeypatch, tm
     assert observed["kwargs"]["errors"] == "replace"
 
 
+def test_staged_package_registration_prefers_exact_official_target():
+    packages = [
+        {
+            "Name": "OpenAI.Codex",
+            "Version": "26.814.5517.0",
+            "InstallLocation": "C:/WindowsApps/Codex-5517",
+            "UserInstallStates": [{"state": "Staged"}],
+        },
+        {
+            "Name": "OpenAI.Codex",
+            "Version": "26.815.1000.0",
+            "InstallLocation": "C:/WindowsApps/Codex-1000",
+            "UserInstallStates": [{"state": "Staged"}],
+        },
+    ]
+
+    selected = windows_update.staged_codex_package_for_registration(
+        "26.814.5517.0",
+        packages,
+    )
+
+    assert selected is packages[0]
+
+
+def test_local_staged_registration_uses_official_manifest(tmp_path, monkeypatch):
+    install = tmp_path / "OpenAI.Codex_26.814.5517.0"
+    install.mkdir()
+    (install / "AppxManifest.xml").write_text("<Package />", encoding="utf-8")
+    observed: dict[str, object] = {}
+
+    def fake_powershell(script, *, timeout=20):
+        observed["script"] = script
+        observed["timeout"] = timeout
+        return subprocess.CompletedProcess(["powershell"], 0, "", "")
+
+    monkeypatch.setattr(windows_update, "_run_powershell", fake_powershell)
+    result = windows_update._run_local_staged_codex_registration(
+        {"InstallLocation": str(install)},
+        timeout=45,
+    )
+
+    assert result.returncode == 0
+    assert "Add-AppxPackage -Register" in observed["script"]
+    assert "-DisableDevelopmentMode" in observed["script"]
+    assert str(install / "AppxManifest.xml") in observed["script"]
+    assert observed["timeout"] == 45
+
+
+def test_appx_registration_falls_back_to_downloaded_official_package(tmp_path, monkeypatch):
+    old_app, _source = app_fixture(tmp_path, version="26.810.7004.0")
+    new_app = dict(old_app, Version="26.814.5517.0")
+    staged = {
+        "Name": "OpenAI.Codex",
+        "Version": new_app["Version"],
+        "InstallLocation": new_app["InstallLocation"],
+        "UserInstallStates": [{"state": "Staged"}],
+    }
+    local_calls: list[dict[str, object]] = []
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(windows_update, "codex_is_running", lambda: False)
+    monkeypatch.setattr(windows_update, "windows_codex_all_user_packages", lambda: [staged])
+    monkeypatch.setattr(windows_update, "windows_codex_app_info", lambda: new_app)
+    monkeypatch.setattr(windows_update.time, "sleep", lambda _seconds: None)
+
+    result = windows_update.run_windows_appx_registration(
+        old_app,
+        apply=True,
+        target_version=new_app["Version"],
+        timeout_seconds=1,
+        poll_seconds=0.1,
+        runner=lambda: subprocess.CompletedProcess(["winget"], 1, "", "0x80072efd"),
+        local_runner=lambda package: (
+            local_calls.append(package)
+            or subprocess.CompletedProcess(["powershell"], 0, "", "")
+        ),
+    )
+
+    assert result == 0
+    assert local_calls == [staged]
+
+
+def test_appx_registration_does_not_fallback_without_staged_official_package(tmp_path, monkeypatch):
+    old_app, _source = app_fixture(tmp_path, version="26.810.7004.0")
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(windows_update, "codex_is_running", lambda: False)
+    monkeypatch.setattr(windows_update, "windows_codex_all_user_packages", lambda: [])
+
+    result = windows_update.run_windows_appx_registration(
+        old_app,
+        apply=True,
+        target_version="26.814.5517.0",
+        runner=lambda: subprocess.CompletedProcess(["winget"], 1, "", "offline"),
+        local_runner=lambda _package: (_ for _ in ()).throw(AssertionError("must not run")),
+    )
+
+    assert result == 20
+
+
 def test_appx_registration_apply_waits_until_target_is_registered(tmp_path, monkeypatch):
     old_app, _source = app_fixture(tmp_path, version="26.721.3996.0")
     new_app = dict(old_app, Version="26.727.6591.0")

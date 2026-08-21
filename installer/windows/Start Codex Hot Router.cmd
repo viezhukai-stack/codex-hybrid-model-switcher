@@ -2,6 +2,12 @@
 setlocal
 cd /d "%~dp0"
 
+set "STABLE_LAUNCHER=%LOCALAPPDATA%\CodexHybridModelSwitcher\launcher\Start-Codex-Hot-Router.ps1"
+if exist "%STABLE_LAUNCHER%" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%STABLE_LAUNCHER%" %*
+  goto :finish
+)
+
 set "PACKAGE_VERSION="
 if exist "%~dp0VERSION.txt" set /p PACKAGE_VERSION=<"%~dp0VERSION.txt"
 set "PROJECT_TOML=%~dp0payload\codex-hybrid-model-switcher\pyproject.toml"
@@ -27,6 +33,7 @@ if exist "%INSTALLED_START%" (
   echo Run Install Codex Hybrid.cmd first, then try again.
 )
 
+:finish
 echo.
 echo Press any key to close this window.
 pause >nul

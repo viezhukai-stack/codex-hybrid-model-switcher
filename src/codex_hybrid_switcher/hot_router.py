@@ -65,6 +65,15 @@ def build_tls_context() -> ssl.SSLContext:
 TLS_CONTEXT = build_tls_context()
 
 
+def configure_proxy_environment(config: AppConfig) -> None:
+    """Optionally bypass stale Windows system-proxy entries for this router only."""
+
+    if not config.hot_router.ignore_system_proxy:
+        return
+    os.environ["NO_PROXY"] = "*"
+    os.environ["no_proxy"] = "*"
+
+
 def runtime_root() -> Path:
     root = Path.home() / ".codex-hybrid-model-switcher" / "hot-router"
     root.mkdir(parents=True, exist_ok=True)
@@ -1801,6 +1810,7 @@ def handler_for(router: HotRouter) -> type[HotRouterHandler]:
 
 def run_hot_router(config_path: str | None = None, *, host: str | None = None, port: int | None = None) -> int:
     config = load_config(config_path)
+    configure_proxy_environment(config)
     router = HotRouter(config, host=host, port=port)
     router.write_state()
     server = ThreadingHTTPServer((router.host, router.port), handler_for(router))

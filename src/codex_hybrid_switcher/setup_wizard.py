@@ -144,6 +144,7 @@ def build_first_run_config(
             "catalog_cache_seconds": 15,
             "max_429_retries": 2,
             "max_retry_after_seconds": 30,
+            "ignore_system_proxy": False,
         },
         "providers": providers,
         "local_model": local_model,
