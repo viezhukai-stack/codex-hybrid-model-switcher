@@ -6,13 +6,13 @@ Python, Git, llama.cpp, or local model files yet.
 The recommended installer package is:
 
 ```text
-Codex-Hybrid-Windows-Netdisk-Setup-v2.18.7.zip
+Codex-Hybrid-Windows-Netdisk-Setup-v2.18.8.zip
 ```
 
 For private netdisk sharing with a bundled local model, build and share:
 
 ```text
-Codex-Hybrid-Windows-Full-Local-Setup-v2.18.7.zip
+Codex-Hybrid-Windows-Full-Local-Setup-v2.18.8.zip
 ```
 
 It contains:
@@ -120,12 +120,14 @@ The full local package also contains:
   copies/hash-checks `codex.exe`, `rg.exe`,
   `codex-windows-sandbox-setup.exe`, `codex-command-runner.exe`, and
   `codex-code-mode-host.exe` when needed.
-- The same transaction removes and re-adds only the current AppX
-  `openai-bundled` marketplace and installs both `browser@openai-bundled` and
-  `chrome@openai-bundled` through the official CLI. It leaves old cache
-  directories untouched, verifies provider
-  routing and protected-file hashes, and only then lets the daily entry open
-  Codex.
+- For Codex CLI versions older than `0.149.0`, the same transaction removes and
+  re-adds only the current AppX `openai-bundled` marketplace and installs both
+  `browser@openai-bundled` and `chrome@openai-bundled` through the official
+  CLI. CLI `0.149.0+` reserves that marketplace for Codex Desktop, so the
+  transaction preserves the enabled plugin entries and does not issue an
+  external remove/add rewrite. Both paths leave old cache directories
+  untouched, verify provider routing and protected-file hashes, and only then
+  let the daily entry open Codex.
 - Compares the current-user AppX registration with all-user staged Codex
   packages. If `highest_staged_version` is newer, the doctor sets
   `pending_registration`; the orchestrator completes registration while Codex
@@ -146,11 +148,12 @@ The full local package also contains:
   to `Repair Codex Browser and CLI.cmd`; it never creates a service, scheduled
   task, watchdog, restart loop, or background updater.
 - After opening Codex, starts one hidden, bounded post-start check. It waits for
-  Codex feature initialization, verifies the official Browser plugin state, and
-  runs `windows-browser-ensure`, which calls
-  `plugin add browser@openai-bundled --json` through the current official CLI
-  only when Browser is available but missing or stale. It never restarts Codex
-  and exits after writing a small local diagnostic log.
+  Codex feature initialization and verifies the official Browser plugin state.
+  On legacy CLIs, `windows-browser-ensure` may call
+  `plugin add browser@openai-bundled --json` only when Browser is available but
+  missing or stale. On CLI `0.149.0+`, the reserved marketplace stays
+  Desktop-owned and the helper does not rewrite it. The check never restarts
+  Codex and exits after writing a small local diagnostic log.
 - The narrower `windows-update-ensure` and `Repair Codex Browser and CLI.cmd`
   paths remain available when only the versioned CLI bundle needs repair.
 - Installs `Change Codex Account.cmd` for an explicit, backup-first device-code
@@ -196,7 +199,7 @@ The full local package also contains:
 
 ## Beginner Flow
 
-1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.7.zip` from the netdisk
+1. Download `Codex-Hybrid-Windows-Netdisk-Setup-v2.18.8.zip` from the netdisk
    link.
 2. Extract the zip.
 3. Double-click `Install Codex Hybrid.cmd`.
@@ -305,7 +308,7 @@ py scripts\build-windows-one-click-package.py
 The default output is the netdisk-ready package:
 
 ```text
-dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.7.zip
+dist\Codex-Hybrid-Windows-Netdisk-Setup-v2.18.8.zip
 ```
 
 Upload that zip to your netdisk.
@@ -329,7 +332,7 @@ one GGUF model and one mmproj GGUF file, then run:
 
 ```powershell
 py scripts\build-windows-one-click-package.py `
-  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.7.zip `
+  --output dist\Codex-Hybrid-Windows-Full-Local-Setup-v2.18.8.zip `
   --include-llama-dir D:\Tools\llama.cpp `
   --include-vcredist-file D:\Installers\vc_redist.x64.exe `
   --include-model-dir D:\Models\gemma-4-e4b

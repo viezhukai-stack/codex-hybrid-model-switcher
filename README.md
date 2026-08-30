@@ -105,7 +105,7 @@ cache, rewrite old conversations, or install always-on recovery services.
 ### Windows full local one-click setup
 
 For a beginner Windows computer, share
-`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.7.zip`, extract the entire zip,
+`Codex-Hybrid-Windows-Full-Local-Setup-v2.18.8.zip`, extract the entire zip,
 and double-click `Install Codex Hybrid.cmd`. This is the recommended netdisk
 package because it includes the local model path and does not require a cloud
 API key.
@@ -119,12 +119,15 @@ Windows hot router, and stop at guarded dry-run before asking for an explicit
 `APPLY` confirmation. It does not redistribute Codex Desktop, install CC
 Switch, or apply a real switch without explicit confirmation.
 
-Windows v2.18.7 also installs four explicit maintenance entries. `Repair Codex
+Windows v2.18.8 also installs four explicit maintenance entries. `Repair Codex
 Update and Plugins.cmd` completes a staged official Store registration and
-refreshes the current AppX marketplace through the official CLI. `Repair Codex
-Browser and CLI.cmd` copies the matching complete CLI companion set and repairs
-the current-user `CODEX_CLI_PATH` after a Codex app update, including the case
-where the app regenerates its Browser config block. `Repair Codex Live Audio.cmd`
+aligns the matching CLI and Browser/Chrome path. On Codex CLI `0.149.0` and
+newer, `openai-bundled` is Desktop-owned, so the updater preserves it instead
+of trying to remove or re-add the reserved marketplace; older CLIs retain the
+explicit marketplace refresh. `Repair Codex Browser and CLI.cmd` copies the
+matching complete CLI companion set and repairs the current-user
+`CODEX_CLI_PATH` after a Codex app update, including the case where the app
+regenerates its Browser config block. `Repair Codex Live Audio.cmd`
 diagnoses microphone consent and default recording roles, remains read-only until
 the user types `REPAIR`, and keeps a timestamped `RESTORE` backup. `Change Codex
 Account.cmd` uses device-code login with a local transaction backup. The normal
@@ -137,13 +140,15 @@ The daily `Start Codex Hot Router.cmd` entry performs the complete closed-app
 update transaction automatically. When Windows has staged a newer Codex AppX,
 it first waits for three identical Store observations, registers the staged
 version, then waits and checks again for a second staged build. It allows at
-most two registration passes, validates all five CLI companion files, refreshes
-the current AppX bundled marketplace, and checks Browser/Chrome before opening
-the app. A healthy installation takes the fast path; if Store versions keep
-changing, Codex stays closed and the explicit repair entry remains available.
+most two registration passes, validates and hashes all five CLI bundle files,
+and checks Browser/Chrome before opening the app. For CLI `0.149.0+`, reserved
+marketplace alignment is deferred to Codex Desktop; legacy CLIs keep the
+explicit pre-start marketplace refresh. A healthy installation takes the fast
+path; if Store versions keep changing, Codex stays closed and the explicit
+repair entry remains available.
 
 If Microsoft Store registration is temporarily offline but the official newer
-package is already staged on disk, v2.18.7 registers that local official
+package is already staged on disk, v2.18.8 registers that local official
 package for the current user and continues the same guarded transaction. The
 desktop entry now calls a stable launcher that discovers the newest valid
 installed Hybrid release instead of embedding one release directory forever.
@@ -158,10 +163,10 @@ surviving older release directory.
 
 After Codex opens, the same daily entry runs one bounded Browser check in the
 background as a final feature-initialization verification. It does nothing when
-the official Browser plugin is healthy and never restarts Codex. The pre-start
-transaction is the phase that refreshes the current AppX marketplace and both
-official Browser/Chrome entries. No service, scheduled task, watchdog, or
-recovery loop is installed.
+the official Browser plugin is healthy and never restarts Codex. With a
+Desktop-owned `openai-bundled` marketplace, this check observes the app-owned
+state without issuing marketplace remove/add commands. No service, scheduled
+task, watchdog, or recovery loop is installed.
 
 The full local package can include `payload/models/local-gemma`,
 `payload/llama.cpp`, and `payload/vcredist/vc_redist.x64.exe` so a beginner can
@@ -180,7 +185,7 @@ See [`docs/windows-one-click-installer.md`](docs/windows-one-click-installer.md)
 ### macOS full local one-click setup
 
 For a beginner Mac computer, share
-`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.7.zip`, extract the entire zip, and
+`Codex-Hybrid-macOS-Full-Local-Setup-v2.18.8.zip`, extract the entire zip, and
 double-click `Install Codex Hybrid.command`. This is the recommended netdisk
 package because it includes both macOS x64 and arm64 llama.cpp runtimes plus
 `payload/models/local-gemma`, so a beginner can use the bundled local Gemma
@@ -204,7 +209,7 @@ Python by default, but the builder can include a tested runtime under
 See [`docs/macos-full-local-pack.md`](docs/macos-full-local-pack.md).
 The v2.17.3 full-local flow and v2.18.0 upgrade path have real Mac UI canaries recorded in
 [`docs/macos-full-local-pack-canary.md`](docs/macos-full-local-pack-canary.md);
-the current v2.18.7 package carries the same app-discovery path plus the shared
+the current v2.18.8 package carries the same app-discovery path plus the shared
 Responses/tool-call preservation fix and HTTP/1.1 WebSocket tunneling used by
 Codex Live voice.
 

@@ -4,6 +4,25 @@ This canary validates the v2.18.7 Windows AppX registration, Browser/CLI update
 guard, and optional account switch on a real Windows Codex Hybrid 2.0
 installation.
 
+## v2.18.8 release audit — 2026-08-30
+
+- The CLI compatibility gate now treats `0.149.0+` as a Desktop-owned
+  `openai-bundled` marketplace. Unit coverage confirms the closed-app updater
+  and post-start Browser helper do not issue marketplace remove/add commands in
+  that mode, while a `0.148.x` CLI keeps the legacy explicit refresh path.
+- Drift detection compares SHA256 for all five managed CLI bundle files rather
+  than `codex.exe` alone. A stale companion binary is now an eligible guarded
+  repair condition.
+- The staging CLI is hash-checked without execution before the directory swap,
+  transient scanner locks are retried, and a failed staging rename restores
+  the previous managed directory.
+- The complete repository suite passed 253 tests, compileall, security scan,
+  release acceptance, stock-Codex handoff, agent handoff drill, and the real
+  clean-machine template validator.
+- This section records source and package evidence. The earlier HL/Kevin
+  physical canaries remain the field evidence; v2.18.8 does not claim a new
+  production-profile mutation test.
+
 ## Safety boundary
 
 - Fully quit Codex/ChatGPT before CLI-bundle repair or account operations. The

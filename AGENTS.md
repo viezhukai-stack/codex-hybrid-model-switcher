@@ -213,10 +213,12 @@ maintenance-only.
 On Windows, app updates use a guarded closed-app transaction plus one bounded
 post-start verification. `windows-update-orchestrate` detects a staged Store
 AppX, completes current-user registration through the official Store product,
-refreshes the hash-matched CLI bundle, and rebinds the current AppX
-`openai-bundled` marketplace before adding Browser and Chrome through the
-official Codex CLI. After Codex opens and finishes feature initialization,
-`windows-browser-ensure` performs one bounded Browser catalog check. Neither
+refreshes the hash-matched complete CLI bundle, and preserves Browser/Chrome.
+For CLI `0.149.0+`, the reserved `openai-bundled` marketplace is managed by
+Codex Desktop and must not be removed or re-added externally; legacy CLIs keep
+the explicit marketplace refresh path. After Codex opens and finishes feature
+initialization, `windows-browser-ensure` performs one bounded Browser check.
+Neither
 phase may log in, restart Codex, edit history/cache files, or become a service,
 scheduled task, watchdog, or recovery loop. `windows-update-ensure` remains the
 narrow CLI-only fallback.
@@ -326,7 +328,7 @@ run validation and bridge diagnostics, and stop at `guarded-switch --dry-run`.
 
 For a beginner Windows machine that may not have Codex Desktop at all, use
 `docs/windows-one-click-installer.md` and the netdisk package
-`Codex-Hybrid-Windows-Netdisk-Setup-v2.13.2.zip`. The installer opens the
+`Codex-Hybrid-Windows-Netdisk-Setup-v2.18.8.zip`. The installer opens the
 official Codex app page when Codex is missing, installs Python with `winget`,
 uses bundled portable Python when present, uses the bundled project payload
 without requiring Git or a GitHub project download, can prefill provider settings

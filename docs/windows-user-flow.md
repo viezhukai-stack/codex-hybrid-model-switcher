@@ -70,14 +70,15 @@ This creates `Start Codex Hot Router.cmd`, `Codex Model Switcher.cmd`,
 
 - runs the closed-app Windows update orchestrator, completes a staged official
   Store registration when needed, refreshes the matching complete CLI bundle,
-  and rebinds the current AppX Browser/Chrome marketplace
+  and aligns Browser/Chrome without rewriting the Desktop-owned reserved
+  marketplace on CLI `0.149.0+`
 - checks or starts the lightweight bridge on `127.0.0.1:19030`
 - starts or reuses the hot router on `127.0.0.1:19032`
 - enables `19032` hot-router mode while Codex is closed when needed
 - opens Codex Desktop after the router is healthy
 - runs one bounded post-start Browser check after Codex feature initialization;
-  it is a no-op when Browser is healthy and uses the official Codex CLI only
-  when Browser is available but missing or stale
+  it is a no-op when Browser is healthy, keeps CLI `0.149.0+` marketplace state
+  app-owned, and uses the official Codex CLI repair only on legacy versions
 - keeps the router in the foreground window instead of installing a service
 
 `Codex Model Switcher.cmd` runs `scripts\windows-provider-menu.ps1`, not the raw
@@ -97,8 +98,9 @@ launcher does open Codex automatically after health checks pass.
 After a Codex app update, the next daily launch normally waits for three stable
 Store observations, completes registration, performs a second bounded
 stability check for newly staged builds, refreshes the matching CLI and
-Browser/Chrome bundle, and then opens Codex. A healthy installation skips the
-full wait. Run
+aligns Browser/Chrome, and then opens Codex. CLI `0.149.0+` owns the reserved
+`openai-bundled` marketplace inside Codex Desktop, so the external updater does
+not remove or re-add it. A healthy installation skips the full wait. Run
 `Repair Codex Update and Plugins.cmd` when the full transaction needs an
 explicit retry; `Repair Codex Browser and CLI.cmd` is the CLI-only fallback. To
 change the ChatGPT account,
@@ -112,13 +114,16 @@ versioned project-owned directory and stores that path in the current-user
 its Browser configuration during startup. It does not create a service,
 scheduled task, watchdog, or restart loop.
 
-The current AppX marketplace and both official Browser/Chrome plugins are
-refreshed while Codex is closed. Browser feature-gate verification remains a
-separate post-start step.
+Legacy CLIs refresh the current AppX marketplace and both official
+Browser/Chrome plugins while Codex is closed. On CLI `0.149.0+`, the reserved
+marketplace stays app-owned and the closed-app step only preserves/verifies the
+enabled plugin entries. Browser feature-gate verification remains a separate
+post-start step.
 `windows-browser-post-start.ps1` waits for the running app to finish loading its
-feature gates, then invokes `windows-browser-ensure`. The command checks the
-official plugin catalog and, only when needed, runs the current official CLI's
-`plugin add browser@openai-bundled --json`. It writes a single diagnostic log at
+feature gates, then invokes `windows-browser-ensure`. Legacy versions may run
+the current official CLI's `plugin add browser@openai-bundled --json` only when
+needed; CLI `0.149.0+` is observed without an external marketplace rewrite. It
+writes a single diagnostic log at
 `%LOCALAPPDATA%\CodexHybridModelSwitcher\logs\browser-post-start.log`, exits
 after the bounded check, and never closes or reopens Codex.
 

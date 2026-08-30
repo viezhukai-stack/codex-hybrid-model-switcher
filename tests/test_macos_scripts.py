@@ -231,6 +231,7 @@ def test_macos_one_click_package_builder_creates_expected_zip(tmp_path):
     assert not any(name.startswith(".package-cache/") for name in names)
     assert not any(name.startswith("payload/codex-hybrid-model-switcher/.github/") for name in names)
     assert not any(name.startswith("payload/codex-hybrid-model-switcher/docs/") for name in names)
+    assert not any(name.startswith("payload/codex-hybrid-model-switcher/dist-materials/") for name in names)
     assert not any(name.startswith("payload/codex-hybrid-model-switcher/tests/") for name in names)
     assert not any(name.startswith("payload/codex-hybrid-model-switcher/scripts/validate-") for name in names)
     assert not any(name.startswith("payload/codex-hybrid-model-switcher/小白一键配置包codex混合配置2.0版/") for name in names)
