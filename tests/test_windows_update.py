@@ -464,6 +464,76 @@ def test_refresh_official_plugins_uses_current_marketplace_and_both_plugins(tmp_
     ]
 
 
+def test_reserved_bundled_marketplace_is_detected_as_app_managed(tmp_path, monkeypatch):
+    _app, source = app_fixture(tmp_path)
+    monkeypatch.setattr(windows_update, "_cli_version_tuple", lambda _cli: (0, 149, 0))
+
+    assert windows_update.bundled_marketplace_is_app_managed(source) is True
+
+
+def test_cli_version_tuple_parses_alpha_version_output(tmp_path, monkeypatch):
+    _app, source = app_fixture(tmp_path)
+    monkeypatch.setattr(
+        windows_update.subprocess,
+        "run",
+        lambda *_args, **_kwargs: subprocess.CompletedProcess(
+            [str(source), "--version"],
+            0,
+            "codex-cli 0.149.0-alpha.18\n",
+            "",
+        ),
+    )
+
+    assert windows_update._cli_version_tuple(source) == (0, 149, 0)
+
+
+def test_reserved_bundled_marketplace_ignores_stale_cached_listing(tmp_path, monkeypatch):
+    _app, source = app_fixture(tmp_path)
+    monkeypatch.setattr(windows_update, "_cli_version_tuple", lambda _cli: (0, 149, 0))
+
+    assert windows_update.bundled_marketplace_is_app_managed(source) is True
+
+
+def test_legacy_cli_keeps_explicit_bundled_marketplace_refresh(tmp_path, monkeypatch):
+    _app, source = app_fixture(tmp_path)
+    monkeypatch.setattr(windows_update, "_cli_version_tuple", lambda _cli: (0, 148, 9))
+
+    assert windows_update.bundled_marketplace_is_app_managed(source) is False
+
+
+def test_reserved_bundled_marketplace_refresh_is_deferred(tmp_path, monkeypatch):
+    app, source = app_fixture(tmp_path)
+    commands: list[list[str]] = []
+    monkeypatch.setattr(windows_update, "bundled_marketplace_is_app_managed", lambda _cli: True)
+
+    def fake_command(_cli, arguments, **_kwargs):
+        commands.append(arguments)
+        return subprocess.CompletedProcess(["codex", *arguments], 0, "{}", "")
+
+    monkeypatch.setattr(windows_update, "_run_codex_plugin_command", fake_command)
+
+    assert windows_update.refresh_official_bundled_plugins(source, app, apply=True) == 0
+    assert commands == []
+
+
+def test_reserved_bundled_marketplace_accepts_stale_cache_before_desktop_launch(tmp_path, monkeypatch):
+    config_path, codex_home = write_config(tmp_path)
+    config = load_config(str(config_path))
+    app, source = app_fixture(tmp_path)
+    add_plugin_cache(codex_home, version="26.715.1000")
+    (codex_home / "config.toml").write_text(
+        '[plugins."browser@openai-bundled"]\nenabled = true\n'
+        '[plugins."chrome@openai-bundled"]\nenabled = true\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(windows_update, "bundled_marketplace_is_app_managed", lambda _cli: True)
+
+    ok, detail = windows_update.verify_official_bundled_plugins(config, app, source)
+
+    assert ok is True
+    assert "Codex Desktop" in detail
+
+
 def test_config_guard_ignores_plugin_node_repl_and_cli_path_but_preserves_other_mcp():
     before = """model_provider = "custom"
 
@@ -828,6 +898,35 @@ def test_inspect_windows_update_detects_healthy_and_stale_cli(tmp_path, monkeypa
     assert stale.launch_safe is False
 
 
+def test_inspect_windows_update_detects_stale_cli_companion(tmp_path, monkeypatch):
+    config_path, codex_home = write_config(tmp_path)
+    config = load_config(str(config_path))
+    app, source = app_fixture(tmp_path)
+    add_plugin_cache(codex_home)
+    configured = tmp_path / "OpenAI" / "Codex" / "bin" / "hash" / "codex.exe"
+    copy_cli_bundle(source, configured)
+    (configured.parent / "codex-code-mode-host.exe").write_bytes(b"stale-companion")
+    (codex_home / "config.toml").write_text(
+        f"[mcp_servers.node_repl]\ncommand = 'node'\n\n"
+        f"[mcp_servers.node_repl.env]\nCODEX_CLI_PATH = '{configured}'\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+
+    report = windows_update.inspect_windows_update(
+        config,
+        execute_cli=False,
+        include_resources=False,
+        app_info=app,
+    )
+
+    assert report.configured_cli.sha256 == report.source_cli.sha256
+    assert report.status == windows_update.STATUS_REPAIR_REQUIRED
+    assert report.launch_safe is False
+    assert "Configured CODEX_CLI_PATH does not match the current Codex app CLI bundle." in report.errors
+    assert windows_update.auto_repair_eligible(report) is True
+
+
 def test_inspect_windows_update_repairs_matching_cli_in_older_managed_directory(tmp_path, monkeypatch):
     config_path, codex_home = write_config(tmp_path)
     config = load_config(str(config_path))
@@ -1145,6 +1244,118 @@ def test_guarded_repair_uses_user_environment_when_config_key_is_absent(tmp_path
     assert not list(codex_home.glob("config.toml.bak-codex-update-*"))
 
 
+def test_replace_with_permission_retry_handles_transient_windows_scanner_lock(tmp_path, monkeypatch):
+    source = tmp_path / "staging"
+    destination = tmp_path / "installed"
+    source.mkdir()
+    (source / "codex.exe").write_bytes(b"cli")
+    real_replace = windows_update.os.replace
+    calls = 0
+    sleeps: list[float] = []
+
+    def flaky_replace(left, right):
+        nonlocal calls
+        calls += 1
+        if calls < 3:
+            raise PermissionError("scanner still holds the staged directory")
+        return real_replace(left, right)
+
+    monkeypatch.setattr(windows_update.os, "replace", flaky_replace)
+    monkeypatch.setattr(windows_update.time, "sleep", sleeps.append)
+
+    windows_update._replace_with_permission_retry(source, destination)
+
+    assert calls == 3
+    assert sleeps == [0.25, 0.25]
+    assert (destination / "codex.exe").read_bytes() == b"cli"
+
+
+def test_cli_bundle_is_only_executed_after_staging_directory_swap(tmp_path, monkeypatch):
+    _app, source = app_fixture(tmp_path)
+    destination = tmp_path / "managed" / "26.818.5345.0" / "codex.exe"
+    source_hashes = windows_update.cli_bundle_hashes(source)
+    assert source_hashes is not None
+    probes: list[tuple[Path, bool]] = []
+
+    def fake_probe(path, kind, *, execute=True, required_siblings=()):
+        path = Path(path)
+        probes.append((path, execute))
+        missing = [name for name in required_siblings if not (path.parent / name).is_file()]
+        return windows_update.CliProbe(
+            kind=kind,
+            exists=path.is_file(),
+            runnable=path.is_file() and not missing,
+            version="codex-cli test" if execute else "",
+            size=path.stat().st_size if path.is_file() else 0,
+            bundle_complete=not missing,
+            missing_bundle_files=missing,
+        )
+
+    monkeypatch.setattr(windows_update, "probe_cli", fake_probe)
+
+    installed, staging, previous = windows_update._install_cli_bundle_atomically(
+        source,
+        destination,
+        source_hashes,
+    )
+
+    assert installed is True
+    assert staging is None
+    assert previous is None
+    assert probes[0][1] is False
+    assert probes[0][0].parent.name.startswith(".staging-")
+    assert probes[1] == (destination, True)
+    assert windows_update.cli_bundle_hashes(destination) == source_hashes
+
+
+def test_cli_bundle_swap_restores_previous_directory_when_staging_rename_fails(tmp_path, monkeypatch):
+    _app, source = app_fixture(tmp_path)
+    destination = tmp_path / "managed" / "26.818.5345.0" / "codex.exe"
+    destination.parent.mkdir(parents=True)
+    destination.write_bytes(b"previous-cli")
+    for name in windows_update.MANAGED_CLI_COMPANION_FILES:
+        (destination.parent / name).write_bytes(("previous-" + name).encode("utf-8"))
+    previous_hashes = windows_update.cli_bundle_hashes(destination)
+    source_hashes = windows_update.cli_bundle_hashes(source)
+    assert previous_hashes is not None
+    assert source_hashes is not None
+    real_replace = windows_update.os.replace
+
+    def fail_staging_swap(left, right):
+        left_path = Path(left)
+        if left_path.name.startswith(".staging-"):
+            raise PermissionError("persistent scanner lock")
+        return real_replace(left, right)
+
+    monkeypatch.setattr(windows_update.os, "replace", fail_staging_swap)
+    monkeypatch.setattr(windows_update.time, "sleep", lambda _seconds: None)
+
+    try:
+        windows_update._install_cli_bundle_atomically(source, destination, source_hashes)
+    except PermissionError:
+        pass
+    else:
+        raise AssertionError("the simulated staging swap should fail")
+
+    assert windows_update.cli_bundle_hashes(destination) == previous_hashes
+    assert not list(destination.parent.parent.glob(".previous-*-codex-cli"))
+
+
+def test_restore_config_from_text_reports_verified_success_and_write_failure(tmp_path, monkeypatch):
+    path = tmp_path / "config.toml"
+    path.write_text("old\n", encoding="utf-8")
+
+    assert windows_update._restore_config_from_text(path, "model_provider = 'custom'\n", False) is True
+    assert path.read_text(encoding="utf-8") == "model_provider = 'custom'\n"
+
+    monkeypatch.setattr(
+        windows_update,
+        "write_utf8_text_atomic",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("locked")),
+    )
+    assert windows_update._restore_config_from_text(path, "replacement\n", False) is False
+
+
 def automatic_report(*, healthy: bool, error: str = "") -> windows_update.WindowsUpdateReport:
     source = windows_update.CliProbe(
         "appx-source",
@@ -1279,6 +1490,43 @@ def test_browser_ensure_is_zero_write_when_browser_is_already_healthy(tmp_path, 
         verify_seconds=0,
     ) == 0
     assert {name: (codex_home / name).read_bytes() for name in before} == before
+    assert not (config_path.parent / ".windows-browser-post-start.lock").exists()
+
+
+def test_browser_ensure_defers_reserved_marketplace_to_desktop(tmp_path, monkeypatch):
+    config_path, codex_home = write_config(tmp_path)
+    app, _source = app_fixture(tmp_path)
+    cli_path = tmp_path / "managed" / "codex.exe"
+    cli_path.parent.mkdir(parents=True)
+    cli_path.write_bytes(b"cli")
+    (codex_home / "config.toml").write_text(
+        '[plugins."browser@openai-bundled"]\nenabled = true\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(windows_update, "is_windows", lambda: True)
+    monkeypatch.setattr(windows_update, "windows_codex_app_info", lambda: app)
+    monkeypatch.setattr(windows_update, "current_codex_cli_for_plugins", lambda *_args: cli_path)
+    monkeypatch.setattr(windows_update, "codex_is_running", lambda: True)
+    monkeypatch.setattr(windows_update, "bundled_marketplace_is_app_managed", lambda _cli: True)
+    monkeypatch.setattr(windows_update, "_browser_config_ready", lambda *_args: False)
+    monkeypatch.setattr(
+        windows_update,
+        "query_codex_plugin_catalog",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("reserved marketplace must not be queried")),
+    )
+    monkeypatch.setattr(
+        windows_update,
+        "_run_codex_plugin_command",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("reserved marketplace must not be rewritten")),
+    )
+
+    assert windows_update.run_windows_browser_ensure(
+        str(config_path),
+        wait_seconds=0,
+        settle_seconds=0,
+        poll_seconds=0.1,
+        verify_seconds=0,
+    ) == 0
     assert not (config_path.parent / ".windows-browser-post-start.lock").exists()
 
 

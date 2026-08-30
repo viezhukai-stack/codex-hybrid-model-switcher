@@ -32,6 +32,7 @@ EXCLUDED_DIRS = {
     "__pycache__",
     "docs",
     "dist",
+    "dist-materials",
     "tests",
     "小白一键配置包codex混合配置2.0版",
 }
@@ -77,7 +78,7 @@ def git_worktree_files() -> list[Path]:
         if not raw:
             continue
         rel = Path(raw.decode("utf-8"))
-        if should_include(rel):
+        if should_include(rel) and (ROOT / rel).is_file():
             files.append(rel)
     return files
 

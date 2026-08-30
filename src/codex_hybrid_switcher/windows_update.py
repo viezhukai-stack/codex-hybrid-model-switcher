@@ -26,6 +26,7 @@ AUTO_REPAIR_ERROR_PREFIXES = (
     "Configured CODEX_CLI_PATH is missing companion programs:",
     "Configured CODEX_CLI_PATH is missing or not runnable.",
     "Configured CODEX_CLI_PATH does not match the current Codex app CLI.",
+    "Configured CODEX_CLI_PATH does not match the current Codex app CLI bundle.",
     "Configured CODEX_CLI_PATH uses an older managed version directory.",
 )
 
@@ -1110,6 +1111,45 @@ def _plugin_command_output(process: subprocess.CompletedProcess[str]) -> str:
     )
 
 
+def _cli_version_tuple(cli_path: Path) -> tuple[int, int, int] | None:
+    """Return the numeric Codex CLI version used for compatibility gates."""
+
+    try:
+        process = subprocess.run(
+            [str(cli_path), "--version"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=20,
+            check=False,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0) if is_windows() else 0,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if process.returncode != 0:
+        return None
+    match = re.search(r"\b(\d+)\.(\d+)\.(\d+)", process.stdout or "")
+    if not match:
+        return None
+    return tuple(int(part) for part in match.groups())
+
+
+def bundled_marketplace_is_app_managed(cli_path: Path) -> bool:
+    """Detect CLIs where ``openai-bundled`` is reserved for Codex Desktop.
+
+    Codex CLI 0.149 and newer rejects attempts to add the reserved marketplace
+    name.  A stale cached entry may still appear in ``plugin marketplace
+    list``, so the version gate is authoritative.  In that mode the Desktop
+    app owns Browser/Chrome activation, and the closed-app updater must not
+    remove or re-add the marketplace.
+    """
+
+    version = _cli_version_tuple(cli_path)
+    if version is None or version < (0, 149, 0):
+        return False
+    return True
+
+
 def _marketplace_remove_is_already_absent(process: subprocess.CompletedProcess[str]) -> bool:
     if process.returncode == 0:
         return True
@@ -1148,6 +1188,12 @@ def refresh_official_bundled_plugins(
     if not cli_path.is_file():
         print("The current Codex CLI was not found; marketplace refresh stopped.")
         return 20
+    if bundled_marketplace_is_app_managed(cli_path):
+        print(
+            "The current Codex CLI reserves openai-bundled for Codex Desktop. "
+            "Browser/Chrome refresh is deferred to the app-owned post-start path."
+        )
+        return 0
 
     commands = [
         ["marketplace", "remove", BUNDLED_MARKETPLACE_NAME, "--json"],
@@ -1381,6 +1427,8 @@ def inspect_windows_update(
         execute=execute_cli,
         required_siblings=MANAGED_CLI_COMPANION_FILES,
     )
+    configured_hashes = cli_bundle_hashes(configured_path)
+    source_hashes = cli_bundle_hashes(source_path)
     browser = plugin_probe("browser", app, config.codex_home, text)
     chrome = plugin_probe("chrome", app, config.codex_home, text)
     staging_count = count_staging_paths(config.codex_home)
@@ -1423,10 +1471,16 @@ def inspect_windows_update(
                 )
             else:
                 errors.append("Configured CODEX_CLI_PATH is missing or not runnable.")
-        elif source_probe.exists and configured_probe.sha256 != source_probe.sha256:
+        elif source_probe.exists and (
+            configured_probe.sha256 != source_probe.sha256
+            or (
+                source_hashes is not None
+                and configured_hashes != source_hashes
+            )
+        ):
             launch_safe = False
             status = STATUS_REPAIR_REQUIRED
-            errors.append("Configured CODEX_CLI_PATH does not match the current Codex app CLI.")
+            errors.append("Configured CODEX_CLI_PATH does not match the current Codex app CLI bundle.")
         if (
             configured_probe.kind == "hybrid-cache"
             and managed_path is not None
@@ -1581,18 +1635,23 @@ def _install_cli_bundle_atomically(
         for name, source_path in cli_bundle_paths(source).items():
             shutil.copy2(source_path, staging_dir / name)
         staged_cli = staging_dir / "codex.exe"
+        # Do not execute codex.exe from the staging directory before the
+        # directory swap. Windows security scanners can briefly retain an
+        # image handle after --version exits, which makes the immediately
+        # following directory rename fail with WinError 5. Hash and bundle
+        # validation are sufficient here; the final path is executed below.
         copied = probe_cli(
             staged_cli,
             "hybrid-cache",
-            execute=True,
+            execute=False,
             required_siblings=MANAGED_CLI_COMPANION_FILES,
         )
         if not copied.runnable or not copied.bundle_complete or cli_bundle_hashes(staged_cli) != source_hashes:
             return False, staging_dir, None
 
         if destination_dir.exists():
-            os.replace(destination_dir, previous_dir)
-        os.replace(staging_dir, destination_dir)
+            _replace_with_permission_retry(destination_dir, previous_dir)
+        _replace_with_permission_retry(staging_dir, destination_dir)
         installed = probe_cli(
             destination,
             "hybrid-cache",
@@ -1605,20 +1664,43 @@ def _install_cli_bundle_atomically(
             if destination_dir.exists():
                 shutil.rmtree(destination_dir, ignore_errors=True)
             if previous_dir.exists():
-                os.replace(previous_dir, destination_dir)
+                _replace_with_permission_retry(previous_dir, destination_dir)
             return False, None, None
         return True, None, previous_dir if previous_dir.exists() else None
     except Exception:
-        if destination_dir.exists() and previous_dir.exists():
-            shutil.rmtree(destination_dir, ignore_errors=True)
+        if previous_dir.exists():
+            if destination_dir.exists():
+                shutil.rmtree(destination_dir, ignore_errors=True)
             try:
-                os.replace(previous_dir, destination_dir)
-            except OSError:
-                pass
+                _replace_with_permission_retry(previous_dir, destination_dir)
+            except OSError as restore_exc:
+                raise RuntimeError(
+                    "CLI bundle swap failed and the previous managed directory "
+                    f"could not be restored from {previous_dir}"
+                ) from restore_exc
         raise
     finally:
         if staging_dir.exists():
             shutil.rmtree(staging_dir, ignore_errors=True)
+
+
+def _replace_with_permission_retry(
+    source: Path,
+    destination: Path,
+    *,
+    attempts: int = 12,
+    delay_seconds: float = 0.25,
+) -> None:
+    """Retry a Windows directory swap while short-lived scanners release it."""
+
+    for attempt in range(max(1, attempts)):
+        try:
+            os.replace(source, destination)
+            return
+        except PermissionError:
+            if attempt + 1 >= max(1, attempts):
+                raise
+            time.sleep(max(0.0, delay_seconds))
 
 
 def run_windows_update_repair(
@@ -1866,6 +1948,12 @@ def official_plugins_need_refresh(config: AppConfig, app_info: dict[str, str]) -
     except OSError:
         return True
     probes = [plugin_probe(name, app_info, config.codex_home, text) for name in ("browser", "chrome")]
+    cli_path = current_codex_cli_for_plugins(config, app_info)
+    if cli_path is not None and bundled_marketplace_is_app_managed(cli_path):
+        # The new Desktop-owned marketplace refreshes its cache only after the
+        # app starts.  Keep requiring the user's enabled plugin entries, but do
+        # not block launch solely because the previous AppX cache is stale.
+        return any(not probe.installed for probe in probes)
     return any(not probe.installed or not probe.version_matches for probe in probes)
 
 
@@ -1880,13 +1968,19 @@ def verify_official_bundled_plugins(
         text, _ = read_utf8_text_preserving_bom(config.codex_home / "config.toml")
     except OSError as exc:
         return False, f"config read failed: {type(exc).__name__}"
+    app_managed = bundled_marketplace_is_app_managed(cli_path)
     for name in ("browser", "chrome"):
         probe = plugin_probe(name, app_info, config.codex_home, text)
-        if not probe.installed or not probe.version_matches:
+        if not probe.installed or (not app_managed and not probe.version_matches):
             return False, (
                 f"{name} is not installed with the current AppX version "
                 f"(bundled={probe.source_version}, cache={probe.cache_version})"
             )
+    if app_managed:
+        return True, (
+            "Browser/Chrome are enabled; the reserved openai-bundled marketplace "
+            "will be version-aligned by Codex Desktop after launch"
+        )
     states, error = query_codex_plugin_catalog(cli_path)
     if error:
         return False, error
@@ -2029,7 +2123,13 @@ def run_windows_update_orchestrate(
             if restore_backup:
                 _restore_config_from_backup(backup, config)
             else:
-                _restore_config_from_text(config.codex_home / "config.toml", before_config, before_bom)
+                restored = _restore_config_from_text(
+                    config.codex_home / "config.toml",
+                    before_config,
+                    before_bom,
+                )
+                if not restored:
+                    _restore_config_from_backup(backup, config)
             print(
                 f"A protected Codex configuration block changed during {stage}; "
                 "the original config was restored."
@@ -2140,11 +2240,13 @@ def run_windows_update_orchestrate(
             if refresh != 0:
                 # Keep any validated CLI repair, but do not leave a half-written
                 # marketplace/config transaction behind.
-                _restore_config_from_text(
+                restored = _restore_config_from_text(
                     config.codex_home / "config.toml",
                     plugin_config_before,
                     plugin_bom,
                 )
+                if not restored:
+                    _restore_config_from_backup(backup, config)
                 print("Browser/Chrome refresh failed. The previous config was restored and Codex remains closed.")
                 return refresh
             plugins_refreshed = True
@@ -2212,11 +2314,19 @@ def run_windows_update_orchestrate(
     return 0
 
 
-def _restore_config_from_text(path: Path, text: str, bom: bool) -> None:
+def _restore_config_from_text(path: Path, text: str, bom: bool) -> bool:
+    payload = text.encode("utf-8")
+    if bom:
+        payload = codecs.BOM_UTF8 + payload
+    expected = hashlib.sha256(payload).hexdigest()
     try:
         write_utf8_text_atomic(path, text, bom=bom)
     except OSError:
-        pass
+        return False
+    try:
+        return sha256_file(path) == expected
+    except OSError:
+        return False
 
 
 def run_windows_browser_ensure(
@@ -2267,6 +2377,15 @@ def run_windows_browser_ensure(
             return 20
 
         print("Checking Browser after Codex feature initialization...")
+        if bundled_marketplace_is_app_managed(cli_path):
+            if _browser_config_ready(config, app):
+                print("Browser is enabled and aligned by the Codex Desktop-owned marketplace.")
+            else:
+                print(
+                    "Browser is enabled and its reserved marketplace is owned by Codex Desktop; "
+                    "no external marketplace rewrite was attempted."
+                )
+            return 0
         last_error: str | None = None
         feature_deadline = time.monotonic() + wait_seconds
         while True:

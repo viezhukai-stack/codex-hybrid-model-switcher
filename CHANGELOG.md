@@ -5,6 +5,29 @@ conservative release process because it edits Codex provider configuration.
 
 ## Unreleased
 
+## v2.18.8
+
+- Updated the Windows Codex update path for CLI `0.149.0` and newer, where
+  `openai-bundled` is reserved and managed by Codex Desktop. The closed-app
+  transaction no longer removes, re-adds, or externally rewrites that
+  marketplace; it preserves the enabled Browser/Chrome entries and lets the
+  app-owned post-start path align the reserved bundle. Older CLIs keep the
+  existing explicit marketplace refresh behavior.
+- Extended CLI drift detection from `codex.exe` alone to the complete managed
+  five-file bundle, so a stale command runner, sandbox helper, ripgrep binary,
+  or code-mode host now triggers the same guarded repair.
+- Hardened the atomic Windows CLI swap against antivirus and indexing locks.
+  The staging executable is hash-checked without being launched before the
+  directory rename, transient `PermissionError` failures are retried, and a
+  failed swap restores the previous managed directory before returning.
+- Added verified config restoration with fallback to the private transaction
+  backup when an atomic text restore is blocked or does not match its expected
+  hash.
+- Refreshed the Windows and macOS beginner package documentation for v2.18.8.
+  The safety boundary is unchanged: no service, scheduled task, KeepAlive job,
+  watchdog, account rewrite, model-cache edit, task-database edit, or session
+  migration is added by the normal update path.
+
 ## v2.18.7
 
 - Added an offline-safe current-user AppX registration fallback for Windows.
